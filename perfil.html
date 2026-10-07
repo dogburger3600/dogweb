@@ -12,7 +12,7 @@
 <body class="profile-page">
   <header class="c-header">
     <a href="index.html" class="c-header-logo signup-brand" aria-label="Voltar ao cardápio">
-      <div class="c-header-icon">🍔</div>
+      <div class="c-header-icon"><img src="dogburger.png" alt="" class="brand-icon-img" /></div>
       <div>
         <span class="c-header-name">Dog Burger</span>
         <span class="c-header-sub">Minha conta</span>
@@ -113,6 +113,14 @@
           </form>
         </article>
       </div>
+
+      <section class="profile-orders-section">
+        <div class="profile-orders-head">
+          <div><p class="profile-kicker">Suas compras</p><h2>Histórico de pedidos</h2></div>
+          <span class="profile-orders-count" id="profile-orders-count">0 pedidos</span>
+        </div>
+        <div id="profile-orders-list"><p class="profile-orders-loading">Carregando pedidos...</p></div>
+      </section>
     </section>
 
     <div class="profile-error hidden" id="profile-error">

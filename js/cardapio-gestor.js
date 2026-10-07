@@ -49,7 +49,7 @@ function renderMenuProducts() {
     const categoryMeta = CAT_MAP[product.category] || { emoji:'🍽️', label:product.category };
     return `<article class="menu-edit-card${product.active ? '' : ' archived'}">
       <div class="menu-edit-image">
-        ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.style.display='none'" />` : '<span>🍔</span>'}
+        ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.style.display='none'" />` : '<img src="dogburger.png" alt="Dog Burger" class="menu-placeholder-logo" />'}
         <span class="product-cat-badge">${categoryMeta.emoji} ${escapeHtml(categoryMeta.label)}</span>
         ${product.active ? '' : '<span class="menu-archived-badge">Desativado</span>'}
       </div>
