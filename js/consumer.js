@@ -139,7 +139,7 @@ function closeCart() {
   document.getElementById('cart-drawer').classList.add('hidden');
 }
 
-function openCheckout() {
+async function openCheckout() {
   const count = cart.length;
   const total = cartTotal();
   document.getElementById('checkout-sub').textContent =
@@ -150,6 +150,18 @@ function openCheckout() {
   document.getElementById('checkout-overlay').classList.remove('hidden');
   document.getElementById('checkout-modal').classList.remove('hidden');
   document.getElementById('customer-name').focus();
+  const addressBox = document.getElementById('checkout-address');
+  addressBox.classList.add('hidden');
+  const { data: { user } } = await DB.auth.getUser();
+  if (user) {
+    const { data: profile } = await DB.from('profiles').select('name, street, address_number, address_complement, neighborhood').eq('id', user.id).maybeSingle();
+    if (profile) {
+      document.getElementById('customer-name').value = profile.name || '';
+      const firstLine = [profile.street, profile.address_number].filter(Boolean).join(', ');
+      document.getElementById('checkout-address-text').textContent = `${firstLine}${profile.address_complement ? ` · ${profile.address_complement}` : ''}${profile.neighborhood ? ` — ${profile.neighborhood}` : ''}`;
+      addressBox.classList.remove('hidden');
+    }
+  }
 }
 
 function closeCheckout() {

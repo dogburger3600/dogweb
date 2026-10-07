@@ -32,9 +32,9 @@ const Store = {
     return data.publicUrl;
   },
   async getOrders() {
-    const { data, error } = await DB.from('orders').select('id, customer_name, note, status, created_at, order_items(product_id, quantity, unit_price, unit_cost)').order('created_at', { ascending:false });
+    const { data, error } = await DB.from('orders').select('id, customer_name, note, status, created_at, delivery_address, order_items(product_id, quantity, unit_price, unit_cost)').order('created_at', { ascending:false });
     if (error) throw error;
-    return data.map(o => ({ id:`PED-${String(o.id).padStart(3,'0')}`, databaseId:o.id, customerName:o.customer_name, note:o.note, status:o.status, createdAt:new Date(o.created_at).getTime(), items:o.order_items.map(i => ({ pid:i.product_id, qty:i.quantity, unitPrice:Number(i.unit_price), unitCost:Number(i.unit_cost) })) }));
+    return data.map(o => ({ id:`PED-${String(o.id).padStart(3,'0')}`, databaseId:o.id, customerName:o.customer_name, note:o.note, status:o.status, createdAt:new Date(o.created_at).getTime(), address:o.delivery_address, items:o.order_items.map(i => ({ pid:i.product_id, qty:i.quantity, unitPrice:Number(i.unit_price), unitCost:Number(i.unit_cost) })) }));
   },
   async getExpenses() {
     const { data, error } = await DB.from('expenses').select('*').order('created_at', { ascending:false });
@@ -58,8 +58,8 @@ const Store = {
     const { error } = await DB.from('expenses').insert({ description:expense.description, amount:expense.amount, category:expense.category });
     if (error) throw error;
   },
-  async signUp({ name, phone, email, password }) {
-    const { data, error } = await DB.auth.signUp({ email, password, options:{ data:{ name, phone, consent:true } } });
+  async signUp({ name, phone, email, password, address, captchaToken }) {
+    const { data, error } = await DB.auth.signUp({ email, password, options:{ captchaToken, data:{ name, phone, consent:true, street:address.street, address_number:address.number, address_complement:address.complement, neighborhood:address.neighborhood } } });
     if (error) throw error;
     return data;
   },

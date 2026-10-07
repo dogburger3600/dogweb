@@ -156,6 +156,7 @@ function orderCard(o) {
           </div>` : '';
         }).join('')}
       </div>
+      ${o.address ? `<div class="order-address">📍 ${formatOrderAddress(o.address)}</div>` : ''}
       ${o.note ? `<div class="order-note">📝 ${o.note}</div>` : ''}
       ${next ? `<button class="btn-advance" onclick="advanceOrder('${o.id}','${next}')">Avançar → ${STATUS_META[next].label}</button>` : ''}
     </div>` : ''}
@@ -394,6 +395,14 @@ async function submitExpense() {
   }
 }
 
+function formatOrderAddress(address) {
+  const clean = value => String(value || '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[char]);
+  const firstLine = [address.street, address.number].filter(Boolean).map(clean).join(', ');
+  const neighborhood = address.neighborhood ? ` — ${clean(address.neighborhood)}` : '';
+  const complement = address.complement ? ` · ${clean(address.complement)}` : '';
+  return `${firstLine}${complement}${neighborhood}`;
+}
+
 async function verifyManager() {
   const { data: { user } } = await DB.auth.getUser();
   if (!user) return false;
@@ -411,7 +420,7 @@ async function initManager() {
     await setView('dashboard');
   } else {
     document.getElementById('page-manager').classList.add('hidden');
-    document.getElementById('manager-login').classList.remove('hidden');
+    window.location.replace('entrar.html');
   }
 }
 

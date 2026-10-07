@@ -51,10 +51,10 @@
               <p class="profile-kicker">Dados da conta</p>
               <h2>Informações pessoais</h2>
             </div>
-            <span class="profile-lock">🔒 Protegido</span>
+            <button class="btn-profile-edit" id="profile-edit-button" type="button">Editar dados</button>
           </div>
 
-          <div class="profile-info-list">
+          <div class="profile-info-list" id="profile-info-view">
             <div class="profile-info-row">
               <span class="profile-info-icon">👤</span>
               <div><small>Nome completo</small><strong id="profile-full-name"></strong></div>
@@ -68,10 +68,49 @@
               <div><small>Celular</small><strong id="profile-phone"></strong></div>
             </div>
             <div class="profile-info-row">
+              <span class="profile-info-icon">📍</span>
+              <div><small>Endereço de entrega</small><strong id="profile-address"></strong></div>
+            </div>
+            <div class="profile-info-row">
               <span class="profile-info-icon">🔑</span>
               <div><small>Senha</small><strong>Protegida pelo Supabase</strong></div>
             </div>
           </div>
+
+          <form class="profile-edit-form hidden" id="profile-edit-form">
+            <div class="form-group">
+              <label class="form-label" for="profile-edit-name">Nome completo *</label>
+              <input class="form-input" id="profile-edit-name" type="text" autocomplete="name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profile-edit-email">E-mail</label>
+              <input class="form-input profile-readonly" id="profile-edit-email" type="email" disabled />
+              <small class="profile-field-note">O e-mail da conta não pode ser alterado.</small>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="profile-edit-phone">Celular *</label>
+              <input class="form-input" id="profile-edit-phone" type="tel" autocomplete="tel" inputmode="numeric" maxlength="15" required />
+            </div>
+            <div class="signup-section-title"><span>📍</span><div><strong>Endereço de entrega</strong><small>Será usado nos próximos pedidos</small></div></div>
+            <div class="signup-address-grid">
+              <div class="form-group address-street"><label class="form-label" for="profile-edit-street">Rua *</label><input class="form-input" id="profile-edit-street" maxlength="120" required /></div>
+              <div class="form-group address-number"><label class="form-label" for="profile-edit-address-number">Número *</label><input class="form-input" id="profile-edit-address-number" maxlength="12" required /></div>
+              <div class="form-group address-complement"><label class="form-label" for="profile-edit-address-complement">Complemento</label><input class="form-input" id="profile-edit-address-complement" maxlength="80" /></div>
+              <div class="form-group address-neighborhood"><label class="form-label" for="profile-edit-neighborhood">Bairro *</label><input class="form-input" id="profile-edit-neighborhood" maxlength="80" required /></div>
+            </div>
+            <div class="profile-password-section">
+              <p class="form-label">Alterar senha <span>(opcional)</span></p>
+              <div class="signup-grid">
+                <div class="form-group"><input class="form-input" id="profile-edit-password" type="password" autocomplete="new-password" minlength="6" placeholder="Nova senha" /></div>
+                <div class="form-group"><input class="form-input" id="profile-edit-confirm" type="password" autocomplete="new-password" placeholder="Confirmar nova senha" /></div>
+              </div>
+            </div>
+            <p class="form-error profile-edit-error" id="profile-edit-error"></p>
+            <div class="modal-actions">
+              <button class="btn-secondary" id="profile-edit-cancel" type="button">Cancelar</button>
+              <button class="btn-primary" id="profile-edit-save" type="submit">Salvar alterações</button>
+            </div>
+          </form>
         </article>
       </div>
     </section>
@@ -81,6 +120,8 @@
       <a href="entrar.html">Entrar novamente</a>
     </div>
   </main>
+
+  <div id="toast" class="toast hidden"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
