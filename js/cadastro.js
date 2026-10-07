@@ -22,6 +22,25 @@ function onlyDigits(value) {
   return value.replace(/\D/g, '');
 }
 
+function isValidEmail(email) {
+  return email.length <= 254 && !email.includes('..') && /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email);
+}
+
+function isValidBrazilianMobile(phone) {
+  return /^[1-9]{2}9\d{8}$/.test(phone) && !/^(\d)\1+$/.test(phone);
+}
+
+document.querySelectorAll('.password-toggle').forEach(button => {
+  button.addEventListener('click', () => {
+    const input = document.getElementById(button.dataset.passwordTarget);
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    button.classList.toggle('is-visible', show);
+    button.setAttribute('aria-pressed', String(show));
+    button.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+  });
+});
+
 function formatPhone(value) {
   const digits = onlyDigits(value).slice(0, 11);
   if (digits.length <= 2) return digits.replace(/^(\d{0,2})/, '($1');
@@ -69,11 +88,11 @@ form.addEventListener('submit', async event => {
     setError('name', 'Informe seu nome e sobrenome.');
     valid = false;
   }
-  if (phone.length < 10 || phone.length > 11) {
-    setError('phone', 'Informe um celular válido com DDD.');
+  if (!isValidBrazilianMobile(phone)) {
+    setError('phone', 'Informe um celular válido com DDD, incluindo o dígito 9.');
     valid = false;
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!isValidEmail(email)) {
     setError('email', 'Informe um e-mail válido.');
     valid = false;
   }

@@ -16,6 +16,20 @@ function cartCount() {
   return cart.reduce((s, i) => s + i.qty, 0);
 }
 
+function saveCart() {
+  sessionStorage.setItem('dogburger_cart', JSON.stringify(cart.map(item => ({ pid:item.product.id, qty:item.qty }))));
+}
+
+function restoreCart() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('dogburger_cart') || '[]');
+    cart = saved.map(item => ({ product:getProduct(item.pid), qty:item.qty })).filter(item => item.product && item.qty > 0);
+  } catch {
+    cart = [];
+    sessionStorage.removeItem('dogburger_cart');
+  }
+}
+
 function renderCategoryTabs() {
   const el = document.getElementById('category-tabs');
   el.innerHTML = CATEGORIES.map(c =>
@@ -83,6 +97,7 @@ function addToCart(pid) {
   }
   updateCartBadge();
   renderCartItems();
+  saveCart();
 }
 
 function updateQty(pid, delta) {
@@ -93,6 +108,7 @@ function updateQty(pid, delta) {
   if (cart[idx].qty <= 0) cart.splice(idx, 1);
   updateCartBadge();
   renderCartItems();
+  saveCart();
 }
 
 function renderCartItems() {
@@ -140,6 +156,12 @@ function closeCart() {
 }
 
 async function openCheckout() {
+  const { data: { user } } = await DB.auth.getUser();
+  if (!user) {
+    saveCart();
+    window.location.href = 'entrar.html?returnTo=index.html&checkout=1';
+    return;
+  }
   const count = cart.length;
   const total = cartTotal();
   document.getElementById('checkout-sub').textContent =
@@ -152,15 +174,12 @@ async function openCheckout() {
   document.getElementById('customer-name').focus();
   const addressBox = document.getElementById('checkout-address');
   addressBox.classList.add('hidden');
-  const { data: { user } } = await DB.auth.getUser();
-  if (user) {
-    const { data: profile } = await DB.from('profiles').select('name, street, address_number, address_complement, neighborhood').eq('id', user.id).maybeSingle();
-    if (profile) {
-      document.getElementById('customer-name').value = profile.name || '';
-      const firstLine = [profile.street, profile.address_number].filter(Boolean).join(', ');
-      document.getElementById('checkout-address-text').textContent = `${firstLine}${profile.address_complement ? ` · ${profile.address_complement}` : ''}${profile.neighborhood ? ` — ${profile.neighborhood}` : ''}`;
-      addressBox.classList.remove('hidden');
-    }
+  const { data: profile } = await DB.from('profiles').select('name, street, address_number, address_complement, neighborhood').eq('id', user.id).maybeSingle();
+  if (profile) {
+    document.getElementById('customer-name').value = profile.name || '';
+    const firstLine = [profile.street, profile.address_number].filter(Boolean).join(', ');
+    document.getElementById('checkout-address-text').textContent = `${firstLine}${profile.address_complement ? ` · ${profile.address_complement}` : ''}${profile.neighborhood ? ` — ${profile.neighborhood}` : ''}`;
+    addressBox.classList.remove('hidden');
   }
 }
 
@@ -184,6 +203,7 @@ async function placeOrder() {
     const id = await Store.placeOrder(name, note, cart);
     products = await Store.getProducts();
     cart = [];
+    sessionStorage.removeItem('dogburger_cart');
     updateCartBadge();
     renderProducts();
     closeCheckout();
@@ -209,7 +229,15 @@ async function initConsumer() {
   document.getElementById('products-grid').innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--stone)">Carregando cardápio...</p>';
   try {
     products = await Store.getProducts();
+    restoreCart();
     renderProducts();
+    updateCartBadge();
+    renderCartItems();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === '1' && cart.length > 0) {
+      window.history.replaceState({}, '', 'index.html');
+      await openCheckout();
+    }
   } catch (error) {
     document.getElementById('products-grid').innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--red)">Não foi possível carregar o cardápio. ${error.message}</p>`;
   }

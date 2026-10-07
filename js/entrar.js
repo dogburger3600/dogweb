@@ -4,6 +4,17 @@ const loginForm = document.getElementById('login-form');
 let loginCaptchaToken = '';
 let loginCaptchaWidgetId = null;
 
+document.querySelectorAll('.password-toggle').forEach(button => {
+  button.addEventListener('click', () => {
+    const input = document.getElementById(button.dataset.passwordTarget);
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    button.classList.toggle('is-visible', show);
+    button.setAttribute('aria-pressed', String(show));
+    button.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha');
+  });
+});
+
 window.onLoginTurnstileLoad = () => {
   if (TURNSTILE_SITE_KEY.startsWith('COLE_AQUI')) {
     document.getElementById('login-error').textContent = 'CAPTCHA aguardando configuração da chave pública.';
@@ -21,7 +32,11 @@ async function redirectAuthenticatedUser() {
   const { data: { user } } = await DB.auth.getUser();
   if (!user) return false;
   const { data: profile } = await DB.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  window.location.replace(profile?.role === 'manager' ? 'gestor.html' : 'index.html');
+  const params = new URLSearchParams(window.location.search);
+  const customerDestination = params.get('returnTo') === 'index.html'
+    ? `index.html${params.get('checkout') === '1' ? '?checkout=1' : ''}`
+    : 'index.html';
+  window.location.replace(profile?.role === 'manager' ? 'gestor.html' : customerDestination);
   return true;
 }
 
@@ -33,6 +48,14 @@ loginForm.addEventListener('submit', async event => {
   button.textContent = 'Entrando...';
   errorElement.textContent = '';
 
+  const email = document.getElementById('login-email').value.trim().toLowerCase();
+  if (email.length > 254 || email.includes('..') || !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email)) {
+    errorElement.textContent = 'Informe um e-mail válido.';
+    button.disabled = false;
+    button.textContent = 'Entrar';
+    return;
+  }
+
   if (!loginCaptchaToken) {
     errorElement.textContent = 'Confirme que você não é um robô.';
     button.disabled = false;
@@ -41,7 +64,7 @@ loginForm.addEventListener('submit', async event => {
   }
 
   const { error } = await DB.auth.signInWithPassword({
-    email: document.getElementById('login-email').value.trim(),
+    email,
     password: document.getElementById('login-password').value,
     options: { captchaToken:loginCaptchaToken },
   });

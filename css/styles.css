@@ -211,6 +211,15 @@ body { min-height: 100vh; }
   background: var(--white); color: var(--dark);
 }
 .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--brand); }
+.password-field { position: relative; }
+.password-field .form-input { padding-right: 48px; }
+.password-toggle { position: absolute; top: 50%; right: 7px; transform: translateY(-50%); width: 36px; height: 34px; display: grid; place-items: center; border: none; border-radius: 8px; background: transparent; color: var(--stone); cursor: pointer; }
+.password-toggle:hover { background: var(--surface); }
+.password-toggle:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+.eye-icon { width: 20px; height: 20px; display: block; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.eye-slash { opacity: 1; transition: opacity 0.15s; }
+.password-toggle.is-visible .eye-slash { opacity: 0; }
+.password-toggle.is-visible { color: var(--brand); }
 .form-textarea { resize: none; }
 .checkout-address { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: -2px 0 16px; padding: 11px 12px; border-radius: 10px; background: #EFF6FF; }
 .checkout-address > div { display: flex; align-items: center; gap: 9px; min-width: 0; }

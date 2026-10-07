@@ -33,7 +33,7 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="login-password">Senha</label>
-          <input class="form-input" id="login-password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required />
+          <div class="password-field"><input class="form-input" id="login-password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required /><button class="password-toggle" type="button" data-password-target="login-password" aria-label="Mostrar senha" aria-pressed="false"><svg class="eye-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/><path class="eye-slash" d="M4 4 20 20"/></svg></button></div>
         </div>
         <div class="captcha-wrap login-captcha"><div id="login-captcha"></div></div>
         <p id="login-error" class="form-error login-error"></p>
