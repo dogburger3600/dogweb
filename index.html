@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dog Burger - Cardápio Digital</title>
+  <link rel="icon" type="image/png" href="dogburger.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div id="page-consumer">
+  <!-- Header -->
+  <header class="c-header">
+    <div class="c-header-logo">
+      <div class="c-header-icon">🍔</div>
+      <div>
+        <span class="c-header-name">Dog Burger</span>
+        <span class="c-header-sub">Peça o seu</span>
+      </div>
+    </div>
+    <div class="c-header-actions">
+      <div class="header-auth" id="guest-actions">
+        <a href="entrar.html" class="btn-ghost">Entrar</a>
+        <a href="cadastro.html" class="btn-ghost">Criar conta</a>
+      </div>
+      <div class="header-user hidden" id="user-actions">
+        <span class="header-user-avatar" id="header-user-avatar">U</span>
+        <a href="perfil.html" class="header-user-name" id="header-user-name" title="Ver meu perfil"></a>
+        <a href="gestor.html" class="btn-manager-shortcut hidden" id="manager-shortcut">Painel do Gestor</a>
+        <button class="btn-ghost" id="header-logout" type="button">Sair</button>
+      </div>
+      <button class="btn-cart" onclick="openCart()">
+        🛒 Carrinho
+        <span class="cart-badge" id="cart-badge" style="display:none">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <div class="c-hero">
+    <div class="c-hero-logo-wrap">
+      <img src="dogburger.png" alt="Dog Burger" class="c-hero-logo" />
+    </div>
+    <p class="c-hero-label">Cardápio Digital</p>
+    <h1 class="c-hero-title">O que vai ser<br><span>hoje?</span></h1>
+    <p class="c-hero-sub">Escolha seus favoritos e faça seu pedido em segundos</p>
+  </div>
+
+  <!-- Category Tabs -->
+  <div class="c-tabs" id="category-tabs"></div>
+
+  <!-- Products Grid -->
+  <main class="c-main">
+    <div class="products-grid" id="products-grid"></div>
+  </main>
+</div>
+
+<!-- Cart Drawer -->
+<div id="cart-overlay" class="overlay hidden" onclick="closeCart()"></div>
+<div id="cart-drawer" class="cart-drawer hidden">
+  <div class="cart-header">
+    <span class="cart-title">Seu Carrinho</span>
+    <button class="btn-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cart-items-list"></div>
+  <div class="cart-footer hidden" id="cart-footer">
+    <div class="cart-total">
+      <span class="cart-total-label">Total</span>
+      <span class="cart-total-value" id="cart-total-display">R$ 0,00</span>
+    </div>
+    <button class="btn-checkout" onclick="openCheckout()">Finalizar Pedido →</button>
+  </div>
+</div>
+
+<!-- Checkout Modal -->
+<div id="checkout-overlay" class="modal-overlay hidden" onclick="closeCheckout()"></div>
+<div id="checkout-modal" class="modal hidden">
+  <h2 class="modal-title">Confirmar Pedido</h2>
+  <p class="modal-sub" id="checkout-sub"></p>
+  <div class="form-group">
+    <label class="form-label">Seu Nome *</label>
+    <input type="text" class="form-input" id="customer-name" placeholder="Digite seu nome" />
+  </div>
+  <div class="form-group">
+    <label class="form-label">Observações</label>
+    <textarea class="form-textarea" id="order-note" rows="3" placeholder="Informe suas preferências"></textarea>
+  </div>
+  <div class="modal-actions">
+    <button class="btn-secondary" onclick="closeCheckout()">Voltar</button>
+    <button class="btn-primary" id="btn-place-order" onclick="placeOrder()">✅ Fazer Pedido</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/store.js"></script>
+<script src="js/auth-header.js"></script>
+<script src="js/consumer.js"></script>
+</body>
+</html>

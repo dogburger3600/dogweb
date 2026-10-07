@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro de Cliente - Dog Burger</title>
+  <link rel="icon" type="image/png" href="dogburger.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="signup-page">
+  <header class="c-header signup-header">
+    <a href="index.html" class="c-header-logo signup-brand" aria-label="Voltar ao cardápio">
+      <div class="c-header-icon">🍔</div>
+      <div>
+        <span class="c-header-name">Dog Burger</span>
+        <span class="c-header-sub">Cadastro de cliente</span>
+      </div>
+    </a>
+    <div class="header-auth">
+      <a href="entrar.html" class="btn-ghost">Já tenho conta</a>
+      <a href="index.html" class="btn-ghost">← Cardápio</a>
+    </div>
+  </header>
+
+  <main class="signup-main">
+    <section class="signup-intro">
+      <img src="dogburger.png" alt="Dog Burger" class="signup-logo" />
+      <p class="signup-eyebrow">Bem-vindo à Dog Burger</p>
+      <h1>Crie sua conta</h1>
+      <p>Cadastre-se para deixar seus próximos pedidos mais rápidos e acompanhar suas compras.</p>
+      <ul class="signup-benefits">
+        <li><span>✓</span> Dados salvos para os próximos pedidos</li>
+        <li><span>✓</span> Histórico de compras em um só lugar</li>
+        <li><span>✓</span> Atendimento mais rápido</li>
+      </ul>
+    </section>
+
+    <section class="signup-card" aria-labelledby="signup-title">
+      <div id="signup-form-wrap">
+        <h2 id="signup-title">Seus dados</h2>
+        <p class="signup-card-sub">Preencha os campos abaixo para começar.</p>
+
+        <form id="signup-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="signup-name">Nome completo *</label>
+            <input class="form-input" id="signup-name" name="name" type="text" autocomplete="name" placeholder="Digite seu nome completo" required />
+            <small class="form-error" id="name-error"></small>
+          </div>
+
+          <div class="signup-grid">
+            <div class="form-group">
+              <label class="form-label" for="signup-phone">Celular *</label>
+              <input class="form-input" id="signup-phone" name="phone" type="tel" autocomplete="tel" inputmode="numeric" maxlength="15" placeholder="(00) 00000-0000" required />
+              <small class="form-error" id="phone-error"></small>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="signup-email">E-mail *</label>
+              <input class="form-input" id="signup-email" name="email" type="email" autocomplete="email" placeholder="seu@email.com" required />
+              <small class="form-error" id="email-error"></small>
+            </div>
+          </div>
+
+          <div class="signup-grid">
+            <div class="form-group">
+              <label class="form-label" for="signup-password">Senha *</label>
+              <input class="form-input" id="signup-password" name="password" type="password" autocomplete="new-password" minlength="6" placeholder="Mínimo de 6 caracteres" required />
+              <small class="form-error" id="password-error"></small>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="signup-confirm">Confirmar senha *</label>
+              <input class="form-input" id="signup-confirm" name="confirmPassword" type="password" autocomplete="new-password" placeholder="Digite a senha novamente" required />
+              <small class="form-error" id="confirm-error"></small>
+            </div>
+          </div>
+
+          <label class="signup-consent">
+            <input id="signup-consent" type="checkbox" required />
+            <span>Concordo com o uso dos meus dados para atendimento e realização de pedidos.</span>
+          </label>
+          <small class="form-error consent-error" id="consent-error"></small>
+
+          <button class="btn-primary signup-submit" id="signup-submit" type="submit">Criar minha conta</button>
+          <p class="signup-security">🔒 Seus dados ficam armazenados neste dispositivo.</p>
+        </form>
+      </div>
+
+      <div class="signup-success hidden" id="signup-success" role="status">
+        <div class="signup-success-icon">✓</div>
+        <h2>Cadastro concluído!</h2>
+        <p>Sua conta foi criada. Agora você já pode voltar ao cardápio.</p>
+        <a href="index.html" class="btn-primary signup-success-link">Ver cardápio</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/cadastro.js"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lanche Express - Área do Gestor</title>
+  <link rel="icon" type="image/png" href="dogburger.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div id="manager-login" class="manager-login hidden">
+  <form id="manager-login-form" class="signup-card manager-login-card">
+    <div class="m-sidebar-icon manager-login-icon">🍔</div>
+    <h2>Acesso do gestor</h2>
+    <p class="signup-card-sub">Entre com uma conta autorizada.</p>
+    <div class="form-group">
+      <label class="form-label" for="manager-email">E-mail</label>
+      <input class="form-input" id="manager-email" type="email" autocomplete="email" required />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="manager-password">Senha</label>
+      <input class="form-input" id="manager-password" type="password" autocomplete="current-password" required />
+    </div>
+    <p id="manager-login-error" class="form-error"></p>
+    <button class="btn-primary signup-submit" type="submit">Entrar</button>
+    <a href="index.html" class="manager-back-link">← Voltar ao cardápio</a>
+  </form>
+</div>
+
+<div id="page-manager" class="hidden">
+  <aside class="m-sidebar">
+    <div class="m-sidebar-header">
+      <div class="m-sidebar-logo">
+        <div class="m-sidebar-icon">🍔</div>
+        <div>
+          <span class="m-sidebar-name">Dog Burger</span>
+          <span class="m-sidebar-role">Área do Gestor</span>
+        </div>
+      </div>
+    </div>
+    <nav class="m-nav">
+      <button class="m-nav-btn active" id="nav-dashboard" onclick="setView('dashboard')">
+        <span>📊</span> Dashboard
+      </button>
+      <button class="m-nav-btn" id="nav-pedidos" onclick="setView('pedidos')">
+        <span>📋</span> Pedidos
+        <span class="m-nav-badge hidden" id="active-orders-badge">0</span>
+      </button>
+      <a class="m-nav-btn m-nav-link" href="cardapio-gestor.html">
+        <span>🍔</span> Editar Cardápio
+      </a>
+    </nav>
+    <div class="m-sidebar-footer">
+      <a href="index.html">← Ver Cardápio</a>
+      <button onclick="signOutManager()">Sair da conta</button>
+    </div>
+  </aside>
+
+  <div class="m-main">
+    <header class="m-topbar">
+      <h1 class="m-topbar-title" id="view-title">Dashboard</h1>
+      <div class="topbar-actions">
+        <a href="cardapio-gestor.html" class="topbar-menu-link">🍔 Editar Cardápio</a>
+        <div class="m-online">
+          <div class="m-online-dot"></div>
+          <span class="m-online-label">Online</span>
+        </div>
+      </div>
+    </header>
+    <main class="m-content" id="m-content"></main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/store.js"></script>
+<script src="js/manager.js"></script>
+</body>
+</html>

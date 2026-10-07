@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meu Perfil - Dog Burger</title>
+  <link rel="icon" type="image/png" href="dogburger.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="profile-page">
+  <header class="c-header">
+    <a href="index.html" class="c-header-logo signup-brand" aria-label="Voltar ao cardápio">
+      <div class="c-header-icon">🍔</div>
+      <div>
+        <span class="c-header-name">Dog Burger</span>
+        <span class="c-header-sub">Minha conta</span>
+      </div>
+    </a>
+    <a href="index.html" class="btn-ghost">← Voltar ao cardápio</a>
+  </header>
+
+  <main class="profile-main">
+    <div class="profile-loading" id="profile-loading">Carregando seu perfil...</div>
+
+    <section class="profile-shell hidden" id="profile-content">
+      <div class="profile-hero">
+        <div class="profile-avatar" id="profile-avatar">U</div>
+        <div>
+          <p class="profile-kicker">Meu perfil</p>
+          <h1 id="profile-name"></h1>
+          <p class="profile-member" id="profile-member"></p>
+        </div>
+        <button class="btn-secondary profile-logout" id="profile-logout" type="button">Sair da conta</button>
+      </div>
+
+      <div class="profile-grid">
+        <article class="points-card">
+          <div class="points-icon">★</div>
+          <div>
+            <span class="points-label">Seus pontos</span>
+            <strong><span id="profile-points">0</span> pontos</strong>
+            <p>Em breve, suas compras poderão gerar cashback.</p>
+          </div>
+        </article>
+
+        <article class="profile-card">
+          <div class="profile-card-head">
+            <div>
+              <p class="profile-kicker">Dados da conta</p>
+              <h2>Informações pessoais</h2>
+            </div>
+            <span class="profile-lock">🔒 Protegido</span>
+          </div>
+
+          <div class="profile-info-list">
+            <div class="profile-info-row">
+              <span class="profile-info-icon">👤</span>
+              <div><small>Nome completo</small><strong id="profile-full-name"></strong></div>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-icon">✉️</span>
+              <div><small>E-mail</small><strong id="profile-email"></strong></div>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-icon">📱</span>
+              <div><small>Celular</small><strong id="profile-phone"></strong></div>
+            </div>
+            <div class="profile-info-row">
+              <span class="profile-info-icon">🔑</span>
+              <div><small>Senha</small><strong>Protegida pelo Supabase</strong></div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <div class="profile-error hidden" id="profile-error">
+      <strong>Não foi possível carregar seu perfil.</strong>
+      <a href="entrar.html">Entrar novamente</a>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/perfil.js"></script>
+</body>
+</html>

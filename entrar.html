@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entrar - Dog Burger</title>
+  <link rel="icon" type="image/png" href="dogburger.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="signup-page">
+  <header class="c-header signup-header">
+    <a href="index.html" class="c-header-logo signup-brand" aria-label="Voltar ao cardápio">
+      <div class="c-header-icon">🍔</div>
+      <div>
+        <span class="c-header-name">Dog Burger</span>
+        <span class="c-header-sub">Acesso à conta</span>
+      </div>
+    </a>
+    <a href="index.html" class="btn-ghost">← Voltar ao cardápio</a>
+  </header>
+
+  <main class="login-main">
+    <section class="signup-card login-card">
+      <div class="m-sidebar-icon manager-login-icon">🍔</div>
+      <h1>Que bom ter você de volta!</h1>
+      <p class="signup-card-sub">Entre para acessar sua conta.</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-email">E-mail</label>
+          <input class="form-input" id="login-email" type="email" autocomplete="email" placeholder="seu@email.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Senha</label>
+          <input class="form-input" id="login-password" type="password" autocomplete="current-password" placeholder="Digite sua senha" required />
+        </div>
+        <p id="login-error" class="form-error login-error"></p>
+        <button class="btn-primary signup-submit" id="login-submit" type="submit">Entrar</button>
+      </form>
+      <p class="login-signup">Ainda não tem conta? <a href="cadastro.html">Cadastre-se</a></p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/entrar.js"></script>
+</body>
+</html>
