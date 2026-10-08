@@ -9,10 +9,12 @@ let expandedOrders = new Set();
 let editingStock = null;
 let stockFilterCat = 'todos';
 let ordersFilter = 'todos';
+let reportDate = localDateKey(Date.now());
 
 const VIEW_TITLES = {
   dashboard: 'Dashboard',
   pedidos: 'Pedidos',
+  relatorios: 'Relatórios',
   popup: 'Pop-up Inicial',
 };
 
@@ -35,7 +37,7 @@ async function setView(view) {
   if (!VIEW_TITLES[view]) view = 'dashboard';
   currentView = view;
   document.getElementById('view-title').textContent = VIEW_TITLES[view];
-  ['dashboard','pedidos','popup'].forEach(v => {
+  ['dashboard','pedidos','relatorios','popup'].forEach(v => {
     const btn = document.getElementById(`nav-${v}`);
     if (btn) btn.classList.toggle('active', v === view);
   });
@@ -47,7 +49,7 @@ async function setView(view) {
 
   // Recarregar dados mais recentes da store
   try {
-    [products, orders] = await Promise.all([Store.getProducts(), Store.getOrders()]);
+    [products, orders] = await Promise.all([Store.getAllProducts(), Store.getOrders()]);
   } catch (error) {
     document.getElementById('m-content').innerHTML = `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${error.message}</div>`;
     return;
@@ -56,6 +58,7 @@ async function setView(view) {
   const content = document.getElementById('m-content');
   if (view === 'dashboard')  content.innerHTML = renderDashboard();
   if (view === 'pedidos')    content.innerHTML = renderPedidos();
+  if (view === 'relatorios') content.innerHTML = renderRelatorios();
   if (view === 'popup') {
     content.innerHTML = renderPopupEditor();
     await initPopupEditor();
@@ -268,6 +271,91 @@ async function advanceOrder(id, nextStatus) {
   }
   updateActiveOrdersBadge();
   document.getElementById('m-content').innerHTML = renderPedidos();
+}
+
+/* ── RELATÓRIOS ── */
+function localDateKey(timestamp) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function escapeManagerHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]);
+}
+
+function setReportDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+  reportDate = value;
+  document.getElementById('m-content').innerHTML = renderRelatorios();
+}
+
+function shiftReportDate(days) {
+  const date = new Date(`${reportDate}T12:00:00`);
+  date.setDate(date.getDate() + days);
+  setReportDate(localDateKey(date));
+}
+
+function showTodayReport() {
+  setReportDate(localDateKey(Date.now()));
+}
+
+function renderRelatorios() {
+  const selectedOrders = orders.filter(order => localDateKey(order.createdAt) === reportDate);
+  const attendedOrders = selectedOrders.filter(order => order.status === 'entregue');
+  const activeDayOrders = selectedOrders.filter(order => order.status !== 'entregue');
+  const dayRevenue = selectedOrders.reduce((total, order) => total + orderTotal(order), 0);
+  const averageTicket = selectedOrders.length ? dayRevenue / selectedOrders.length : 0;
+  const selectedDate = new Date(`${reportDate}T12:00:00`);
+  const selectedDateLabel = selectedDate.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+
+  const rows = selectedOrders.map(order => {
+    const status = STATUS_META[order.status] || { label:order.status, color:'#57534E', bg:'#F5F5F4' };
+    const customer = order.customer || {};
+    const items = order.items.map(item => {
+      const product = getProduct(item.pid);
+      return `<span><strong>${item.qty}×</strong> ${escapeManagerHtml(product?.name || `Produto #${item.pid}`)} <small>R$ ${fmt(item.unitPrice * item.qty)}</small></span>`;
+    }).join('');
+    const address = order.address ? formatOrderAddress(order.address) : 'Não informado';
+    return `<tr>
+      <td><strong class="report-order-id">${order.id}</strong><small>${new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}</small></td>
+      <td><strong>${escapeManagerHtml(order.customerName)}</strong><small>${escapeManagerHtml(customer.phone || 'Telefone não informado')}</small><small>${escapeManagerHtml(customer.email || 'E-mail não informado')}</small></td>
+      <td><div class="report-products-list">${items || '<span>Nenhum item</span>'}</div></td>
+      <td><span class="report-address">${address}</span>${order.note ? `<small class="report-note">Observação: ${escapeManagerHtml(order.note)}</small>` : ''}</td>
+      <td><strong class="report-value">R$ ${fmt(orderTotal(order))}</strong></td>
+      <td><span class="status-badge" style="background:${status.bg};color:${status.color}">${escapeManagerHtml(status.label)}</span></td>
+    </tr>`;
+  }).join('');
+
+  return `<section class="reports-page">
+    <div class="card report-calendar-card">
+      <div>
+        <span class="report-calendar-label">Dia do relatório</span>
+        <h2>${escapeManagerHtml(selectedDateLabel)}</h2>
+      </div>
+      <div class="report-calendar-controls">
+        <button type="button" title="Dia anterior" aria-label="Dia anterior" onclick="shiftReportDate(-1)">←</button>
+        <input id="report-date" type="date" value="${reportDate}" aria-label="Selecionar dia do relatório" onchange="setReportDate(this.value)" />
+        <button type="button" title="Próximo dia" aria-label="Próximo dia" onclick="shiftReportDate(1)">→</button>
+        <button class="report-today-button" type="button" onclick="showTodayReport()">Hoje</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid report-kpis">
+      ${kpiCard('Valor vendido no dia', `R$ ${fmt(dayRevenue)}`, '💵', '#16A34A', 'todos os pedidos do dia')}
+      ${kpiCard('Pedidos atendidos', String(attendedOrders.length), '✅', '#7C3AED', 'pedidos entregues')}
+      ${kpiCard('Pedidos recebidos', String(selectedOrders.length), '📋', '#F97316', 'total registrado no dia')}
+      ${kpiCard('Em andamento', String(activeDayOrders.length), '👨‍🍳', '#2563EB', 'ainda não entregues')}
+      ${kpiCard('Ticket médio', `R$ ${fmt(averageTicket)}`, '🧾', '#D97706', 'média por pedido')}
+    </div>
+
+    <div class="card report-orders-card">
+      <div class="card-header report-orders-header"><div><span class="card-title">Pedidos do dia</span><p>${selectedOrders.length} ${selectedOrders.length === 1 ? 'pedido encontrado' : 'pedidos encontrados'}</p></div></div>
+      ${selectedOrders.length ? `<div class="report-table-wrap"><table class="report-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Valor</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="report-empty"><span>📅</span><strong>Nenhum pedido neste dia</strong><p>Escolha outra data no calendário para consultar.</p></div>'}
+    </div>
+  </section>`;
 }
 
 /* ── ESTOQUE ── */

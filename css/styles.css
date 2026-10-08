@@ -499,6 +499,40 @@ body { min-height: 100vh; }
 .profile-orders-head h2 { font-family: var(--font-display); font-size: 1.2rem; }
 .profile-orders-count { padding: 5px 10px; border-radius: 99px; background: var(--surface); color: var(--stone); font-size: 0.72rem; font-weight: 800; }
 .profile-orders-loading, .profile-orders-empty { padding: 34px 10px; text-align: center; color: var(--stone-light); }
+
+/* ── RELATÓRIOS DO GESTOR ── */
+.reports-page { display: grid; gap: 20px; }
+.report-calendar-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; background: linear-gradient(135deg, #1C1917, #3B1F0A); color: #fff; }
+.report-calendar-label { display: block; margin-bottom: 5px; color: #FDBA74; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
+.report-calendar-card h2 { font-family: var(--font-display); font-size: 1.15rem; text-transform: capitalize; }
+.report-calendar-controls { display: flex; align-items: center; gap: 8px; }
+.report-calendar-controls button, .report-calendar-controls input { min-height: 40px; border: 1px solid rgba(255,255,255,0.18); border-radius: 9px; background: rgba(255,255,255,0.1); color: #fff; font-family: var(--font-body); font-weight: 800; }
+.report-calendar-controls button { min-width: 40px; padding: 0 12px; cursor: pointer; }
+.report-calendar-controls button:hover { background: var(--brand); border-color: var(--brand); }
+.report-calendar-controls input { padding: 0 12px; color-scheme: dark; }
+.report-calendar-controls .report-today-button { padding: 0 16px; background: var(--brand); border-color: var(--brand); }
+.report-kpis { margin-bottom: 0; }
+.report-orders-card { padding: 0; overflow: hidden; }
+.report-orders-header { padding: 20px 22px; margin: 0; }
+.report-orders-header p { margin-top: 3px; color: var(--stone-light); font-size: 0.75rem; font-weight: 700; }
+.report-table-wrap { overflow-x: auto; border-top: 1px solid var(--surface); }
+.report-table { width: 100%; min-width: 1050px; border-collapse: collapse; }
+.report-table th { padding: 11px 14px; background: var(--bg); color: var(--stone-light); font-size: 0.66rem; font-weight: 900; letter-spacing: 0.07em; text-align: left; text-transform: uppercase; }
+.report-table td { padding: 15px 14px; border-top: 1px solid var(--surface); color: var(--stone); font-size: 0.78rem; line-height: 1.45; vertical-align: top; }
+.report-table tbody tr:hover { background: #FFFBF7; }
+.report-table td > strong, .report-table td > small { display: block; }
+.report-table td > small { margin-top: 3px; color: var(--stone-light); }
+.report-order-id { color: var(--dark); font-family: var(--font-mono); }
+.report-products-list { display: grid; gap: 4px; min-width: 170px; }
+.report-products-list span { color: var(--dark); }
+.report-products-list small { margin-left: 5px; color: var(--stone-light); white-space: nowrap; }
+.report-address { display: block; max-width: 240px; }
+.report-note { display: block; margin-top: 7px; color: var(--stone-light); font-style: italic; }
+.report-value { color: var(--green); font-family: var(--font-mono); white-space: nowrap; }
+.report-empty { display: grid; place-items: center; padding: 48px 20px; color: var(--stone-light); text-align: center; }
+.report-empty span { margin-bottom: 8px; font-size: 2rem; }
+.report-empty strong { color: var(--dark); font-family: var(--font-display); }
+.report-empty p { margin-top: 4px; font-size: 0.8rem; }
 .history-order { overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border); border-radius: 14px; }
 .history-order:last-child { margin-bottom: 0; }
 .history-order-summary { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--bg); }
@@ -624,4 +658,8 @@ body { min-height: 100vh; }
   .menu-manager-grid { grid-template-columns: 1fr; }
   .product-number-grid { grid-template-columns: 1fr 1fr; gap: 0 12px; }
   .home-popup-content { padding: 24px 20px 26px; }
+  .report-calendar-card { align-items: stretch; flex-direction: column; }
+  .report-calendar-controls { display: grid; grid-template-columns: 40px minmax(0,1fr) 40px; }
+  .report-calendar-controls input { width: 100%; min-width: 0; }
+  .report-calendar-controls .report-today-button { grid-column: 1 / -1; }
 }
