@@ -42,23 +42,23 @@
       </div>
     </div>
     <nav class="m-nav">
-      <button class="m-nav-btn active" id="nav-dashboard" onclick="setView('dashboard')">
-        <span>📊</span> Dashboard
+      <button class="m-nav-btn active" id="nav-dashboard" type="button" title="Dashboard" onclick="setView('dashboard')">
+        <span aria-hidden="true">📊</span><span class="m-nav-label">Dashboard</span>
       </button>
-      <button class="m-nav-btn" id="nav-pedidos" onclick="setView('pedidos')">
-        <span>📋</span> Pedidos
+      <button class="m-nav-btn" id="nav-pedidos" type="button" title="Pedidos" onclick="setView('pedidos')">
+        <span aria-hidden="true">📋</span><span class="m-nav-label">Pedidos</span>
         <span class="m-nav-badge hidden" id="active-orders-badge">0</span>
       </button>
-      <a class="m-nav-btn m-nav-link" href="cardapio-gestor.html">
-        <span><img src="dogburger.png" alt="" class="nav-logo-img" /></span> Editar Cardápio
+      <a class="m-nav-btn m-nav-link" href="cardapio-gestor.html" title="Editar Cardápio">
+        <span aria-hidden="true"><img src="dogburger.png" alt="" class="nav-logo-img" /></span><span class="m-nav-label">Editar Cardápio</span>
       </a>
-      <button class="m-nav-btn" id="nav-popup" onclick="setView('popup')">
-        <span>📣</span> Pop-up Inicial
+      <button class="m-nav-btn" id="nav-popup" type="button" title="Pop-up Inicial" onclick="setView('popup')">
+        <span aria-hidden="true">📣</span><span class="m-nav-label">Pop-up Inicial</span>
       </button>
     </nav>
     <div class="m-sidebar-footer">
-      <a href="index.html">← Ver Cardápio</a>
-      <button onclick="signOutManager()">Sair da conta</button>
+      <a href="index.html" title="Ver Cardápio"><span aria-hidden="true">←</span><span class="m-sidebar-footer-label">Ver Cardápio</span></a>
+      <button type="button" title="Sair da conta" onclick="signOutManager()"><span aria-hidden="true">↪</span><span class="m-sidebar-footer-label">Sair da conta</span></button>
     </div>
   </aside>
 

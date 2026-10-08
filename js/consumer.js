@@ -241,10 +241,22 @@ function safePopupUrl(value) {
 
 async function loadHomePopup() {
   try {
-    const popup = await Store.getActivePopup();
+    const isTuesdayPromoTest = new URLSearchParams(window.location.search).get('popup-test') === 'terca';
+    const popup = isTuesdayPromoTest
+      ? {
+          id: 'test-terca-triplo',
+          title: 'Terça do Triplo',
+          message: 'Na terça, o Duplo vira Triplo! Só às terças-feiras.',
+          image_url: 'promo-terca-triplo-v2.png',
+          button_text: 'Ver cardápio',
+          button_url: 'index.html',
+          active: true,
+          updated_at: 'test-terca-triplo-v2'
+        }
+      : await Store.getActivePopup();
     if (!popup || !popup.active || !popup.title || !popup.message) return;
     currentPopupVersion = popup.updated_at || String(popup.id);
-    if (sessionStorage.getItem('dogburger_popup_seen') === currentPopupVersion) return;
+    if (!isTuesdayPromoTest && sessionStorage.getItem('dogburger_popup_seen') === currentPopupVersion) return;
     document.getElementById('home-popup-title').textContent = popup.title;
     document.getElementById('home-popup-message').textContent = popup.message;
 

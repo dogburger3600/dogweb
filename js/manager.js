@@ -32,12 +32,17 @@ function activeOrders() {
 }
 
 async function setView(view) {
+  if (!VIEW_TITLES[view]) view = 'dashboard';
   currentView = view;
   document.getElementById('view-title').textContent = VIEW_TITLES[view];
   ['dashboard','pedidos','popup'].forEach(v => {
     const btn = document.getElementById(`nav-${v}`);
     if (btn) btn.classList.toggle('active', v === view);
   });
+  const pageUrl = new URL(window.location.href);
+  if (view === 'dashboard') pageUrl.searchParams.delete('view');
+  else pageUrl.searchParams.set('view', view);
+  window.history.replaceState({}, '', pageUrl);
   updateActiveOrdersBadge();
 
   // Recarregar dados mais recentes da store
@@ -497,7 +502,8 @@ async function initManager() {
     document.querySelector('.m-online-label').textContent = profile?.name || user.email;
     document.getElementById('manager-login').classList.add('hidden');
     document.getElementById('page-manager').classList.remove('hidden');
-    await setView('dashboard');
+    const requestedView = new URLSearchParams(window.location.search).get('view');
+    await setView(VIEW_TITLES[requestedView] ? requestedView : 'dashboard');
   } else {
     document.getElementById('page-manager').classList.add('hidden');
     window.location.replace('entrar.html');
