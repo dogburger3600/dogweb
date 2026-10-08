@@ -29,8 +29,16 @@ function formatOrderAddress(address) {
 async function loadOrderHistory() {
   const list = document.getElementById('profile-orders-list');
   let { data: orders, error } = await DB.from('orders')
-    .select('id, status, note, created_at, delivery_address, order_items(product_id, product_name, quantity, unit_price)')
+    .select('id, status, note, created_at, delivery_address, payment_method, change_for, order_items(product_id, product_name, quantity, unit_price, removed_ingredients)')
     .order('created_at', { ascending:false });
+
+  if (error?.code === '42703') {
+    const fallback = await DB.from('orders')
+      .select('id, status, note, created_at, delivery_address, order_items(product_id, product_name, quantity, unit_price)')
+      .order('created_at', { ascending:false });
+    orders = fallback.data;
+    error = fallback.error;
+  }
 
   if (error?.code === '42703') {
     const fallback = await DB.from('orders')
@@ -55,6 +63,7 @@ async function loadOrderHistory() {
     pendente:{ label:'Pendente', color:'#D97706', bg:'#FEF3C7' }, preparando:{ label:'Preparando', color:'#2563EB', bg:'#DBEAFE' },
     pronto:{ label:'Pronto', color:'#16A34A', bg:'#DCFCE7' }, entregue:{ label:'Entregue', color:'#78716C', bg:'#F5F5F4' },
   };
+  const paymentLabels = { pix:'Pix', credito:'Crédito', debito:'Débito', dinheiro:'Dinheiro' };
 
   list.innerHTML = orders.map(order => {
     const total = order.order_items.reduce((sum, item) => sum + Number(item.unit_price) * item.quantity, 0);
@@ -62,7 +71,7 @@ async function loadOrderHistory() {
     const date = new Date(order.created_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' });
     const items = order.order_items.map(item => `<div class="history-item">
       <span class="history-item-qty">${item.quantity}×</span>
-      <div><span class="history-item-name">${escapeProfileHtml(item.product_name || `Produto #${item.product_id}`)}</span><small class="history-item-unit">R$ ${Number(item.unit_price).toLocaleString('pt-BR', {minimumFractionDigits:2})} cada</small></div>
+      <div><span class="history-item-name">${escapeProfileHtml(item.product_name || `Produto #${item.product_id}`)}</span><small class="history-item-unit">R$ ${Number(item.unit_price).toLocaleString('pt-BR', {minimumFractionDigits:2})} cada</small>${item.removed_ingredients ? `<small class="history-item-removal">Sem: ${escapeProfileHtml(item.removed_ingredients)}</small>` : ''}</div>
       <span class="history-item-price">R$ ${(Number(item.unit_price) * item.quantity).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
     </div>`).join('');
     return `<article class="history-order">
@@ -73,6 +82,7 @@ async function loadOrderHistory() {
       </div>
       <div class="history-order-body">${items}<div class="history-order-details">
         <div class="history-detail"><span>📍</span><span>${escapeProfileHtml(formatOrderAddress(order.delivery_address))}</span></div>
+        ${order.payment_method ? `<div class="history-detail"><span>💳</span><span>Pagamento na entrega: ${paymentLabels[order.payment_method] || order.payment_method}${order.payment_method === 'dinheiro' && order.change_for !== null ? ` · troco para R$ ${Number(order.change_for).toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</span></div>` : ''}
         ${order.note ? `<div class="history-detail"><span>📝</span><span>${escapeProfileHtml(order.note)}</span></div>` : ''}
       </div></div>
     </article>`;

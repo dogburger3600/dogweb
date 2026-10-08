@@ -65,6 +65,13 @@ async function setView(view) {
   }
 }
 
+function orderPaymentLabel(order) {
+  const method = PAYMENT_LABELS[order.paymentMethod] || 'Não informado';
+  return order.paymentMethod === 'dinheiro' && order.changeFor !== null
+    ? `${method} · troco para R$ ${fmt(order.changeFor)}`
+    : method;
+}
+
 function renderPopupEditor() {
   return `<div class="popup-editor-layout">
     <form class="card popup-editor-form" id="popup-editor-form">
@@ -239,12 +246,13 @@ function orderCard(o) {
         ${o.items.map(i => {
           const p = getProduct(i.pid);
           return p ? `<div class="order-item-row">
-            <span class="order-item-name">${i.qty}× ${p.name}</span>
-            <span class="order-item-price">R$ ${fmt(p.price * i.qty)}</span>
+            <span class="order-item-name">${i.qty}× ${p.name}${i.removedIngredients ? `<small class="order-item-removal">Sem: ${escapeManagerHtml(i.removedIngredients)}</small>` : ''}</span>
+            <span class="order-item-price">R$ ${fmt(i.unitPrice * i.qty)}</span>
           </div>` : '';
         }).join('')}
       </div>
       ${o.address ? `<div class="order-address">📍 ${formatOrderAddress(o.address)}</div>` : ''}
+      <div class="order-payment">💳 Pagamento na entrega: ${orderPaymentLabel(o)}</div>
       ${o.note ? `<div class="order-note">📝 ${o.note}</div>` : ''}
       ${next ? `<button class="btn-advance" onclick="advanceOrder('${o.id}','${next}')">Avançar → ${STATUS_META[next].label}</button>` : ''}
     </div>` : ''}
@@ -316,7 +324,7 @@ function renderRelatorios() {
     const customer = order.customer || {};
     const items = order.items.map(item => {
       const product = getProduct(item.pid);
-      return `<span><strong>${item.qty}×</strong> ${escapeManagerHtml(product?.name || `Produto #${item.pid}`)} <small>R$ ${fmt(item.unitPrice * item.qty)}</small></span>`;
+      return `<span><strong>${item.qty}×</strong> ${escapeManagerHtml(product?.name || `Produto #${item.pid}`)} <small>R$ ${fmt(item.unitPrice * item.qty)}</small>${item.removedIngredients ? `<em>Sem: ${escapeManagerHtml(item.removedIngredients)}</em>` : ''}</span>`;
     }).join('');
     const address = order.address ? formatOrderAddress(order.address) : 'Não informado';
     return `<tr>
@@ -324,6 +332,7 @@ function renderRelatorios() {
       <td><strong>${escapeManagerHtml(order.customerName)}</strong><small>${escapeManagerHtml(customer.phone || 'Telefone não informado')}</small><small>${escapeManagerHtml(customer.email || 'E-mail não informado')}</small></td>
       <td><div class="report-products-list">${items || '<span>Nenhum item</span>'}</div></td>
       <td><span class="report-address">${address}</span>${order.note ? `<small class="report-note">Observação: ${escapeManagerHtml(order.note)}</small>` : ''}</td>
+      <td><span class="report-payment">${escapeManagerHtml(orderPaymentLabel(order))}</span></td>
       <td><strong class="report-value">R$ ${fmt(orderTotal(order))}</strong></td>
       <td><span class="status-badge" style="background:${status.bg};color:${status.color}">${escapeManagerHtml(status.label)}</span></td>
     </tr>`;
@@ -353,7 +362,7 @@ function renderRelatorios() {
 
     <div class="card report-orders-card">
       <div class="card-header report-orders-header"><div><span class="card-title">Pedidos do dia</span><p>${selectedOrders.length} ${selectedOrders.length === 1 ? 'pedido encontrado' : 'pedidos encontrados'}</p></div></div>
-      ${selectedOrders.length ? `<div class="report-table-wrap"><table class="report-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Valor</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="report-empty"><span>📅</span><strong>Nenhum pedido neste dia</strong><p>Escolha outra data no calendário para consultar.</p></div>'}
+      ${selectedOrders.length ? `<div class="report-table-wrap"><table class="report-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="report-empty"><span>📅</span><strong>Nenhum pedido neste dia</strong><p>Escolha outra data no calendário para consultar.</p></div>'}
     </div>
   </section>`;
 }

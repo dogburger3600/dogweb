@@ -16,14 +16,18 @@ function cartCount() {
   return cart.reduce((s, i) => s + i.qty, 0);
 }
 
+function escapeCartHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]);
+}
+
 function saveCart() {
-  sessionStorage.setItem('dogburger_cart', JSON.stringify(cart.map(item => ({ pid:item.product.id, qty:item.qty }))));
+  sessionStorage.setItem('dogburger_cart', JSON.stringify(cart.map(item => ({ pid:item.product.id, qty:item.qty, removedIngredients:item.removedIngredients || '' }))));
 }
 
 function restoreCart() {
   try {
     const saved = JSON.parse(sessionStorage.getItem('dogburger_cart') || '[]');
-    cart = saved.map(item => ({ product:getProduct(item.pid), qty:item.qty })).filter(item => item.product && item.qty > 0);
+    cart = saved.map(item => ({ product:getProduct(item.pid), qty:item.qty, removedIngredients:String(item.removedIngredients || '').slice(0,120) })).filter(item => item.product && item.qty > 0);
   } catch {
     cart = [];
     sessionStorage.removeItem('dogburger_cart');
@@ -93,7 +97,7 @@ function addToCart(pid) {
   if (existing) {
     existing.qty++;
   } else {
-    cart.push({ product, qty: 1 });
+    cart.push({ product, qty: 1, removedIngredients: '' });
   }
   updateCartBadge();
   renderCartItems();
@@ -108,6 +112,13 @@ function updateQty(pid, delta) {
   if (cart[idx].qty <= 0) cart.splice(idx, 1);
   updateCartBadge();
   renderCartItems();
+  saveCart();
+}
+
+function updateItemRemoval(pid, value) {
+  const item = cart.find(cartItem => cartItem.product.id === pid);
+  if (!item) return;
+  item.removedIngredients = String(value || '').trimStart().slice(0,120);
   saveCart();
 }
 
@@ -128,16 +139,21 @@ function renderCartItems() {
 
   el.innerHTML = cart.map(i => `
     <div class="cart-item">
-      <img src="${i.product.img}" alt="${i.product.name}" />
-      <div class="cart-item-info">
-        <p class="cart-item-name">${i.product.name}</p>
-        <p class="cart-item-price">R$ ${fmt(i.product.price * i.qty)}</p>
+      <div class="cart-item-main">
+        <img src="${i.product.img}" alt="${escapeCartHtml(i.product.name)}" />
+        <div class="cart-item-info">
+          <p class="cart-item-name">${escapeCartHtml(i.product.name)}</p>
+          <p class="cart-item-price">R$ ${fmt(i.product.price * i.qty)}</p>
+        </div>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="updateQty(${i.product.id}, -1)">−</button>
+          <span class="qty-val">${i.qty}</span>
+          <button class="qty-btn plus" onclick="updateQty(${i.product.id}, 1)">+</button>
+        </div>
       </div>
-      <div class="qty-ctrl">
-        <button class="qty-btn" onclick="updateQty(${i.product.id}, -1)">−</button>
-        <span class="qty-val">${i.qty}</span>
-        <button class="qty-btn plus" onclick="updateQty(${i.product.id}, 1)">+</button>
-      </div>
+      <label class="remove-ingredients-field">Remover algum ingrediente?
+        <input type="text" maxlength="120" value="${escapeCartHtml(i.removedIngredients || '')}" placeholder="Ex.: sem cebola e sem molho" oninput="updateItemRemoval(${i.product.id}, this.value)" />
+      </label>
     </div>`).join('');
 
   totalEl.textContent = `R$ ${fmt(cartTotal())}`;
@@ -155,6 +171,30 @@ function closeCart() {
   document.getElementById('cart-drawer').classList.add('hidden');
 }
 
+function renderCheckoutSummary() {
+  document.getElementById('checkout-order-summary').innerHTML = cart.map(item => `
+    <div class="checkout-summary-item">
+      <div><strong>${item.qty}× ${escapeCartHtml(item.product.name)}</strong>${item.removedIngredients ? `<small>Sem: ${escapeCartHtml(item.removedIngredients)}</small>` : ''}</div>
+      <span>R$ ${fmt(item.product.price * item.qty)}</span>
+    </div>`).join('');
+}
+
+function updatePaymentOptions() {
+  const method = document.querySelector('input[name="payment-method"]:checked')?.value;
+  document.getElementById('cash-change-options').classList.toggle('hidden', method !== 'dinheiro');
+  if (method !== 'dinheiro') {
+    document.getElementById('needs-change').checked = false;
+    document.getElementById('change-for').value = '';
+    document.getElementById('change-value-group').classList.add('hidden');
+  }
+}
+
+function updateChangeOptions() {
+  const needsChange = document.getElementById('needs-change').checked;
+  document.getElementById('change-value-group').classList.toggle('hidden', !needsChange);
+  if (!needsChange) document.getElementById('change-for').value = '';
+}
+
 async function openCheckout() {
   const { data: { user } } = await DB.auth.getUser();
   if (!user) {
@@ -166,8 +206,11 @@ async function openCheckout() {
   const total = cartTotal();
   document.getElementById('checkout-sub').textContent =
     `${count} ${count === 1 ? 'item' : 'itens'} · Total R$ ${fmt(total)}`;
+  renderCheckoutSummary();
   document.getElementById('customer-name').value = '';
   document.getElementById('order-note').value = '';
+  document.querySelector('input[name="payment-method"][value="pix"]').checked = true;
+  updatePaymentOptions();
   closeCart();
   document.getElementById('checkout-overlay').classList.remove('hidden');
   document.getElementById('checkout-modal').classList.remove('hidden');
@@ -191,8 +234,19 @@ function closeCheckout() {
 async function placeOrder() {
   const name = document.getElementById('customer-name').value.trim();
   const note = document.getElementById('order-note').value.trim();
+  const paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value;
+  const needsChange = paymentMethod === 'dinheiro' && document.getElementById('needs-change').checked;
+  const changeFor = needsChange ? Number(document.getElementById('change-for').value) : null;
   if (!name) {
     alert('Por favor, digite seu nome.');
+    return;
+  }
+  if (!paymentMethod) {
+    alert('Escolha a forma de pagamento.');
+    return;
+  }
+  if (needsChange && (!Number.isFinite(changeFor) || changeFor < cartTotal())) {
+    alert('Informe um valor para troco igual ou maior que o total do pedido.');
     return;
   }
 
@@ -200,7 +254,7 @@ async function placeOrder() {
   button.disabled = true;
   button.textContent = 'Enviando pedido...';
   try {
-    const id = await Store.placeOrder(name, note, cart);
+    const id = await Store.placeOrder(name, note, cart, paymentMethod, changeFor);
     products = await Store.getProducts();
     cart = [];
     sessionStorage.removeItem('dogburger_cart');
@@ -215,6 +269,9 @@ async function placeOrder() {
     button.textContent = '✅ Fazer Pedido';
   }
 }
+
+document.querySelectorAll('input[name="payment-method"]').forEach(input => input.addEventListener('change', updatePaymentOptions));
+document.getElementById('needs-change').addEventListener('change', updateChangeOptions);
 
 function showToast(msg) {
   const el = document.getElementById('toast');

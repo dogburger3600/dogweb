@@ -15,7 +15,6 @@
   <!-- Header -->
   <header class="c-header">
     <div class="c-header-logo">
-      <div class="c-header-icon"><img src="dogburger.png" alt="" class="brand-icon-img" /></div>
       <div>
         <span class="c-header-name">Dog Burger</span>
         <span class="c-header-sub">Peça o seu</span>
@@ -80,6 +79,10 @@
 <div id="checkout-modal" class="modal hidden">
   <h2 class="modal-title">Confirmar Pedido</h2>
   <p class="modal-sub" id="checkout-sub"></p>
+  <section class="checkout-summary-box" aria-labelledby="checkout-summary-title">
+    <h3 id="checkout-summary-title">Seu pedido</h3>
+    <div id="checkout-order-summary"></div>
+  </section>
   <div class="form-group">
     <label class="form-label">Seu Nome *</label>
     <input type="text" class="form-input" id="customer-name" placeholder="Digite seu nome" />
@@ -92,6 +95,23 @@
     <label class="form-label">Observações</label>
     <textarea class="form-textarea" id="order-note" rows="3" placeholder="Informe suas preferências"></textarea>
   </div>
+  <fieldset class="payment-fieldset">
+    <legend>Pagamento na entrega</legend>
+    <div class="payment-options">
+      <label><input type="radio" name="payment-method" value="pix" checked /><span>Pix</span></label>
+      <label><input type="radio" name="payment-method" value="credito" /><span>Crédito</span></label>
+      <label><input type="radio" name="payment-method" value="debito" /><span>Débito</span></label>
+      <label><input type="radio" name="payment-method" value="dinheiro" /><span>Dinheiro</span></label>
+    </div>
+    <div class="cash-change-options hidden" id="cash-change-options">
+      <label class="change-toggle"><input type="checkbox" id="needs-change" /> Preciso de troco</label>
+      <div class="form-group hidden" id="change-value-group">
+        <label class="form-label" for="change-for">Troco para quanto?</label>
+        <input class="form-input" id="change-for" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Ex.: 100,00" />
+        <small>Informe o valor que será entregue ao motoboy.</small>
+      </div>
+    </div>
+  </fieldset>
   <div class="modal-actions">
     <button class="btn-secondary" onclick="closeCheckout()">Voltar</button>
     <button class="btn-primary" id="btn-place-order" onclick="placeOrder()">✅ Fazer Pedido</button>
