@@ -223,6 +223,57 @@ function showToast(msg) {
   setTimeout(() => el.classList.add('hidden'), 4000);
 }
 
+let currentPopupVersion = '';
+
+function closeHomePopup() {
+  document.getElementById('home-popup-overlay').classList.add('hidden');
+  document.getElementById('home-popup').classList.add('hidden');
+  if (currentPopupVersion) sessionStorage.setItem('dogburger_popup_seen', currentPopupVersion);
+}
+
+function safePopupUrl(value) {
+  if (!value) return '';
+  try {
+    const url = new URL(value, window.location.href);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch { return ''; }
+}
+
+async function loadHomePopup() {
+  try {
+    const popup = await Store.getActivePopup();
+    if (!popup || !popup.active || !popup.title || !popup.message) return;
+    currentPopupVersion = popup.updated_at || String(popup.id);
+    if (sessionStorage.getItem('dogburger_popup_seen') === currentPopupVersion) return;
+    document.getElementById('home-popup-title').textContent = popup.title;
+    document.getElementById('home-popup-message').textContent = popup.message;
+
+    const image = document.getElementById('home-popup-image');
+    if (popup.image_url) {
+      image.src = popup.image_url;
+      image.alt = popup.title;
+      image.classList.remove('hidden');
+    } else image.classList.add('hidden');
+
+    const action = document.getElementById('home-popup-action');
+    const actionUrl = safePopupUrl(popup.button_url);
+    if (popup.button_text && actionUrl) {
+      action.textContent = popup.button_text;
+      action.href = actionUrl;
+      action.classList.remove('hidden');
+    } else action.classList.add('hidden');
+
+    document.getElementById('home-popup-overlay').classList.remove('hidden');
+    document.getElementById('home-popup').classList.remove('hidden');
+    document.getElementById('home-popup-close').focus();
+  } catch {
+    // Mantém o cardápio disponível se o pop-up ainda não estiver configurado.
+  }
+}
+
+document.getElementById('home-popup-close').addEventListener('click', closeHomePopup);
+document.getElementById('home-popup-overlay').addEventListener('click', closeHomePopup);
+
 async function initConsumer() {
   renderCategoryTabs();
   updateCartBadge();
@@ -241,6 +292,7 @@ async function initConsumer() {
   } catch (error) {
     document.getElementById('products-grid').innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--red)">Não foi possível carregar o cardápio. ${error.message}</p>`;
   }
+  await loadHomePopup();
 }
 
 initConsumer();

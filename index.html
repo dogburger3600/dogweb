@@ -101,6 +101,19 @@
 <!-- Toast -->
 <div id="toast" class="toast hidden"></div>
 
+<!-- Home Popup -->
+<div id="home-popup-overlay" class="modal-overlay hidden"></div>
+<section id="home-popup" class="home-popup hidden" role="dialog" aria-modal="true" aria-labelledby="home-popup-title">
+  <button class="home-popup-close" id="home-popup-close" type="button" aria-label="Fechar">✕</button>
+  <img class="home-popup-image hidden" id="home-popup-image" alt="" />
+  <div class="home-popup-content">
+    <span class="home-popup-label">Dog Burger</span>
+    <h2 id="home-popup-title"></h2>
+    <p id="home-popup-message"></p>
+    <a class="btn-primary home-popup-action hidden" id="home-popup-action"></a>
+  </div>
+</section>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/store.js"></script>

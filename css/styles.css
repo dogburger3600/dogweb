@@ -381,6 +381,36 @@ body { min-height: 100vh; }
   min-height: calc(100vh - 64px); max-width: 1100px; margin: 0 auto; padding: 48px 24px;
   display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(420px, 1.1fr); gap: 64px; align-items: center;
 }
+
+/* ── HOME POPUP ── */
+.home-popup { position: fixed; top: 50%; left: 50%; z-index: 205; transform: translate(-50%,-50%); width: min(92vw, 520px); max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 22px; box-shadow: 0 30px 90px rgba(0,0,0,0.32); }
+.home-popup-close { position: absolute; top: 12px; right: 12px; z-index: 3; width: 34px; height: 34px; border: none; border-radius: 50%; background: rgba(28,25,23,0.82); color: #fff; cursor: pointer; }
+.home-popup-image { width: 100%; max-height: 300px; aspect-ratio: 16 / 9; object-fit: contain; object-position: center; background: var(--surface); display: block; }
+.home-popup-content { padding: 28px 30px 30px; text-align: center; }
+.home-popup-label { color: var(--brand); font-size: 0.68rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; }
+.home-popup-content h2 { margin: 6px 0 10px; color: var(--dark); font-family: var(--font-display); font-size: clamp(1.5rem, 5vw, 2rem); line-height: 1.1; }
+.home-popup-content p { color: var(--stone); line-height: 1.6; white-space: pre-line; }
+.home-popup-action { display: inline-block; margin-top: 22px; padding-left: 28px; padding-right: 28px; text-decoration: none; }
+
+/* ── POPUP EDITOR ── */
+.popup-editor-layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; align-items: start; }
+.popup-editor-sub { margin-top: 3px; color: var(--stone-light); font-size: 0.72rem; }
+.popup-active-switch { display: flex; align-items: center; gap: 7px; color: var(--stone); font-size: 0.75rem; font-weight: 800; cursor: pointer; }
+.popup-active-switch input { accent-color: var(--brand); width: 17px; height: 17px; }
+.popup-image-upload { position: relative; width: 100%; aspect-ratio: 16 / 7; overflow: hidden; display: grid; place-items: center; border: 2px dashed var(--border); border-radius: 13px; background: var(--bg); cursor: pointer; }
+.popup-image-upload:hover { border-color: var(--brand); }
+.popup-image-upload img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; }
+#popup-image-prompt { display: grid; place-items: center; gap: 3px; color: var(--stone); }
+#popup-image-prompt span { font-size: 1.6rem; }
+#popup-image-prompt strong { color: var(--dark); font-family: var(--font-display); }
+#popup-image-prompt small { color: var(--stone-light); }
+.popup-save-button { width: 100%; }
+.popup-help-card { background: var(--dark); color: #fff; }
+.popup-help-icon { display: block; font-size: 1.5rem; margin-bottom: 10px; }
+.popup-help-card h2 { font-family: var(--font-display); font-size: 1rem; }
+.popup-help-card p, .popup-help-card li { color: var(--stone-light); font-size: 0.78rem; line-height: 1.5; }
+.popup-help-card p { margin: 8px 0 14px; }
+.popup-help-card ul { padding-left: 18px; display: grid; gap: 7px; }
 .product-cat-badge .category-logo-img { position: static; width: 14px; height: 14px; object-fit: contain; display: inline-block; vertical-align: middle; }
 .signup-intro { color: #fff; }
 .signup-logo { width: 220px; max-height: 150px; object-fit: contain; object-position: left center; margin-bottom: 24px; filter: drop-shadow(0 8px 20px rgba(0,0,0,0.35)); }
@@ -546,6 +576,8 @@ body { min-height: 100vh; }
   .signup-benefits { display: none; }
   .profile-grid { grid-template-columns: 1fr; }
   .points-card { min-height: 190px; }
+  .popup-editor-layout { grid-template-columns: 1fr; }
+  .popup-help-card { display: none; }
   .menu-toolbar { align-items: stretch; flex-wrap: wrap; }
   .menu-search-wrap { flex-basis: 100%; }
 }
@@ -578,4 +610,5 @@ body { min-height: 100vh; }
   .menu-archived-toggle { width: 100%; }
   .menu-manager-grid { grid-template-columns: 1fr; }
   .product-number-grid { grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .home-popup-content { padding: 24px 20px 26px; }
 }

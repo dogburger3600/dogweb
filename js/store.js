@@ -31,6 +31,20 @@ const Store = {
     const { data } = DB.storage.from('product-images').getPublicUrl(path);
     return data.publicUrl;
   },
+  async getActivePopup() {
+    const { data, error } = await DB.from('site_popup').select('*').eq('id', 1).maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  async getPopupSettings() {
+    const { data, error } = await DB.from('site_popup').select('*').eq('id', 1).maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  async savePopup(popup) {
+    const { error } = await DB.from('site_popup').upsert({ id:1, title:popup.title, message:popup.message, image_url:popup.imageUrl, button_text:popup.buttonText, button_url:popup.buttonUrl, active:popup.active, starts_at:popup.startsAt, ends_at:popup.endsAt, updated_at:new Date().toISOString() });
+    if (error) throw error;
+  },
   async getOrders() {
     const { data, error } = await DB.from('orders').select('id, customer_name, note, status, created_at, delivery_address, order_items(product_id, quantity, unit_price, unit_cost)').order('created_at', { ascending:false });
     if (error) throw error;
