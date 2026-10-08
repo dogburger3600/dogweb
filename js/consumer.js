@@ -28,6 +28,7 @@ function restoreCart() {
   try {
     const saved = JSON.parse(sessionStorage.getItem('dogburger_cart') || '[]');
     cart = saved.map(item => ({ product:getProduct(item.pid), qty:item.qty, removedIngredients:String(item.removedIngredients || '').slice(0,120) })).filter(item => item.product && item.qty > 0);
+    cart.forEach(item => { if (item.product.category !== 'lanches') item.removedIngredients = ''; });
   } catch {
     cart = [];
     sessionStorage.removeItem('dogburger_cart');
@@ -115,10 +116,15 @@ function updateQty(pid, delta) {
   saveCart();
 }
 
-function updateItemRemoval(pid, value) {
+function toggleIngredientRemoval(pid, ingredientIndex, checked) {
   const item = cart.find(cartItem => cartItem.product.id === pid);
   if (!item) return;
-  item.removedIngredients = String(value || '').trimStart().slice(0,120);
+  const ingredient = item.product.ingredients?.[ingredientIndex];
+  if (!ingredient || item.product.category !== 'lanches') return;
+  const removed = new Set(String(item.removedIngredients || '').split(',').map(value => value.trim()).filter(Boolean));
+  if (checked) removed.add(ingredient);
+  else removed.delete(ingredient);
+  item.removedIngredients = [...removed].join(', ').slice(0,120);
   saveCart();
 }
 
@@ -137,7 +143,19 @@ function renderCartItems() {
     return;
   }
 
-  el.innerHTML = cart.map(i => `
+  el.innerHTML = cart.map(i => {
+    const isSnack = i.product.category === 'lanches';
+    const ingredients = isSnack && Array.isArray(i.product.ingredients) ? i.product.ingredients : [];
+    const removed = new Set(String(i.removedIngredients || '').split(',').map(value => value.trim()).filter(Boolean));
+    const ingredientsEditor = !isSnack ? '' : ingredients.length ? `
+      <div class="cart-ingredients">
+        <p><strong>Ingredientes:</strong> ${ingredients.map(escapeCartHtml).join(', ')}</p>
+        <span>Toque nos ingredientes que deseja remover:</span>
+        <div class="ingredient-removal-options">
+          ${ingredients.map((ingredient, index) => `<label><input type="checkbox" ${removed.has(ingredient) ? 'checked' : ''} onchange="toggleIngredientRemoval(${i.product.id}, ${index}, this.checked)" /><span>${escapeCartHtml(ingredient)}</span></label>`).join('')}
+        </div>
+      </div>` : '<p class="cart-ingredients-empty">Ingredientes ainda não cadastrados para este lanche.</p>';
+    return `
     <div class="cart-item">
       <div class="cart-item-main">
         <img src="${i.product.img}" alt="${escapeCartHtml(i.product.name)}" />
@@ -151,10 +169,9 @@ function renderCartItems() {
           <button class="qty-btn plus" onclick="updateQty(${i.product.id}, 1)">+</button>
         </div>
       </div>
-      <label class="remove-ingredients-field">Remover algum ingrediente?
-        <input type="text" maxlength="120" value="${escapeCartHtml(i.removedIngredients || '')}" placeholder="Ex.: sem cebola e sem molho" oninput="updateItemRemoval(${i.product.id}, this.value)" />
-      </label>
-    </div>`).join('');
+      ${ingredientsEditor}
+    </div>`;
+  }).join('');
 
   totalEl.textContent = `R$ ${fmt(cartTotal())}`;
   footer.classList.remove('hidden');

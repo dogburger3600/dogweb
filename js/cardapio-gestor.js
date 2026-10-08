@@ -21,6 +21,15 @@ function showMenuToast(message) {
   setTimeout(() => toast.classList.add('hidden'), 3500);
 }
 
+function parseIngredients(value) {
+  return [...new Set(String(value || '').split(',').map(ingredient => ingredient.trim()).filter(Boolean))].slice(0, 30);
+}
+
+function updateIngredientsField() {
+  const isSnack = document.getElementById('product-category').value === 'lanches';
+  document.getElementById('product-ingredients-group').classList.toggle('hidden', !isSnack);
+}
+
 async function verifyMenuManager() {
   const { data: { user } } = await DB.auth.getUser();
   if (!user) return false;
@@ -56,6 +65,7 @@ function renderMenuProducts() {
       <div class="menu-edit-body">
         <div class="menu-edit-title"><h2>${escapeHtml(product.name)}</h2><strong>R$ ${fmt(product.price)}</strong></div>
         <p>${escapeHtml(product.desc)}</p>
+        ${product.category === 'lanches' && product.ingredients.length ? `<p class="menu-edit-ingredients"><strong>Ingredientes:</strong> ${product.ingredients.map(escapeHtml).join(', ')}</p>` : ''}
         <div class="menu-edit-actions">
           <button class="btn-edit-product" data-action="edit" data-id="${product.id}">Editar</button>
           <button class="${product.active ? 'btn-delete-product' : 'btn-restore-product'}" data-action="toggle" data-id="${product.id}">${product.active ? 'Excluir' : 'Restaurar'}</button>
@@ -82,6 +92,8 @@ function openProductModal(product = null) {
   document.getElementById('product-name').value = product?.name || '';
   document.getElementById('product-description').value = product?.desc || '';
   document.getElementById('product-category').value = product?.category || 'lanches';
+  document.getElementById('product-ingredients').value = (product?.ingredients || []).join(', ');
+  updateIngredientsField();
   document.getElementById('product-image').value = '';
   document.getElementById('product-current-image').value = product?.img || '';
   document.getElementById('product-price').value = product?.price ?? '';
@@ -126,9 +138,15 @@ document.getElementById('product-form').addEventListener('submit', async event =
     return;
   }
   const existingProduct = menuProducts.find(item => item.id === Number(id));
+  const category = document.getElementById('product-category').value;
+  const ingredients = category === 'lanches' ? parseIngredients(document.getElementById('product-ingredients').value) : [];
+  if (category === 'lanches' && !ingredients.length) {
+    errorElement.textContent = 'Informe pelo menos um ingrediente do lanche.';
+    return;
+  }
   const product = {
     name:document.getElementById('product-name').value.trim(), desc:document.getElementById('product-description').value.trim(),
-    category:document.getElementById('product-category').value, img:currentImage,
+    category, ingredients, img:currentImage,
     price:Number(document.getElementById('product-price').value), cost:existingProduct?.cost ?? 0,
     stock:existingProduct?.stock ?? 0, minStock:existingProduct?.minStock ?? 0,
   };
@@ -168,6 +186,7 @@ document.getElementById('menu-manager-grid').addEventListener('click', async eve
 });
 
 document.getElementById('new-product-button').addEventListener('click', () => openProductModal());
+document.getElementById('product-category').addEventListener('change', updateIngredientsField);
 document.getElementById('choose-product-image').addEventListener('click', () => document.getElementById('product-image').click());
 document.getElementById('product-upload-box').addEventListener('click', event => {
   if (!event.target.closest('button')) document.getElementById('product-image').click();

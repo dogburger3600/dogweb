@@ -4,19 +4,19 @@ const Store = {
   async getProducts() {
     const { data, error } = await DB.from('products').select('*').eq('active', true).order('name');
     if (error) throw error;
-    return data.map(p => ({ id:p.id, name:p.name, desc:p.description, price:Number(p.price), cost:Number(p.cost), category:p.category, img:p.image_url, stock:p.stock, minStock:p.min_stock }));
+    return data.map(p => ({ id:p.id, name:p.name, desc:p.description, ingredients:Array.isArray(p.ingredients) ? p.ingredients : [], price:Number(p.price), cost:Number(p.cost), category:p.category, img:p.image_url, stock:p.stock, minStock:p.min_stock }));
   },
   async getAllProducts() {
     const { data, error } = await DB.from('products').select('*').order('created_at', { ascending:false });
     if (error) throw error;
-    return data.map(p => ({ id:p.id, name:p.name, desc:p.description, price:Number(p.price), cost:Number(p.cost), category:p.category, img:p.image_url, stock:p.stock, minStock:p.min_stock, active:p.active }));
+    return data.map(p => ({ id:p.id, name:p.name, desc:p.description, ingredients:Array.isArray(p.ingredients) ? p.ingredients : [], price:Number(p.price), cost:Number(p.cost), category:p.category, img:p.image_url, stock:p.stock, minStock:p.min_stock, active:p.active }));
   },
   async addProduct(product) {
-    const { error } = await DB.from('products').insert({ name:product.name, description:product.desc, price:product.price, cost:product.cost, category:product.category, image_url:product.img, stock:product.stock, min_stock:product.minStock, active:true });
+    const { error } = await DB.from('products').insert({ name:product.name, description:product.desc, ingredients:product.ingredients, price:product.price, cost:product.cost, category:product.category, image_url:product.img, stock:product.stock, min_stock:product.minStock, active:true });
     if (error) throw error;
   },
   async updateProduct(id, product) {
-    const { error } = await DB.from('products').update({ name:product.name, description:product.desc, price:product.price, cost:product.cost, category:product.category, image_url:product.img, stock:product.stock, min_stock:product.minStock }).eq('id', id);
+    const { error } = await DB.from('products').update({ name:product.name, description:product.desc, ingredients:product.ingredients, price:product.price, cost:product.cost, category:product.category, image_url:product.img, stock:product.stock, min_stock:product.minStock }).eq('id', id);
     if (error) throw error;
   },
   async setProductActive(id, active) {
@@ -62,7 +62,7 @@ const Store = {
     return data.map(e => ({ id:e.id, description:e.description, amount:Number(e.amount), category:e.category, date:new Date(e.created_at).getTime() }));
   },
   async placeOrder(customerName, note, items, paymentMethod, changeFor) {
-    const { data, error } = await DB.rpc('place_order', { p_customer_name:customerName, p_note:note, p_items:items.map(i => ({ product_id:i.product.id, quantity:i.qty, removed_ingredients:i.removedIngredients || '' })), p_payment_method:paymentMethod, p_change_for:changeFor });
+    const { data, error } = await DB.rpc('place_order', { p_customer_name:customerName, p_note:note, p_items:items.map(i => ({ product_id:i.product.id, quantity:i.qty, removed_ingredients:i.product.category === 'lanches' ? (i.removedIngredients || '') : '' })), p_payment_method:paymentMethod, p_change_for:changeFor });
     if (error) throw error;
     return `PED-${String(data).padStart(3,'0')}`;
   },
