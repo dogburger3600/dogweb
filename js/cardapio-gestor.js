@@ -28,6 +28,40 @@ function parseIngredients(value) {
 function updateIngredientsField() {
   const isSnack = document.getElementById('product-category').value === 'lanches';
   document.getElementById('product-ingredients-group').classList.toggle('hidden', !isSnack);
+  document.getElementById('product-ready-stock-group').classList.toggle('hidden', !isSnack);
+}
+
+function updateDescriptionCount() {
+  const description = document.getElementById('product-description').value;
+  document.getElementById('product-description-count').textContent = `${description.length}/240`;
+}
+
+function clearProductValidation() {
+  document.querySelectorAll('#product-form .input-error').forEach(element => element.classList.remove('input-error'));
+  document.querySelectorAll('#product-form .form-error').forEach(element => { element.textContent = ''; });
+}
+
+function productFieldError(id, message) {
+  document.getElementById(id)?.classList.add('input-error');
+  const error = document.getElementById(`${id}-error`);
+  if (error) error.textContent = message;
+  return false;
+}
+
+function validateProductFields() {
+  clearProductValidation();
+  let valid = true;
+  const name = document.getElementById('product-name').value.trim();
+  const description = document.getElementById('product-description').value.trim();
+  const category = document.getElementById('product-category').value;
+  const priceValue = document.getElementById('product-price').value.trim();
+  const price = Number(priceValue);
+  if (!name) valid = productFieldError('product-name', 'Informe o nome do produto.');
+  if (!description) valid = productFieldError('product-description', 'Informe a descrição do produto.');
+  if (!['lanches','combos','sucos','refrigerantes','sobremesas'].includes(category)) valid = productFieldError('product-category', 'Selecione uma categoria válida.');
+  if (priceValue === '' || !Number.isFinite(price) || price < 0) valid = productFieldError('product-price', 'Informe um preço válido igual ou maior que zero.');
+  if (category === 'lanches' && !parseIngredients(document.getElementById('product-ingredients').value).length) valid = productFieldError('product-ingredients', 'Informe pelo menos um ingrediente do lanche.');
+  return valid;
 }
 
 async function verifyMenuManager() {
@@ -47,6 +81,9 @@ function renderMenuProducts() {
     const matchesCategory = category === 'todos' || product.category === category;
     return matchesSearch && matchesCategory && (product.active || showArchived);
   });
+  const activeCount = menuProducts.filter(product => product.active).length;
+  const snackCount = menuProducts.filter(product => product.category === 'lanches').length;
+  document.getElementById('menu-editor-summary').innerHTML = `<span><strong>${menuProducts.length}</strong> produtos</span><span><strong>${activeCount}</strong> ativos</span><span><strong>${snackCount}</strong> lanches</span>`;
 
   if (!filtered.length) {
     grid.innerHTML = `<div class="menu-empty"><span>🍽️</span><h2>Nenhum produto encontrado</h2><p>Use “Novo produto” para começar a montar seu cardápio.</p></div>`;
@@ -66,6 +103,7 @@ function renderMenuProducts() {
         <div class="menu-edit-title"><h2>${escapeHtml(product.name)}</h2><strong>R$ ${fmt(product.price)}</strong></div>
         <p>${escapeHtml(product.desc)}</p>
         ${product.category === 'lanches' && product.ingredients.length ? `<p class="menu-edit-ingredients"><strong>Ingredientes:</strong> ${product.ingredients.map(escapeHtml).join(', ')}</p>` : ''}
+        <div class="menu-edit-meta"><span>${product.active ? '● Disponível' : '○ Desativado'}</span>${product.category === 'lanches' ? `<span>Estoque: <b>${Number(product.stock) || 0}</b></span>` : '<span>Sem estoque de lanche</span>'}</div>
         <div class="menu-edit-actions">
           <button class="btn-edit-product" data-action="edit" data-id="${product.id}">Editar</button>
           <button class="${product.active ? 'btn-delete-product' : 'btn-restore-product'}" data-action="toggle" data-id="${product.id}">${product.active ? 'Excluir' : 'Restaurar'}</button>
@@ -97,8 +135,11 @@ function openProductModal(product = null) {
   document.getElementById('product-image').value = '';
   document.getElementById('product-current-image').value = product?.img || '';
   document.getElementById('product-price').value = product?.price ?? '';
+  document.getElementById('product-availability-status').textContent = product ? (product.active ? 'Ativo no cardápio' : 'Desativado no cardápio') : 'Novo produto · ativo ao salvar';
+  document.getElementById('product-ready-stock').textContent = `${Number(product?.stock) || 0} unidades`;
   updateImagePreview(product?.img || '');
-  document.getElementById('product-form-error').textContent = '';
+  clearProductValidation();
+  updateDescriptionCount();
   document.getElementById('product-overlay').classList.remove('hidden');
   document.getElementById('product-modal').classList.remove('hidden');
   document.getElementById('product-name').focus();
@@ -129,6 +170,7 @@ document.getElementById('product-form').addEventListener('submit', async event =
   const imageFile = document.getElementById('product-image').files[0];
   const currentImage = document.getElementById('product-current-image').value;
   const errorElement = document.getElementById('product-form-error');
+  if (!validateProductFields()) return;
   if (!imageFile && !currentImage) {
     errorElement.textContent = 'Escolha uma foto para o produto.';
     return;
@@ -140,10 +182,6 @@ document.getElementById('product-form').addEventListener('submit', async event =
   const existingProduct = menuProducts.find(item => item.id === Number(id));
   const category = document.getElementById('product-category').value;
   const ingredients = category === 'lanches' ? parseIngredients(document.getElementById('product-ingredients').value) : [];
-  if (category === 'lanches' && !ingredients.length) {
-    errorElement.textContent = 'Informe pelo menos um ingrediente do lanche.';
-    return;
-  }
   const product = {
     name:document.getElementById('product-name').value.trim(), desc:document.getElementById('product-description').value.trim(),
     category, ingredients, img:currentImage,
@@ -187,6 +225,7 @@ document.getElementById('menu-manager-grid').addEventListener('click', async eve
 
 document.getElementById('new-product-button').addEventListener('click', () => openProductModal());
 document.getElementById('product-category').addEventListener('change', updateIngredientsField);
+document.getElementById('product-description').addEventListener('input', updateDescriptionCount);
 document.getElementById('choose-product-image').addEventListener('click', () => document.getElementById('product-image').click());
 document.getElementById('product-upload-box').addEventListener('click', event => {
   if (!event.target.closest('button')) document.getElementById('product-image').click();

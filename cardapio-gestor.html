@@ -41,6 +41,10 @@
         <button class="btn-new-expense menu-add-button" id="new-product-button">+ Novo produto</button>
       </header>
       <main class="m-content">
+        <section class="menu-editor-intro">
+          <div><span aria-hidden="true">🍽️</span><div><strong>Produtos do cardápio</strong><p>Cadastre, edite e organize a apresentação dos itens disponíveis aos clientes.</p></div></div>
+          <div class="menu-editor-summary" id="menu-editor-summary" aria-live="polite"></div>
+        </section>
         <div class="menu-toolbar">
           <div class="menu-search-wrap"><span>🔍</span><input id="menu-search" type="search" placeholder="Buscar produto" /></div>
           <select class="form-select menu-filter" id="menu-category-filter">
@@ -57,20 +61,29 @@
 
   <div id="product-overlay" class="modal-overlay hidden"></div>
   <div id="product-modal" class="modal product-modal hidden">
-    <div class="product-modal-head"><div><h2 class="modal-title" id="product-modal-title">Novo produto</h2><p class="modal-sub">Os dados serão salvos no Supabase.</p></div><button class="btn-close" id="close-product-modal" type="button">✕</button></div>
+    <div class="product-modal-head"><div><span class="product-modal-eyebrow">Editor de produto</span><h2 class="modal-title" id="product-modal-title">Novo produto</h2><p class="modal-sub">A integração atual de cadastro e edição será preservada.</p></div><button class="btn-close" id="close-product-modal" type="button" aria-label="Fechar editor">✕</button></div>
     <form id="product-form">
       <input type="hidden" id="product-id" />
-      <div class="form-group"><label class="form-label" for="product-name">Nome *</label><input class="form-input" id="product-name" maxlength="80" required /></div>
-      <div class="form-group"><label class="form-label" for="product-description">Descrição *</label><textarea class="form-textarea" id="product-description" rows="3" maxlength="240" required></textarea></div>
-      <div class="form-group" id="product-ingredients-group">
-        <label class="form-label" for="product-ingredients">Ingredientes do lanche *</label>
-        <textarea class="form-textarea" id="product-ingredients" rows="3" maxlength="500" placeholder="Ex.: Pão, carne, queijo, alface, tomate, cebola, molho especial"></textarea>
-        <small class="product-field-help">Separe cada ingrediente com uma vírgula. Eles aparecerão no carrinho para o cliente escolher o que deseja remover.</small>
-      </div>
-      <div class="signup-grid">
-        <div class="form-group"><label class="form-label" for="product-category">Categoria *</label><select class="form-select" id="product-category" required><option value="lanches">Lanches</option><option value="combos">Combos</option><option value="sucos">Sucos</option><option value="refrigerantes">Refrigerantes</option><option value="sobremesas">Sobremesas</option></select></div>
-        <div class="form-group"><label class="form-label" for="product-price">Preço (R$) *</label><input class="form-input" id="product-price" type="number" min="0" step="0.01" required /></div>
-      </div>
+      <section class="product-form-section">
+        <div class="product-form-section-head"><span aria-hidden="true">✏️</span><div><strong>Identificação</strong><small>Informações exibidas no cardápio</small></div></div>
+        <div class="form-group"><label class="form-label" for="product-name">Nome *</label><input class="form-input" id="product-name" maxlength="80" required /><small class="form-error" id="product-name-error"></small></div>
+        <div class="form-group"><label class="form-label" for="product-description">Descrição *</label><textarea class="form-textarea" id="product-description" rows="3" maxlength="240" required></textarea><small class="product-character-count" id="product-description-count">0/240</small><small class="form-error" id="product-description-error"></small></div>
+      </section>
+      <section class="product-form-section">
+        <div class="product-form-section-head"><span aria-hidden="true">🏷️</span><div><strong>Classificação e preço</strong><small>Categoria e valor comercial</small></div></div>
+        <div class="signup-grid">
+          <div class="form-group"><label class="form-label" for="product-category">Categoria *</label><select class="form-select" id="product-category" required><option value="lanches">Lanches</option><option value="combos">Combos</option><option value="sucos">Sucos</option><option value="refrigerantes">Refrigerantes</option><option value="sobremesas">Sobremesas</option></select><small class="form-error" id="product-category-error"></small></div>
+          <div class="form-group"><label class="form-label" for="product-price">Preço (R$) *</label><input class="form-input" id="product-price" type="number" min="0" step="0.01" inputmode="decimal" required /><small class="form-error" id="product-price-error"></small></div>
+        </div>
+        <div class="form-group" id="product-ingredients-group">
+          <label class="form-label" for="product-ingredients">Ingredientes do lanche *</label>
+          <textarea class="form-textarea" id="product-ingredients" rows="3" maxlength="500" placeholder="Ex.: Pão, carne, queijo, alface, tomate, cebola, molho especial"></textarea>
+          <small class="product-field-help">Separe por vírgulas. Ingredientes repetidos serão consolidados e até 30 itens serão considerados.</small>
+          <small class="form-error" id="product-ingredients-error"></small>
+        </div>
+      </section>
+      <section class="product-form-section">
+        <div class="product-form-section-head"><span aria-hidden="true">📷</span><div><strong>Imagem do produto</strong><small>Prévia da foto publicada</small></div></div>
         <div class="product-upload-group">
           <label class="form-label">Foto do produto *</label>
           <input class="hidden" id="product-image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
@@ -81,6 +94,14 @@
             <button class="btn-upload-image" id="choose-product-image" type="button">Escolher imagem</button>
           </div>
         </div>
+      </section>
+      <section class="product-form-section product-availability-section">
+        <div class="product-form-section-head"><span aria-hidden="true">👁️</span><div><strong>Disponibilidade e estoque</strong><small>Estado atual sem alteração do contrato</small></div></div>
+        <div class="product-availability-grid">
+          <div class="product-readonly-field"><span>Disponibilidade</span><strong id="product-availability-status">Novo produto · ativo ao salvar</strong><small>Ative ou desative pelo cartão do produto.</small></div>
+          <div class="product-readonly-field" id="product-ready-stock-group"><span>Quantidade de lanches prontos</span><strong id="product-ready-stock">0 unidades</strong><small>Visualização preparatória. Ajustes continuam no módulo Estoque de Lanches.</small></div>
+        </div>
+      </section>
       <p class="form-error" id="product-form-error"></p>
       <div class="modal-actions"><button class="btn-secondary" id="cancel-product" type="button">Cancelar</button><button class="btn-primary" id="save-product" type="submit">Salvar produto</button></div>
     </form>
