@@ -21,13 +21,13 @@
         </div>
       </div>
       <nav class="m-nav">
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=dashboard" title="Dashboard"><span aria-hidden="true">📊</span><span class="m-nav-label">Dashboard</span></a>
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=pedidos" title="Pedidos"><span aria-hidden="true">📋</span><span class="m-nav-label">Pedidos</span></a>
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=relatorios" title="Relatórios"><span aria-hidden="true">📈</span><span class="m-nav-label">Relatórios</span></a>
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=estoque-lanches" title="Estoque de Lanches"><span aria-hidden="true">📦</span><span class="m-nav-label">Estoque de Lanches</span></a>
-        <a class="m-nav-btn m-nav-link active" href="cardapio-gestor.html" title="Editar Cardápio"><span aria-hidden="true">🍔</span><span class="m-nav-label">Editar Cardápio</span></a>
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=popup" title="Pop-up Inicial"><span aria-hidden="true">📣</span><span class="m-nav-label">Pop-up Inicial</span></a>
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=configuracoes" title="Configurações da Loja"><span aria-hidden="true">⚙️</span><span class="m-nav-label">Configurações da Loja</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=dashboard" title="Dashboard" data-capability="viewDashboard"><span aria-hidden="true">📊</span><span class="m-nav-label">Dashboard</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=pedidos" title="Pedidos" data-capability="viewOrders"><span aria-hidden="true">📋</span><span class="m-nav-label">Pedidos</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=relatorios" title="Relatórios" data-capability="viewReports"><span aria-hidden="true">📈</span><span class="m-nav-label">Relatórios</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=estoque-lanches" title="Estoque de Lanches" data-capability="manageStock"><span aria-hidden="true">📦</span><span class="m-nav-label">Estoque de Lanches</span></a>
+        <a class="m-nav-btn m-nav-link active" href="cardapio-gestor.html" title="Editar Cardápio" data-capability="manageMenu"><span aria-hidden="true">🍔</span><span class="m-nav-label">Editar Cardápio</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=popup" title="Pop-up Inicial" data-capability="managePopup"><span aria-hidden="true">📣</span><span class="m-nav-label">Pop-up Inicial</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=configuracoes" title="Configurações da Loja" data-capability="manageSettings"><span aria-hidden="true">⚙️</span><span class="m-nav-label">Configurações da Loja</span></a>
       </nav>
       <div class="m-sidebar-footer">
         <a href="index.html" title="Ver Cardápio"><span aria-hidden="true">←</span><span class="m-sidebar-footer-label">Ver Cardápio</span></a>
@@ -38,7 +38,7 @@
     <div class="m-main">
       <header class="m-topbar">
         <div><h1 class="m-topbar-title">Editor de Cardápio</h1><p class="menu-topbar-sub">Crie e organize seus produtos</p></div>
-        <button class="btn-new-expense menu-add-button" id="new-product-button">+ Novo produto</button>
+        <button class="btn-new-expense menu-add-button" id="new-product-button" data-capability="manageMenu" data-capability-mode="disable">+ Novo produto</button>
       </header>
       <main class="m-content">
         <section class="menu-editor-intro">
@@ -103,7 +103,7 @@
         </div>
       </section>
       <p class="form-error" id="product-form-error"></p>
-      <div class="modal-actions"><button class="btn-secondary" id="cancel-product" type="button">Cancelar</button><button class="btn-primary" id="save-product" type="submit">Salvar produto</button></div>
+      <div class="modal-actions"><button class="btn-secondary" id="cancel-product" type="button">Cancelar</button><button class="btn-primary" id="save-product" type="submit" data-capability="manageMenu" data-capability-mode="disable">Salvar produto</button></div>
     </form>
   </div>
 
@@ -111,6 +111,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/store.js"></script>
+  <script src="js/ui-capabilities.js"></script>
   <script src="js/cardapio-gestor.js"></script>
 </body>
 </html>

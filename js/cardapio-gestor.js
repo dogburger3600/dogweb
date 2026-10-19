@@ -105,8 +105,8 @@ function renderMenuProducts() {
         ${product.category === 'lanches' && product.ingredients.length ? `<p class="menu-edit-ingredients"><strong>Ingredientes:</strong> ${product.ingredients.map(escapeHtml).join(', ')}</p>` : ''}
         <div class="menu-edit-meta"><span>${product.active ? '● Disponível' : '○ Desativado'}</span>${product.category === 'lanches' ? `<span>Estoque: <b>${Number(product.stock) || 0}</b></span>` : '<span>Sem estoque de lanche</span>'}</div>
         <div class="menu-edit-actions">
-          <button class="btn-edit-product" data-action="edit" data-id="${product.id}">Editar</button>
-          <button class="${product.active ? 'btn-delete-product' : 'btn-restore-product'}" data-action="toggle" data-id="${product.id}">${product.active ? 'Excluir' : 'Restaurar'}</button>
+          <button class="btn-edit-product" data-action="edit" data-id="${product.id}" data-capability="manageMenu" data-capability-mode="disable">Editar</button>
+          <button class="${product.active ? 'btn-delete-product' : 'btn-restore-product'}" data-action="toggle" data-id="${product.id}" data-capability="manageMenu" data-capability-mode="disable">${product.active ? 'Excluir' : 'Restaurar'}</button>
         </div>
       </div>
     </article>`;
@@ -249,5 +249,6 @@ document.getElementById('menu-manager-logout').addEventListener('click', async (
   }
   document.getElementById('menu-manager-loading').classList.add('hidden');
   document.getElementById('page-menu-manager').classList.remove('hidden');
+  window.UICapabilities?.init('manager');
   await loadMenuProducts();
 })();

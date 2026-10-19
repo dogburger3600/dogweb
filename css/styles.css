@@ -1,6 +1,16 @@
 ﻿*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-family: 'Nunito', sans-serif; background: #FAFAF9; color: #1C1917; -webkit-font-smoothing: antialiased; }
 body { min-height: 100vh; }
+.capability-hidden { display: none !important; }
+[data-capability-mode="disable"]:disabled { opacity: 0.55; cursor: not-allowed; }
+.visual-role-switcher { position: fixed; right: 14px; bottom: 14px; z-index: 500; width: min(310px, calc(100vw - 28px)); padding: 12px; border: 1px solid #C4B5FD; border-radius: 13px; background: #FAF5FF; box-shadow: 0 16px 42px rgba(76,29,149,0.2); color: var(--stone); }
+.visual-role-switcher > strong, .visual-role-switcher > small { display: block; }
+.visual-role-switcher > strong { color: #5B21B6; font-family: var(--font-display); font-size: 0.76rem; text-transform: uppercase; }
+.visual-role-switcher select { width: 100%; margin: 7px 0; padding: 7px 9px; border: 1px solid #C4B5FD; border-radius: 8px; background: #fff; color: var(--dark); font-family: var(--font-body); font-weight: 700; }
+.visual-role-switcher > small { font-size: 0.64rem; line-height: 1.35; }
+.visual-role-switcher details { margin-top: 8px; font-size: 0.65rem; }
+.visual-role-switcher summary { color: #6D28D9; font-weight: 800; cursor: pointer; }
+.visual-role-switcher ul { max-height: 160px; margin-top: 6px; padding-left: 17px; overflow-y: auto; line-height: 1.45; }
 
 :root {
   --brand: #F97316;

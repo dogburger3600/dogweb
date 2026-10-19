@@ -42,26 +42,26 @@
       </div>
     </div>
     <nav class="m-nav">
-      <button class="m-nav-btn active" id="nav-dashboard" type="button" title="Dashboard" onclick="setView('dashboard')">
+      <button class="m-nav-btn active" id="nav-dashboard" type="button" title="Dashboard" data-capability="viewDashboard" onclick="setView('dashboard')">
         <span aria-hidden="true">📊</span><span class="m-nav-label">Dashboard</span>
       </button>
-      <button class="m-nav-btn" id="nav-pedidos" type="button" title="Pedidos" onclick="setView('pedidos')">
+      <button class="m-nav-btn" id="nav-pedidos" type="button" title="Pedidos" data-capability="viewOrders" onclick="setView('pedidos')">
         <span aria-hidden="true">📋</span><span class="m-nav-label">Pedidos</span>
         <span class="m-nav-badge hidden" id="active-orders-badge">0</span>
       </button>
-      <button class="m-nav-btn" id="nav-relatorios" type="button" title="Relatórios" onclick="setView('relatorios')">
+      <button class="m-nav-btn" id="nav-relatorios" type="button" title="Relatórios" data-capability="viewReports" onclick="setView('relatorios')">
         <span aria-hidden="true">📈</span><span class="m-nav-label">Relatórios</span>
       </button>
-      <button class="m-nav-btn" id="nav-estoque-lanches" type="button" title="Estoque de Lanches" onclick="setView('estoque-lanches')">
+      <button class="m-nav-btn" id="nav-estoque-lanches" type="button" title="Estoque de Lanches" data-capability="manageStock" onclick="setView('estoque-lanches')">
         <span aria-hidden="true">📦</span><span class="m-nav-label">Estoque de Lanches</span>
       </button>
-      <a class="m-nav-btn m-nav-link" href="cardapio-gestor.html" title="Editar Cardápio">
+      <a class="m-nav-btn m-nav-link" href="cardapio-gestor.html" title="Editar Cardápio" data-capability="manageMenu">
         <span aria-hidden="true">🍔</span><span class="m-nav-label">Editar Cardápio</span>
       </a>
-      <button class="m-nav-btn" id="nav-popup" type="button" title="Pop-up Inicial" onclick="setView('popup')">
+      <button class="m-nav-btn" id="nav-popup" type="button" title="Pop-up Inicial" data-capability="managePopup" onclick="setView('popup')">
         <span aria-hidden="true">📣</span><span class="m-nav-label">Pop-up Inicial</span>
       </button>
-      <button class="m-nav-btn" id="nav-configuracoes" type="button" title="Configurações da Loja" onclick="setView('configuracoes')">
+      <button class="m-nav-btn" id="nav-configuracoes" type="button" title="Configurações da Loja" data-capability="manageSettings" onclick="setView('configuracoes')">
         <span aria-hidden="true">⚙️</span><span class="m-nav-label">Configurações da Loja</span>
       </button>
     </nav>
@@ -89,6 +89,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/store.js"></script>
+<script src="js/ui-capabilities.js"></script>
 <script src="js/manager.js"></script>
 </body>
 </html>
