@@ -10,6 +10,7 @@ let editingStock = null;
 let stockFilterCat = 'todos';
 let ordersFilter = 'todos';
 let reportDate = localDateKey(Date.now());
+let popupPreviewImageSource = '';
 
 // Estado demonstrativo exclusivo do frontend. Não altera pedidos nem persiste no Supabase.
 const ORDERS_FRONTEND_DEMO = {
@@ -138,15 +139,15 @@ function orderPaymentLabel(order) {
 function renderPopupEditor() {
   return `<div class="popup-editor-layout">
     <form class="card popup-editor-form" id="popup-editor-form">
-      <div class="card-header"><div><span class="card-title">Conteúdo do pop-up</span><p class="popup-editor-sub">Configure promoções ou avisos exibidos na página inicial.</p></div><label class="popup-active-switch"><input type="checkbox" id="popup-active" /><span></span> Ativo</label></div>
-      <div class="form-group"><label class="form-label" for="popup-title">Título *</label><input class="form-input" id="popup-title" maxlength="80" required /></div>
-      <div class="form-group"><label class="form-label" for="popup-message">Mensagem *</label><textarea class="form-textarea" id="popup-message" rows="4" maxlength="400" required></textarea></div>
-      <div class="form-group"><label class="form-label">Imagem opcional</label><input class="hidden" id="popup-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" /><input id="popup-image-url" type="hidden" /><div class="popup-image-upload" id="popup-image-upload"><img class="hidden" id="popup-image-preview" alt="Prévia do pop-up" /><div id="popup-image-prompt"><span>🖼️</span><strong>Importar imagem</strong><small>JPG, PNG, WEBP ou GIF · até 5 MB</small></div><button class="btn-upload-image" id="choose-popup-image" type="button">Escolher imagem</button></div></div>
-      <div class="signup-grid"><div class="form-group"><label class="form-label" for="popup-button-text">Texto do botão</label><input class="form-input" id="popup-button-text" maxlength="40" placeholder="Ver cardápio" /></div><div class="form-group"><label class="form-label" for="popup-button-url">Destino do botão</label><input class="form-input" id="popup-button-url" placeholder="index.html ou https://..." /></div></div>
-      <div class="signup-grid"><div class="form-group"><label class="form-label" for="popup-starts-at">Início da exibição</label><input class="form-input" id="popup-starts-at" type="datetime-local" /></div><div class="form-group"><label class="form-label" for="popup-ends-at">Fim da exibição</label><input class="form-input" id="popup-ends-at" type="datetime-local" /></div></div>
+      <div class="card-header popup-editor-head"><div><span class="card-title">Pop-up inicial</span><p class="popup-editor-sub">Organize promoções e comunicados exibidos na página inicial.</p></div><label class="popup-active-switch"><input type="checkbox" id="popup-active" /><span></span><strong>Ativo</strong></label></div>
+      <div class="popup-active-note"><span aria-hidden="true">📣</span><div><strong id="popup-active-label">Pop-up desativado</strong><small>A ativação só terá efeito após salvar pelo fluxo existente.</small></div></div>
+      <section class="popup-form-section"><div class="popup-form-section-head"><span aria-hidden="true">✏️</span><div><strong>Conteúdo</strong><small>Título e mensagem principal</small></div></div><div class="form-group"><label class="form-label" for="popup-title">Título *</label><input class="form-input" id="popup-title" maxlength="80" required /></div><div class="form-group"><label class="form-label" for="popup-message">Mensagem *</label><textarea class="form-textarea" id="popup-message" rows="4" maxlength="400" required></textarea><small class="popup-character-count" id="popup-message-count">0/400</small></div></section>
+      <section class="popup-form-section"><div class="popup-form-section-head"><span aria-hidden="true">🖼️</span><div><strong>Imagem</strong><small>Opcional · formato horizontal recomendado</small></div></div><div class="form-group"><input class="hidden" id="popup-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" /><input id="popup-image-url" type="hidden" /><div class="popup-image-upload" id="popup-image-upload"><img class="hidden" id="popup-image-preview" alt="Prévia da imagem do pop-up" /><div id="popup-image-prompt"><span>🖼️</span><strong>Importar imagem</strong><small>JPG, PNG, WEBP ou GIF · até 5 MB</small></div><button class="btn-upload-image" id="choose-popup-image" type="button">Escolher imagem</button></div></div></section>
+      <section class="popup-form-section"><div class="popup-form-section-head"><span aria-hidden="true">🔗</span><div><strong>Botão de ação</strong><small>CTA opcional; preencha texto e destino juntos</small></div></div><div class="signup-grid"><div class="form-group"><label class="form-label" for="popup-button-text">Texto do botão</label><input class="form-input" id="popup-button-text" maxlength="40" placeholder="Ver cardápio" /></div><div class="form-group"><label class="form-label" for="popup-button-url">Destino do botão</label><input class="form-input" id="popup-button-url" placeholder="index.html ou https://..." /></div></div></section>
+      <section class="popup-form-section"><div class="popup-form-section-head"><span aria-hidden="true">🗓️</span><div><strong>Período de exibição</strong><small>Datas vazias mantêm a exibição contínua</small></div></div><div class="signup-grid"><div class="form-group"><label class="form-label" for="popup-starts-at">Início</label><input class="form-input" id="popup-starts-at" type="datetime-local" /></div><div class="form-group"><label class="form-label" for="popup-ends-at">Fim</label><input class="form-input" id="popup-ends-at" type="datetime-local" /></div></div><div class="popup-schedule-status" id="popup-schedule-status">Exibição contínua, sem período definido.</div></section>
       <p class="form-error" id="popup-editor-error"></p><button class="btn-primary popup-save-button" id="popup-save-button" type="submit">Salvar pop-up</button>
     </form>
-    <div class="card popup-help-card"><span class="popup-help-icon">💡</span><h2>Como funciona</h2><p>Quando estiver ativo e dentro do período escolhido, o pop-up aparecerá uma vez por sessão para cada visitante.</p><ul><li>Deixe as datas vazias para exibição contínua.</li><li>Desative quando não quiser mostrar nada.</li><li>Uma nova edição volta a aparecer para os visitantes.</li></ul></div>
+    <aside class="popup-editor-side"><div class="popup-preview-panel"><div class="popup-preview-toolbar"><span>Preview</span><strong id="popup-preview-state">Desativado</strong></div><div class="popup-preview-window"><div class="popup-preview-image-wrap hidden" id="popup-live-image-wrap"><img id="popup-live-image" alt="" /></div><div class="popup-preview-content"><span>Dog Burger</span><h2 id="popup-live-title">Título do pop-up</h2><p id="popup-live-message">Sua mensagem aparecerá aqui.</p><span class="popup-preview-button hidden" id="popup-live-button">Ver cardápio</span></div></div></div><div class="card popup-help-card"><span class="popup-help-icon">💡</span><h2>Como funciona</h2><p>Quando estiver ativo e dentro do período escolhido, o pop-up aparecerá uma vez por sessão para cada visitante.</p><ul><li>Deixe as datas vazias para exibição contínua.</li><li>Preencha texto e destino para mostrar o CTA.</li><li>Uma nova edição volta a aparecer para os visitantes.</li></ul></div></aside>
   </div>`;
 }
 
@@ -158,10 +159,44 @@ function popupLocalDate(iso) {
 }
 
 function updatePopupPreview(source) {
+  popupPreviewImageSource = source || '';
   const preview = document.getElementById('popup-image-preview');
   const prompt = document.getElementById('popup-image-prompt');
   if (source) { preview.src = source; preview.classList.remove('hidden'); prompt.classList.add('hidden'); }
   else { preview.removeAttribute('src'); preview.classList.add('hidden'); prompt.classList.remove('hidden'); }
+  updatePopupLivePreview(source);
+}
+
+function updatePopupLivePreview(imageSource) {
+  const title = document.getElementById('popup-title').value.trim();
+  const message = document.getElementById('popup-message').value.trim();
+  const buttonText = document.getElementById('popup-button-text').value.trim();
+  const buttonUrl = document.getElementById('popup-button-url').value.trim();
+  const active = document.getElementById('popup-active').checked;
+  document.getElementById('popup-live-title').textContent = title || 'Título do pop-up';
+  document.getElementById('popup-live-message').textContent = message || 'Sua mensagem aparecerá aqui.';
+  document.getElementById('popup-message-count').textContent = `${document.getElementById('popup-message').value.length}/400`;
+  document.getElementById('popup-active-label').textContent = active ? 'Pop-up ativo ao salvar' : 'Pop-up desativado';
+  document.getElementById('popup-preview-state').textContent = active ? 'Ativo' : 'Desativado';
+  const previewButton = document.getElementById('popup-live-button');
+  previewButton.textContent = buttonText || 'Ver cardápio';
+  previewButton.classList.toggle('hidden', !(buttonText && buttonUrl));
+  const currentSource = imageSource === undefined ? popupPreviewImageSource : imageSource;
+  const imageWrap = document.getElementById('popup-live-image-wrap');
+  if (currentSource) { document.getElementById('popup-live-image').src = currentSource; imageWrap.classList.remove('hidden'); }
+  else imageWrap.classList.add('hidden');
+  updatePopupScheduleStatus();
+}
+
+function updatePopupScheduleStatus() {
+  const startsValue = document.getElementById('popup-starts-at').value;
+  const endsValue = document.getElementById('popup-ends-at').value;
+  const status = document.getElementById('popup-schedule-status');
+  status.classList.remove('is-error');
+  if (!startsValue && !endsValue) { status.textContent = 'Exibição contínua, sem período definido.'; return; }
+  if (startsValue && endsValue && new Date(endsValue) <= new Date(startsValue)) { status.textContent = 'O fim deve ser posterior ao início.'; status.classList.add('is-error'); return; }
+  if (startsValue && endsValue) { status.textContent = 'Período completo configurado.'; return; }
+  status.textContent = startsValue ? 'Sem data final: permanece ativo após o início.' : 'Sem data inicial: válido até a data final.';
 }
 
 async function initPopupEditor() {
@@ -179,11 +214,14 @@ async function initPopupEditor() {
       document.getElementById('popup-active').checked = popup.active;
       updatePopupPreview(popup.image_url || '');
     }
+    updatePopupLivePreview();
   } catch (error) { errorElement.textContent = `Não foi possível carregar. ${error.message}`; }
 
   document.getElementById('choose-popup-image').addEventListener('click', () => document.getElementById('popup-image-file').click());
   document.getElementById('popup-image-upload').addEventListener('click', event => { if (!event.target.closest('button')) document.getElementById('popup-image-file').click(); });
   document.getElementById('popup-image-file').addEventListener('change', event => { const file = event.target.files[0]; if (file) updatePopupPreview(URL.createObjectURL(file)); });
+  ['popup-title','popup-message','popup-button-text','popup-button-url','popup-starts-at','popup-ends-at'].forEach(id => document.getElementById(id).addEventListener('input', () => updatePopupLivePreview()));
+  document.getElementById('popup-active').addEventListener('change', () => updatePopupLivePreview());
   document.getElementById('popup-editor-form').addEventListener('submit', savePopupEditor);
 }
 
@@ -198,12 +236,14 @@ async function savePopupEditor(event) {
   if (file && (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024)) { errorElement.textContent = 'Escolha uma imagem válida de até 5 MB.'; return; }
   if (startsValue && endsValue && new Date(endsValue) <= new Date(startsValue)) { errorElement.textContent = 'A data final deve ser posterior à inicial.'; return; }
   const buttonUrl = document.getElementById('popup-button-url').value.trim();
+  const buttonText = document.getElementById('popup-button-text').value.trim();
+  if ((buttonText && !buttonUrl) || (!buttonText && buttonUrl)) { errorElement.textContent = 'Preencha o texto e o destino do botão juntos.'; return; }
   if (buttonUrl && !/^(https?:\/\/|[a-z0-9_.-]+\.html(?:[?#].*)?$)/i.test(buttonUrl)) { errorElement.textContent = 'Informe um endereço HTTPS ou uma página do site.'; return; }
   button.disabled = true; button.textContent = 'Salvando...';
   try {
     let imageUrl = document.getElementById('popup-image-url').value;
     if (file) imageUrl = await Store.uploadProductImage(file);
-    await Store.savePopup({ title:document.getElementById('popup-title').value.trim(), message:document.getElementById('popup-message').value.trim(), imageUrl, buttonText:document.getElementById('popup-button-text').value.trim(), buttonUrl, active:document.getElementById('popup-active').checked, startsAt:startsValue ? new Date(startsValue).toISOString() : null, endsAt:endsValue ? new Date(endsValue).toISOString() : null });
+    await Store.savePopup({ title:document.getElementById('popup-title').value.trim(), message:document.getElementById('popup-message').value.trim(), imageUrl, buttonText, buttonUrl, active:document.getElementById('popup-active').checked, startsAt:startsValue ? new Date(startsValue).toISOString() : null, endsAt:endsValue ? new Date(endsValue).toISOString() : null });
     document.getElementById('popup-image-url').value = imageUrl;
     alert('Pop-up salvo com sucesso.');
   } catch (error) { errorElement.textContent = `Não foi possível salvar. ${error.message}`; }
