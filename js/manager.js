@@ -15,7 +15,22 @@ const VIEW_TITLES = {
   dashboard: 'Dashboard',
   pedidos: 'Pedidos',
   relatorios: 'Relatórios',
+  'estoque-lanches': 'Estoque de Lanches',
   popup: 'Pop-up Inicial',
+  configuracoes: 'Configurações da Loja',
+};
+
+const PLACEHOLDER_VIEWS = {
+  'estoque-lanches': {
+    icon: '📦',
+    title: 'Estoque de Lanches',
+    description: 'A estrutura desta área está preparada para o controle futuro da quantidade de lanches prontos.',
+  },
+  configuracoes: {
+    icon: '⚙️',
+    title: 'Configurações da Loja',
+    description: 'A estrutura desta área está preparada para as configurações operacionais que serão definidas em uma próxima etapa.',
+  },
 };
 
 function getProduct(pid) {
@@ -37,7 +52,7 @@ async function setView(view) {
   if (!VIEW_TITLES[view]) view = 'dashboard';
   currentView = view;
   document.getElementById('view-title').textContent = VIEW_TITLES[view];
-  ['dashboard','pedidos','relatorios','popup'].forEach(v => {
+  Object.keys(VIEW_TITLES).forEach(v => {
     const btn = document.getElementById(`nav-${v}`);
     if (btn) btn.classList.toggle('active', v === view);
   });
@@ -46,6 +61,11 @@ async function setView(view) {
   else pageUrl.searchParams.set('view', view);
   window.history.replaceState({}, '', pageUrl);
   updateActiveOrdersBadge();
+
+  if (PLACEHOLDER_VIEWS[view]) {
+    document.getElementById('m-content').innerHTML = renderPlannedModule(PLACEHOLDER_VIEWS[view]);
+    return;
+  }
 
   // Recarregar dados mais recentes da store
   try {
@@ -63,6 +83,19 @@ async function setView(view) {
     content.innerHTML = renderPopupEditor();
     await initPopupEditor();
   }
+}
+
+function renderPlannedModule(module) {
+  return `<section class="planned-module" aria-labelledby="planned-module-title">
+    <div class="planned-module-icon" aria-hidden="true">${module.icon}</div>
+    <span class="planned-module-badge">Módulo em preparação</span>
+    <h2 id="planned-module-title">${module.title}</h2>
+    <p>${module.description}</p>
+    <div class="planned-module-note">
+      <strong>Nenhuma operação está ativa nesta etapa.</strong>
+      <span>Persistência, regras de negócio e permissões serão implementadas na Task específica deste módulo.</span>
+    </div>
+  </section>`;
 }
 
 function orderPaymentLabel(order) {
