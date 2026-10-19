@@ -33,6 +33,12 @@ const PLACEHOLDER_VIEWS = {
   },
 };
 
+// Mock exclusivamente visual. Será substituído pelas integrações de Realtime e áudio em Tasks futuras.
+const DASHBOARD_FRONTEND_MOCK = Object.freeze({
+  updateMode: 'manual',
+  soundAlert: 'planned',
+});
+
 function getProduct(pid) {
   return products.find(p => p.id === pid);
 }
@@ -67,15 +73,19 @@ async function setView(view) {
     return;
   }
 
+  const content = document.getElementById('m-content');
+  if (view === 'dashboard') content.innerHTML = renderDashboardState('loading');
+
   // Recarregar dados mais recentes da store
   try {
     [products, orders] = await Promise.all([Store.getAllProducts(), Store.getOrders()]);
   } catch (error) {
-    document.getElementById('m-content').innerHTML = `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${error.message}</div>`;
+    content.innerHTML = view === 'dashboard'
+      ? renderDashboardState('error', error.message)
+      : `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${error.message}</div>`;
     return;
   }
 
-  const content = document.getElementById('m-content');
   if (view === 'dashboard')  content.innerHTML = renderDashboard();
   if (view === 'pedidos')    content.innerHTML = renderPedidos();
   if (view === 'relatorios') content.innerHTML = renderRelatorios();
@@ -188,34 +198,96 @@ function updateActiveOrdersBadge() {
 }
 
 /* ── DASHBOARD ── */
+function renderDashboardState(state, detail = '') {
+  if (state === 'loading') {
+    return `<section class="dashboard-state" aria-live="polite" aria-busy="true">
+      <div class="dashboard-state-spinner" aria-hidden="true"></div>
+      <strong>Carregando visão operacional...</strong>
+      <span>Buscando os indicadores e pedidos mais recentes.</span>
+    </section>`;
+  }
+  return `<section class="dashboard-state dashboard-state-error" role="alert">
+    <span class="dashboard-state-icon" aria-hidden="true">⚠️</span>
+    <strong>Não foi possível carregar o Dashboard</strong>
+    <span>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</span>
+    <button type="button" onclick="setView('dashboard')">Tentar novamente</button>
+  </section>`;
+}
+
+function renderDashboardEmpty(icon, title, description) {
+  return `<div class="dashboard-empty">
+    <span aria-hidden="true">${icon}</span>
+    <strong>${title}</strong>
+    <p>${description}</p>
+  </div>`;
+}
+
 function renderDashboard() {
   const now = new Date().toDateString();
   const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === now);
   const active = activeOrders();
+  const newOrders = orders.filter(o => o.status === 'pendente');
   const delivered = orders.filter(o => o.status === 'entregue').length;
   const ready = orders.filter(o => o.status === 'pronto').length;
+  const soldOutSnacks = products.filter(product => product.category === 'lanches' && Number(product.stock) <= 0);
 
-  return `
-    <div class="kpi-grid">
+  return `<section class="dashboard-page" aria-label="Visão operacional">
+    <div class="dashboard-readiness" aria-label="Recursos preparados para integração futura">
+      <div>
+        <span class="dashboard-live-dot" aria-hidden="true"></span>
+        <div><strong>Atualização manual</strong><small>Tempo real preparado para integração futura</small></div>
+      </div>
+      <button class="dashboard-sound-status" type="button" disabled title="O alerta sonoro será habilitado em uma Task futura">
+        <span aria-hidden="true">🔕</span> Alerta sonoro em preparação
+      </button>
+      <span class="dashboard-mock-label">Mock frontend · ${DASHBOARD_FRONTEND_MOCK.updateMode} · ${DASHBOARD_FRONTEND_MOCK.soundAlert}</span>
+    </div>
+
+    <div class="kpi-grid dashboard-kpis">
       ${kpiCard('Pedidos Hoje', String(todayOrders.length), '📋', '#F97316', 'recebidos hoje')}
       ${kpiCard('Pedidos Ativos', String(active.length), '👨‍🍳', '#2563EB', 'pendentes ou preparando')}
       ${kpiCard('Prontos', String(ready), '✅', '#16A34A', 'aguardando entrega')}
       ${kpiCard('Entregues', String(delivered), '🛵', '#7C3AED', 'total de pedidos')}
     </div>
 
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header"><span class="card-title">Pedidos Ativos</span></div>
-      ${active.length === 0
-        ? `<p style="color:var(--stone-light);font-size:0.875rem">Nenhum pedido ativo no momento.</p>`
-        : active.slice(0,5).map(o => dashOrderRow(o)).join('')}
+    <div class="dashboard-operations-grid">
+      <article class="card dashboard-operation-card">
+        <div class="card-header dashboard-card-header">
+          <div><span class="card-title">Novos pedidos</span><p>Aguardando início do preparo</p></div>
+          <span class="dashboard-count-badge">${newOrders.length}</span>
+        </div>
+        ${newOrders.length
+          ? `<div class="dashboard-order-list">${newOrders.slice(0,4).map(o => dashOrderRow(o)).join('')}</div><button class="dashboard-text-button" type="button" onclick="setView('pedidos')">Ver todos os pedidos →</button>`
+          : renderDashboardEmpty('✨', 'Fila em dia', 'Nenhum pedido novo aguardando atendimento.')}
+      </article>
+
+      <article class="card dashboard-operation-card">
+        <div class="card-header dashboard-card-header">
+          <div><span class="card-title">Disponibilidade de lanches</span><p>Indicador visual, sem bloqueio automático</p></div>
+          <span class="dashboard-count-badge ${soldOutSnacks.length ? 'is-alert' : 'is-ok'}">${soldOutSnacks.length}</span>
+        </div>
+        ${soldOutSnacks.length
+          ? `<div class="dashboard-stock-alert"><span aria-hidden="true">⚠️</span><div><strong>${soldOutSnacks.length} ${soldOutSnacks.length === 1 ? 'lanche sinalizado' : 'lanches sinalizados'} como esgotado</strong><p>${soldOutSnacks.slice(0,3).map(product => escapeManagerHtml(product.name)).join(', ')}${soldOutSnacks.length > 3 ? ` e mais ${soldOutSnacks.length - 3}` : ''}</p></div></div><button class="dashboard-text-button" type="button" onclick="setView('estoque-lanches')">Abrir área preparada →</button>`
+          : renderDashboardEmpty('🍔', 'Nenhum alerta visual', 'Não há lanches com quantidade zero nos dados atuais.')}
+      </article>
     </div>
 
-    <div class="card">
-      <div class="card-header"><span class="card-title">Últimos Pedidos</span></div>
-      ${orders.length === 0
-        ? `<p style="color:var(--stone-light);font-size:0.875rem">Nenhum pedido registrado.</p>`
-        : orders.slice(0,5).map(o => dashOrderRow(o)).join('')}
-    </div>`;
+    <div class="dashboard-feed-grid">
+      <article class="card">
+        <div class="card-header dashboard-card-header"><div><span class="card-title">Pedidos ativos</span><p>Pendentes ou em preparo</p></div><span class="dashboard-count-badge">${active.length}</span></div>
+        ${active.length
+          ? active.slice(0,5).map(o => dashOrderRow(o)).join('')
+          : renderDashboardEmpty('👨‍🍳', 'Nenhum pedido ativo', 'Os próximos pedidos aparecerão nesta área.')}
+      </article>
+
+      <article class="card">
+        <div class="card-header dashboard-card-header"><div><span class="card-title">Últimos pedidos</span><p>Movimentação mais recente</p></div></div>
+        ${orders.length
+          ? orders.slice(0,5).map(o => dashOrderRow(o)).join('')
+          : renderDashboardEmpty('📋', 'Nenhum pedido registrado', 'O histórico recente aparecerá quando houver pedidos.')}
+      </article>
+    </div>
+  </section>`;
 }
 
 function dashOrderRow(o) {
