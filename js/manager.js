@@ -18,6 +18,16 @@ const ORDERS_FRONTEND_DEMO = {
   feedback: '',
 };
 
+// Mock local de unidades de lanches prontos. Não representa ingredientes e não possui persistência.
+const SNACK_STOCK_FRONTEND_DEMO = {
+  quantities: new Map(),
+  minimums: new Map(),
+  history: [],
+  filter: 'todos',
+  restockProductId: null,
+  feedback: null,
+};
+
 const VIEW_TITLES = {
   dashboard: 'Dashboard',
   pedidos: 'Pedidos',
@@ -28,11 +38,6 @@ const VIEW_TITLES = {
 };
 
 const PLACEHOLDER_VIEWS = {
-  'estoque-lanches': {
-    icon: '📦',
-    title: 'Estoque de Lanches',
-    description: 'A estrutura desta área está preparada para o controle futuro da quantidade de lanches prontos.',
-  },
   configuracoes: {
     icon: '⚙️',
     title: 'Configurações da Loja',
@@ -82,6 +87,7 @@ async function setView(view) {
 
   const content = document.getElementById('m-content');
   if (view === 'dashboard') content.innerHTML = renderDashboardState('loading');
+  if (view === 'estoque-lanches') content.innerHTML = renderSnackStockState('loading');
 
   // Recarregar dados mais recentes da store
   try {
@@ -89,13 +95,16 @@ async function setView(view) {
   } catch (error) {
     content.innerHTML = view === 'dashboard'
       ? renderDashboardState('error', error.message)
-      : `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${error.message}</div>`;
+      : view === 'estoque-lanches'
+        ? renderSnackStockState('error', error.message)
+        : `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${error.message}</div>`;
     return;
   }
 
   if (view === 'dashboard')  content.innerHTML = renderDashboard();
   if (view === 'pedidos')    content.innerHTML = renderPedidos();
   if (view === 'relatorios') content.innerHTML = renderRelatorios();
+  if (view === 'estoque-lanches') content.innerHTML = renderSnackStock();
   if (view === 'popup') {
     content.innerHTML = renderPopupEditor();
     await initPopupEditor();
@@ -470,6 +479,161 @@ function printKitchenTicket(id) {
     card.classList.remove('print-target');
     document.body.classList.remove('printing-order-ticket');
   }, 0);
+}
+
+/* ── ESTOQUE DE LANCHES PRONTOS (FRONTEND) ── */
+function snackStockProducts() {
+  return products.filter(product => product.category === 'lanches');
+}
+
+function normalizedStockNumber(value, fallback = 0) {
+  if (value === null || value === undefined || value === '') return fallback;
+  const number = Number(value);
+  return Number.isInteger(number) && number >= 0 ? number : fallback;
+}
+
+function initializeSnackStockDemo() {
+  snackStockProducts().forEach(product => {
+    if (!SNACK_STOCK_FRONTEND_DEMO.quantities.has(product.id)) {
+      SNACK_STOCK_FRONTEND_DEMO.quantities.set(product.id, normalizedStockNumber(product.stock));
+    }
+    if (!SNACK_STOCK_FRONTEND_DEMO.minimums.has(product.id)) {
+      SNACK_STOCK_FRONTEND_DEMO.minimums.set(product.id, normalizedStockNumber(product.minStock, 5));
+    }
+  });
+}
+
+function snackStockStatus(product) {
+  const quantity = SNACK_STOCK_FRONTEND_DEMO.quantities.get(product.id) ?? 0;
+  const minimum = SNACK_STOCK_FRONTEND_DEMO.minimums.get(product.id) ?? 0;
+  if (quantity === 0) return { key:'zero', label:'Esgotado', icon:'⛔' };
+  if (quantity <= minimum) return { key:'baixo', label:'Baixo', icon:'⚠️' };
+  return { key:'normal', label:'Normal', icon:'✅' };
+}
+
+function renderSnackStockState(state, detail = '') {
+  if (state === 'loading') {
+    return `<section class="snack-stock-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando lanches...</strong><span>Preparando o controle local de unidades prontas.</span></section>`;
+  }
+  return `<section class="snack-stock-state is-error" role="alert"><span aria-hidden="true">⚠️</span><strong>Não foi possível carregar os lanches</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('estoque-lanches')">Tentar novamente</button></section>`;
+}
+
+function renderSnackStock() {
+  initializeSnackStockDemo();
+  const snacks = snackStockProducts();
+  const counts = { normal:0, baixo:0, zero:0 };
+  snacks.forEach(product => { counts[snackStockStatus(product).key]++; });
+  const filtered = SNACK_STOCK_FRONTEND_DEMO.filter === 'todos'
+    ? snacks
+    : snacks.filter(product => snackStockStatus(product).key === SNACK_STOCK_FRONTEND_DEMO.filter);
+  const filters = [
+    { key:'todos', label:'Todos', count:snacks.length },
+    { key:'normal', label:'Normal', count:counts.normal },
+    { key:'baixo', label:'Baixo', count:counts.baixo },
+    { key:'zero', label:'Esgotado', count:counts.zero },
+  ];
+
+  return `<section class="snack-stock-page" aria-label="Estoque local de lanches prontos">
+    <div class="snack-stock-intro">
+      <div><span aria-hidden="true">📦</span><div><strong>Unidades de lanches prontos</strong><p>Não inclui ingredientes, não realiza abatimento e não possui reset diário.</p></div></div>
+      <span>Mock local · sem persistência</span>
+    </div>
+    ${SNACK_STOCK_FRONTEND_DEMO.feedback ? `<div class="snack-stock-feedback is-${SNACK_STOCK_FRONTEND_DEMO.feedback.type}" role="status">${escapeManagerHtml(SNACK_STOCK_FRONTEND_DEMO.feedback.message)}</div>` : ''}
+    <div class="snack-stock-kpis">
+      ${kpiCard('Lanches cadastrados', String(snacks.length), '🍔', '#F97316', 'somente categoria lanches')}
+      ${kpiCard('Estoque normal', String(counts.normal), '✅', '#16A34A', 'acima do mínimo local')}
+      ${kpiCard('Estoque baixo', String(counts.baixo), '⚠️', '#D97706', 'no mínimo ou abaixo')}
+      ${kpiCard('Esgotados', String(counts.zero), '⛔', '#DC2626', 'quantidade local igual a zero')}
+    </div>
+    <div class="filter-tabs snack-stock-filters">${filters.map(filter => `<button class="filter-tab${SNACK_STOCK_FRONTEND_DEMO.filter === filter.key ? ' active' : ''}" type="button" onclick="setSnackStockFilter('${filter.key}')">${filter.label} (${filter.count})</button>`).join('')}</div>
+    ${filtered.length ? `<div class="snack-stock-grid">${filtered.map(renderSnackStockCard).join('')}</div>` : `<div class="snack-stock-empty"><span aria-hidden="true">🍔</span><strong>Nenhum lanche neste estado</strong><p>Escolha outro filtro para continuar.</p></div>`}
+    ${renderSnackStockHistory()}
+    ${renderSnackRestockModal()}
+  </section>`;
+}
+
+function renderSnackStockCard(product) {
+  const quantity = SNACK_STOCK_FRONTEND_DEMO.quantities.get(product.id) ?? 0;
+  const minimum = SNACK_STOCK_FRONTEND_DEMO.minimums.get(product.id) ?? 0;
+  const status = snackStockStatus(product);
+  return `<article class="snack-stock-card is-${status.key}">
+    <div class="snack-stock-card-head"><div class="snack-stock-product-icon" aria-hidden="true">🍔</div><div><h3>${escapeManagerHtml(product.name)}</h3><span class="snack-stock-status">${status.icon} ${status.label}</span></div></div>
+    <div class="snack-stock-quantity"><strong>${quantity}</strong><span>unidades prontas</span></div>
+    <label class="snack-stock-minimum">Estoque mínimo local<input type="number" min="0" max="999" step="1" value="${minimum}" aria-label="Estoque mínimo de ${escapeManagerHtml(product.name)}" onchange="updateSnackStockMinimum(${JSON.stringify(product.id)}, this.value)" /></label>
+    <button class="btn-primary snack-stock-restock" type="button" onclick="openSnackRestock(${JSON.stringify(product.id)})">+ Reposição manual</button>
+  </article>`;
+}
+
+function setSnackStockFilter(filter) {
+  if (!['todos','normal','baixo','zero'].includes(filter)) return;
+  SNACK_STOCK_FRONTEND_DEMO.filter = filter;
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
+function updateSnackStockMinimum(productId, value) {
+  const minimum = Number(value);
+  if (!Number.isInteger(minimum) || minimum < 0 || minimum > 999) {
+    SNACK_STOCK_FRONTEND_DEMO.feedback = { type:'error', message:'O estoque mínimo deve ser um número inteiro entre 0 e 999.' };
+  } else {
+    SNACK_STOCK_FRONTEND_DEMO.minimums.set(productId, minimum);
+    SNACK_STOCK_FRONTEND_DEMO.feedback = { type:'success', message:'Estoque mínimo ajustado somente nesta sessão.' };
+  }
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
+function renderSnackRestockModal() {
+  if (SNACK_STOCK_FRONTEND_DEMO.restockProductId === null) return '';
+  const product = snackStockProducts().find(item => item.id === SNACK_STOCK_FRONTEND_DEMO.restockProductId);
+  if (!product) return '';
+  return `<div class="modal-overlay snack-restock-overlay" onclick="closeSnackRestock()"></div>
+    <section class="modal snack-restock-modal" role="dialog" aria-modal="true" aria-labelledby="snack-restock-title">
+      <span class="orders-demo-badge">reposição local</span>
+      <h2 class="modal-title" id="snack-restock-title">Repor ${escapeManagerHtml(product.name)}</h2>
+      <p class="modal-sub">A quantidade será somada apenas nesta sessão e não será enviada ao Supabase.</p>
+      <form onsubmit="submitSnackRestock(event)">
+        <div class="form-group"><label class="form-label" for="snack-restock-amount">Quantidade a adicionar *</label><input class="form-input" id="snack-restock-amount" type="number" min="1" max="999" step="1" inputmode="numeric" required /></div>
+        <p class="form-error" id="snack-restock-error"></p>
+        <div class="modal-actions"><button class="btn-secondary" type="button" onclick="closeSnackRestock()">Cancelar</button><button class="btn-primary" type="submit">Adicionar unidades</button></div>
+      </form>
+    </section>`;
+}
+
+function openSnackRestock(productId) {
+  SNACK_STOCK_FRONTEND_DEMO.restockProductId = productId;
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+  setTimeout(() => document.getElementById('snack-restock-amount')?.focus(), 0);
+}
+
+function closeSnackRestock() {
+  SNACK_STOCK_FRONTEND_DEMO.restockProductId = null;
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
+function submitSnackRestock(event) {
+  event.preventDefault();
+  const amount = Number(document.getElementById('snack-restock-amount').value);
+  const errorElement = document.getElementById('snack-restock-error');
+  if (!Number.isInteger(amount) || amount < 1 || amount > 999) {
+    errorElement.textContent = 'Informe uma quantidade inteira entre 1 e 999.';
+    return;
+  }
+  const productId = SNACK_STOCK_FRONTEND_DEMO.restockProductId;
+  const product = snackStockProducts().find(item => item.id === productId);
+  const current = SNACK_STOCK_FRONTEND_DEMO.quantities.get(productId) ?? 0;
+  if (!product || current + amount > 9999) {
+    errorElement.textContent = 'A quantidade total não pode ultrapassar 9.999 unidades.';
+    return;
+  }
+  SNACK_STOCK_FRONTEND_DEMO.quantities.set(productId, current + amount);
+  SNACK_STOCK_FRONTEND_DEMO.history.unshift({ productName:product.name, amount, at:Date.now() });
+  SNACK_STOCK_FRONTEND_DEMO.restockProductId = null;
+  SNACK_STOCK_FRONTEND_DEMO.feedback = { type:'success', message:`${amount} unidades adicionadas a ${product.name} somente nesta sessão.` };
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
+function renderSnackStockHistory() {
+  const entries = SNACK_STOCK_FRONTEND_DEMO.history.slice(0, 5);
+  return `<section class="card snack-stock-history"><div class="card-header"><div><span class="card-title">Histórico visual da sessão</span><p>Preparado para integração futura, sem persistência.</p></div></div>${entries.length ? entries.map(entry => `<div class="snack-stock-history-row"><span>+${entry.amount}</span><div><strong>${escapeManagerHtml(entry.productName)}</strong><small>${new Date(entry.at).toLocaleString('pt-BR')}</small></div></div>`).join('') : '<div class="snack-stock-history-empty">Nenhuma reposição local realizada nesta sessão.</div>'}</section>`;
 }
 
 function toggleOrder(id) {
