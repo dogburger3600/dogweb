@@ -42,6 +42,14 @@ const STORE_SETTINGS_FRONTEND_DEMO = {
   feedback: null,
 };
 
+// Controle visual dos filtros de relatórios. Não altera consultas nem critérios financeiros.
+const REPORTS_FRONTEND_DEMO = {
+  period: 'day',
+  customStart: reportDate,
+  customEnd: reportDate,
+  error: '',
+};
+
 const VIEW_TITLES = {
   dashboard: 'Dashboard',
   pedidos: 'Pedidos',
@@ -94,6 +102,7 @@ async function setView(view) {
   const content = document.getElementById('m-content');
   if (view === 'dashboard') content.innerHTML = renderDashboardState('loading');
   if (view === 'estoque-lanches') content.innerHTML = renderSnackStockState('loading');
+  if (view === 'relatorios') content.innerHTML = renderReportsState('loading');
 
   // Recarregar dados mais recentes da store
   try {
@@ -103,7 +112,9 @@ async function setView(view) {
       ? renderDashboardState('error', error.message)
       : view === 'estoque-lanches'
         ? renderSnackStockState('error', error.message)
-        : `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${error.message}</div>`;
+        : view === 'relatorios'
+          ? renderReportsState('error', error.message)
+          : `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${error.message}</div>`;
     return;
   }
 
@@ -802,6 +813,8 @@ function escapeManagerHtml(value) {
 function setReportDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
   reportDate = value;
+  REPORTS_FRONTEND_DEMO.period = 'day';
+  REPORTS_FRONTEND_DEMO.error = '';
   document.getElementById('m-content').innerHTML = renderRelatorios();
 }
 
@@ -815,14 +828,69 @@ function showTodayReport() {
   setReportDate(localDateKey(Date.now()));
 }
 
+function setReportPeriod(period) {
+  if (!['day','seven','thirty','custom'].includes(period)) return;
+  REPORTS_FRONTEND_DEMO.period = period;
+  REPORTS_FRONTEND_DEMO.error = '';
+  if (period !== 'custom') reportDate = localDateKey(Date.now());
+  document.getElementById('m-content').innerHTML = renderRelatorios();
+}
+
+function applyCustomReportRange() {
+  const start = document.getElementById('report-custom-start').value;
+  const end = document.getElementById('report-custom-end').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end) {
+    REPORTS_FRONTEND_DEMO.error = 'Informe um período personalizado válido, com a data inicial anterior ou igual à final.';
+    document.getElementById('report-range-error').textContent = REPORTS_FRONTEND_DEMO.error;
+    return;
+  }
+  REPORTS_FRONTEND_DEMO.customStart = start;
+  REPORTS_FRONTEND_DEMO.customEnd = end;
+  REPORTS_FRONTEND_DEMO.error = '';
+  document.getElementById('m-content').innerHTML = renderRelatorios();
+}
+
+function reportPeriodRange() {
+  if (REPORTS_FRONTEND_DEMO.period === 'custom') {
+    return { start:REPORTS_FRONTEND_DEMO.customStart, end:REPORTS_FRONTEND_DEMO.customEnd };
+  }
+  const end = REPORTS_FRONTEND_DEMO.period === 'day' ? reportDate : localDateKey(Date.now());
+  const startDate = new Date(`${end}T12:00:00`);
+  if (REPORTS_FRONTEND_DEMO.period === 'seven') startDate.setDate(startDate.getDate() - 6);
+  if (REPORTS_FRONTEND_DEMO.period === 'thirty') startDate.setDate(startDate.getDate() - 29);
+  return { start:localDateKey(startDate), end };
+}
+
+function reportPeriodLabel(range) {
+  const format = value => new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
+  if (range.start === range.end) return new Date(`${range.start}T12:00:00`).toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  return `${format(range.start)} — ${format(range.end)}`;
+}
+
+function renderReportsState(state, detail = '') {
+  if (state === 'loading') return `<section class="reports-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando relatórios...</strong><span>Organizando os dados financeiros disponíveis.</span></section>`;
+  return `<section class="reports-state is-error" role="alert"><span aria-hidden="true">⚠️</span><strong>Não foi possível carregar os relatórios</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('relatorios')">Tentar novamente</button></section>`;
+}
+
 function renderRelatorios() {
-  const selectedOrders = orders.filter(order => localDateKey(order.createdAt) === reportDate);
+  const range = reportPeriodRange();
+  const selectedOrders = orders.filter(order => {
+    const date = localDateKey(order.createdAt);
+    return date >= range.start && date <= range.end;
+  });
+  const selectedExpenses = expenses.filter(expense => {
+    const date = localDateKey(expense.date);
+    return date >= range.start && date <= range.end;
+  });
   const attendedOrders = selectedOrders.filter(order => order.status === 'entregue');
-  const activeDayOrders = selectedOrders.filter(order => order.status !== 'entregue');
-  const dayRevenue = selectedOrders.reduce((total, order) => total + orderTotal(order), 0);
-  const averageTicket = selectedOrders.length ? dayRevenue / selectedOrders.length : 0;
-  const selectedDate = new Date(`${reportDate}T12:00:00`);
-  const selectedDateLabel = selectedDate.toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
+  const periodRevenue = selectedOrders.reduce((total, order) => total + orderTotal(order), 0);
+  const periodCost = selectedOrders.reduce((total, order) => total + order.items.reduce((subtotal, item) => {
+    const product = getProduct(item.pid);
+    return subtotal + (item.unitCost ?? product?.cost ?? 0) * item.qty;
+  }, 0), 0);
+  const periodExpenses = selectedExpenses.reduce((total, expense) => total + expense.amount, 0);
+  const periodResult = periodRevenue - periodCost - periodExpenses;
+  const averageTicket = selectedOrders.length ? periodRevenue / selectedOrders.length : 0;
 
   const rows = selectedOrders.map(order => {
     const status = STATUS_META[order.status] || { label:order.status, color:'#57534E', bg:'#F5F5F4' };
@@ -844,30 +912,34 @@ function renderRelatorios() {
   }).join('');
 
   return `<section class="reports-page">
-    <div class="card report-calendar-card">
-      <div>
-        <span class="report-calendar-label">Dia do relatório</span>
-        <h2>${escapeManagerHtml(selectedDateLabel)}</h2>
-      </div>
-      <div class="report-calendar-controls">
-        <button type="button" title="Dia anterior" aria-label="Dia anterior" onclick="shiftReportDate(-1)">←</button>
-        <input id="report-date" type="date" value="${reportDate}" aria-label="Selecionar dia do relatório" onchange="setReportDate(this.value)" />
-        <button type="button" title="Próximo dia" aria-label="Próximo dia" onclick="shiftReportDate(1)">→</button>
-        <button class="report-today-button" type="button" onclick="showTodayReport()">Hoje</button>
-      </div>
+    <div class="report-readiness"><div><span aria-hidden="true">📊</span><div><strong>Visão financeira em preparação</strong><p>Os indicadores preservam os dados atuais; critérios definitivos serão consolidados no backend.</p></div></div><span>sem alteração de consultas</span></div>
+    <div class="card report-filter-card">
+      <div class="report-filter-head"><div><span class="report-calendar-label">Período do relatório</span><h2>${escapeManagerHtml(reportPeriodLabel(range))}</h2></div><div class="report-period-tabs">
+        <button type="button" class="${REPORTS_FRONTEND_DEMO.period === 'day' ? 'active' : ''}" onclick="setReportPeriod('day')">Dia</button>
+        <button type="button" class="${REPORTS_FRONTEND_DEMO.period === 'seven' ? 'active' : ''}" onclick="setReportPeriod('seven')">7 dias</button>
+        <button type="button" class="${REPORTS_FRONTEND_DEMO.period === 'thirty' ? 'active' : ''}" onclick="setReportPeriod('thirty')">30 dias</button>
+        <button type="button" class="${REPORTS_FRONTEND_DEMO.period === 'custom' ? 'active' : ''}" onclick="setReportPeriod('custom')">Personalizado</button>
+      </div></div>
+      ${REPORTS_FRONTEND_DEMO.period === 'day' ? `<div class="report-calendar-controls"><button type="button" title="Dia anterior" aria-label="Dia anterior" onclick="shiftReportDate(-1)">←</button><input id="report-date" type="date" value="${reportDate}" aria-label="Selecionar dia do relatório" onchange="setReportDate(this.value)" /><button type="button" title="Próximo dia" aria-label="Próximo dia" onclick="shiftReportDate(1)">→</button><button class="report-today-button" type="button" onclick="showTodayReport()">Hoje</button></div>` : ''}
+      ${REPORTS_FRONTEND_DEMO.period === 'custom' ? `<div class="report-custom-range"><label>Data inicial<input id="report-custom-start" type="date" value="${REPORTS_FRONTEND_DEMO.customStart}" /></label><span aria-hidden="true">→</span><label>Data final<input id="report-custom-end" type="date" value="${REPORTS_FRONTEND_DEMO.customEnd}" /></label><button class="btn-primary" type="button" onclick="applyCustomReportRange()">Aplicar período</button></div><p class="form-error" id="report-range-error">${escapeManagerHtml(REPORTS_FRONTEND_DEMO.error)}</p>` : ''}
     </div>
 
+    <div class="report-backend-note"><span aria-hidden="true">🛡️</span><div><strong>Preparado para conciliação futura</strong><p>Cancelamentos ou vendas não realizadas continuam incluídos conforme o comportamento atual. A exclusão dependerá de critérios consolidados no backend.</p></div></div>
+
     <div class="kpi-grid report-kpis">
-      ${kpiCard('Valor vendido no dia', `R$ ${fmt(dayRevenue)}`, '💵', '#16A34A', 'todos os pedidos do dia')}
+      ${kpiCard('Vendas no período', `R$ ${fmt(periodRevenue)}`, '💵', '#16A34A', `${selectedOrders.length} pedidos registrados`)}
+      ${kpiCard('Custos dos produtos', `R$ ${fmt(periodCost)}`, '🧾', '#D97706', 'estimativa com dados atuais')}
+      ${kpiCard('Despesas no período', `R$ ${fmt(periodExpenses)}`, '📤', '#DC2626', `${selectedExpenses.length} registros disponíveis`)}
+      ${kpiCard('Resultado estimado', `R$ ${fmt(periodResult)}`, '📈', periodResult >= 0 ? '#2563EB' : '#DC2626', 'vendas − custos − despesas')}
       ${kpiCard('Pedidos atendidos', String(attendedOrders.length), '✅', '#7C3AED', 'pedidos entregues')}
-      ${kpiCard('Pedidos recebidos', String(selectedOrders.length), '📋', '#F97316', 'total registrado no dia')}
-      ${kpiCard('Em andamento', String(activeDayOrders.length), '👨‍🍳', '#2563EB', 'ainda não entregues')}
-      ${kpiCard('Ticket médio', `R$ ${fmt(averageTicket)}`, '🧾', '#D97706', 'média por pedido')}
+      ${kpiCard('Ticket médio', `R$ ${fmt(averageTicket)}`, '🧮', '#D97706', 'média dos pedidos registrados')}
     </div>
 
     <div class="card report-orders-card">
-      <div class="card-header report-orders-header"><div><span class="card-title">Pedidos do dia</span><p>${selectedOrders.length} ${selectedOrders.length === 1 ? 'pedido encontrado' : 'pedidos encontrados'}</p></div></div>
-      ${selectedOrders.length ? `<div class="report-table-wrap"><table class="report-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="report-empty"><span>📅</span><strong>Nenhum pedido neste dia</strong><p>Escolha outra data no calendário para consultar.</p></div>'}
+      <div>
+        <div class="card-header report-orders-header"><div><span class="card-title">Pedidos do período</span><p>${selectedOrders.length} ${selectedOrders.length === 1 ? 'pedido encontrado' : 'pedidos encontrados'}</p></div></div>
+        ${selectedOrders.length ? `<div class="report-table-wrap"><table class="report-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="report-empty"><span>📅</span><strong>Nenhum pedido neste período</strong><p>Escolha outro filtro ou período personalizado para consultar.</p></div>'}
+      </div>
     </div>
   </section>`;
 }
