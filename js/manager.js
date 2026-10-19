@@ -28,6 +28,20 @@ const SNACK_STOCK_FRONTEND_DEMO = {
   feedback: null,
 };
 
+// Configuração demonstrativa mantida somente na memória desta sessão.
+const STORE_SETTINGS_FRONTEND_DEMO = {
+  values: {
+    openTime: '18:00', closeTime: '23:30', pauseEnabled: false, pauseStart: '20:30', pauseEnd: '21:00',
+    whatsapp: '+55 (88) 99623-9679', instagram: '@dogburgertaua', location: 'Dog Burguer, Tauá/CE',
+    latitude: '-6.0074487', longitude: '-40.2952674', deliveryEnabled: true, pickupEnabled: true,
+    pix: true, cash: true, card: true, deliveryEtaMin: 30, deliveryEtaMax: 50, pickupEtaMin: 20, pickupEtaMax: 35,
+    deliveryFee: 5, freeDeliveryFrom: 15,
+  },
+  dirty: false,
+  saving: false,
+  feedback: null,
+};
+
 const VIEW_TITLES = {
   dashboard: 'Dashboard',
   pedidos: 'Pedidos',
@@ -35,14 +49,6 @@ const VIEW_TITLES = {
   'estoque-lanches': 'Estoque de Lanches',
   popup: 'Pop-up Inicial',
   configuracoes: 'Configurações da Loja',
-};
-
-const PLACEHOLDER_VIEWS = {
-  configuracoes: {
-    icon: '⚙️',
-    title: 'Configurações da Loja',
-    description: 'A estrutura desta área está preparada para as configurações operacionais que serão definidas em uma próxima etapa.',
-  },
 };
 
 // Mock exclusivamente visual. Será substituído pelas integrações de Realtime e áudio em Tasks futuras.
@@ -80,8 +86,8 @@ async function setView(view) {
   window.history.replaceState({}, '', pageUrl);
   updateActiveOrdersBadge();
 
-  if (PLACEHOLDER_VIEWS[view]) {
-    document.getElementById('m-content').innerHTML = renderPlannedModule(PLACEHOLDER_VIEWS[view]);
+  if (view === 'configuracoes') {
+    document.getElementById('m-content').innerHTML = renderStoreSettings();
     return;
   }
 
@@ -109,19 +115,6 @@ async function setView(view) {
     content.innerHTML = renderPopupEditor();
     await initPopupEditor();
   }
-}
-
-function renderPlannedModule(module) {
-  return `<section class="planned-module" aria-labelledby="planned-module-title">
-    <div class="planned-module-icon" aria-hidden="true">${module.icon}</div>
-    <span class="planned-module-badge">Módulo em preparação</span>
-    <h2 id="planned-module-title">${module.title}</h2>
-    <p>${module.description}</p>
-    <div class="planned-module-note">
-      <strong>Nenhuma operação está ativa nesta etapa.</strong>
-      <span>Persistência, regras de negócio e permissões serão implementadas na Task específica deste módulo.</span>
-    </div>
-  </section>`;
 }
 
 function orderPaymentLabel(order) {
@@ -634,6 +627,140 @@ function submitSnackRestock(event) {
 function renderSnackStockHistory() {
   const entries = SNACK_STOCK_FRONTEND_DEMO.history.slice(0, 5);
   return `<section class="card snack-stock-history"><div class="card-header"><div><span class="card-title">Histórico visual da sessão</span><p>Preparado para integração futura, sem persistência.</p></div></div>${entries.length ? entries.map(entry => `<div class="snack-stock-history-row"><span>+${entry.amount}</span><div><strong>${escapeManagerHtml(entry.productName)}</strong><small>${new Date(entry.at).toLocaleString('pt-BR')}</small></div></div>`).join('') : '<div class="snack-stock-history-empty">Nenhuma reposição local realizada nesta sessão.</div>'}</section>`;
+}
+
+/* ── CONFIGURAÇÕES DA LOJA (FRONTEND) ── */
+function checkedSetting(value) {
+  return value ? ' checked' : '';
+}
+
+function storeSettingsSection(icon, title, subtitle, content) {
+  return `<section class="card store-settings-section"><div class="store-settings-section-head"><div><span aria-hidden="true">${icon}</span><div><strong>${title}</strong><small>${subtitle}</small></div></div></div>${content}</section>`;
+}
+
+function renderStoreSettings() {
+  const value = STORE_SETTINGS_FRONTEND_DEMO.values;
+  const feedback = STORE_SETTINGS_FRONTEND_DEMO.feedback;
+  const saving = STORE_SETTINGS_FRONTEND_DEMO.saving;
+  return `<section class="store-settings-page">
+    <div class="store-settings-readiness"><div><span aria-hidden="true">⚙️</span><div><strong>Parâmetros operacionais e comerciais</strong><p>Prévia administrativa local, ainda sem persistência ou efeito na loja.</p></div></div><span>Configuração local · demonstração</span></div>
+    ${feedback ? `<div class="store-settings-feedback is-${feedback.type}" role="status">${escapeManagerHtml(feedback.message)}</div>` : ''}
+    <form id="store-settings-form" onsubmit="submitStoreSettings(event)" oninput="markStoreSettingsDirty()" novalidate>
+      <div class="store-settings-layout">
+        <div class="store-settings-column">
+          ${storeSettingsSection('🕐', 'Funcionamento', 'Horários e pausas operacionais', `
+            <div class="store-settings-grid"><div class="form-group"><label class="form-label" for="setting-open-time">Abertura *</label><input class="form-input" id="setting-open-time" type="time" value="${value.openTime}" required /><small class="form-error" id="setting-open-time-error"></small></div><div class="form-group"><label class="form-label" for="setting-close-time">Fechamento *</label><input class="form-input" id="setting-close-time" type="time" value="${value.closeTime}" required /><small class="form-error" id="setting-close-time-error"></small></div></div>
+            <label class="store-settings-check"><input id="setting-pause-enabled" type="checkbox"${checkedSetting(value.pauseEnabled)} onchange="toggleStorePauseFields()" /> Programar pausa de atendimento</label>
+            <div class="store-settings-grid"><div class="form-group"><label class="form-label" for="setting-pause-start">Início da pausa</label><input class="form-input" id="setting-pause-start" type="time" value="${value.pauseStart}"${value.pauseEnabled ? '' : ' disabled'} /><small class="form-error" id="setting-pause-start-error"></small></div><div class="form-group"><label class="form-label" for="setting-pause-end">Fim da pausa</label><input class="form-input" id="setting-pause-end" type="time" value="${value.pauseEnd}"${value.pauseEnabled ? '' : ' disabled'} /><small class="form-error" id="setting-pause-end-error"></small></div></div>`) }
+          ${storeSettingsSection('📞', 'Informações comerciais', 'Canais exibidos ao cliente', `
+            <div class="form-group"><label class="form-label" for="setting-whatsapp">WhatsApp *</label><input class="form-input" id="setting-whatsapp" value="${escapeManagerHtml(value.whatsapp)}" maxlength="24" required /><small class="form-error" id="setting-whatsapp-error"></small></div>
+            <div class="form-group"><label class="form-label" for="setting-instagram">Instagram *</label><input class="form-input" id="setting-instagram" value="${escapeManagerHtml(value.instagram)}" maxlength="31" required /><small class="form-error" id="setting-instagram-error"></small></div>
+            <div class="form-group"><label class="form-label" for="setting-location">Localização *</label><input class="form-input" id="setting-location" value="${escapeManagerHtml(value.location)}" maxlength="120" required /><small class="form-error" id="setting-location-error"></small></div>
+            <div class="store-settings-grid"><div class="form-group"><label class="form-label" for="setting-latitude">Latitude *</label><input class="form-input" id="setting-latitude" inputmode="decimal" value="${value.latitude}" required /><small class="form-error" id="setting-latitude-error"></small></div><div class="form-group"><label class="form-label" for="setting-longitude">Longitude *</label><input class="form-input" id="setting-longitude" inputmode="decimal" value="${value.longitude}" required /><small class="form-error" id="setting-longitude-error"></small></div></div>`) }
+        </div>
+        <div class="store-settings-column">
+          ${storeSettingsSection('🛵', 'Atendimento e estimativas', 'Modalidades e tempo previsto', `
+            <div class="store-settings-options"><label class="store-settings-option"><input id="setting-delivery-enabled" type="checkbox"${checkedSetting(value.deliveryEnabled)} /><span><strong>Entrega</strong><small>Disponibilizar pedidos para entrega</small></span></label><label class="store-settings-option"><input id="setting-pickup-enabled" type="checkbox"${checkedSetting(value.pickupEnabled)} /><span><strong>Retirada gratuita</strong><small>Disponibilizar retirada no local</small></span></label></div><small class="form-error" id="setting-service-error"></small>
+            <div class="store-settings-grid"><div class="form-group"><label class="form-label" for="setting-delivery-eta-min">Entrega mínima (min) *</label><input class="form-input" id="setting-delivery-eta-min" type="number" min="1" max="240" step="1" value="${value.deliveryEtaMin}" /><small class="form-error" id="setting-delivery-eta-min-error"></small></div><div class="form-group"><label class="form-label" for="setting-delivery-eta-max">Entrega máxima (min) *</label><input class="form-input" id="setting-delivery-eta-max" type="number" min="1" max="240" step="1" value="${value.deliveryEtaMax}" /><small class="form-error" id="setting-delivery-eta-max-error"></small></div></div>
+            <div class="store-settings-grid"><div class="form-group"><label class="form-label" for="setting-pickup-eta-min">Retirada mínima (min) *</label><input class="form-input" id="setting-pickup-eta-min" type="number" min="1" max="240" step="1" value="${value.pickupEtaMin}" /><small class="form-error" id="setting-pickup-eta-min-error"></small></div><div class="form-group"><label class="form-label" for="setting-pickup-eta-max">Retirada máxima (min) *</label><input class="form-input" id="setting-pickup-eta-max" type="number" min="1" max="240" step="1" value="${value.pickupEtaMax}" /><small class="form-error" id="setting-pickup-eta-max-error"></small></div></div>`) }
+          ${storeSettingsSection('💳', 'Pagamentos aceitos', 'Selecione pelo menos uma opção', `<div class="store-settings-options is-inline"><label class="store-settings-option"><input id="setting-pix" type="checkbox"${checkedSetting(value.pix)} /><span><strong>Pix</strong></span></label><label class="store-settings-option"><input id="setting-cash" type="checkbox"${checkedSetting(value.cash)} /><span><strong>Dinheiro</strong></span></label><label class="store-settings-option"><input id="setting-card" type="checkbox"${checkedSetting(value.card)} /><span><strong>Cartão</strong></span></label></div><small class="form-error" id="setting-payment-error"></small>`) }
+          <section class="card store-settings-section is-sensitive"><div class="store-settings-section-head"><div><span aria-hidden="true">🔐</span><div><strong>Regras comerciais sensíveis</strong><small>Taxas e condições de entrega</small></div></div><span class="store-settings-owner-badge">edição futura: owner</span></div><div class="store-settings-grid"><div class="form-group"><label class="form-label" for="setting-delivery-fee">Taxa padrão (R$) *</label><input class="form-input" id="setting-delivery-fee" type="number" min="0" max="999" step="0.01" value="${value.deliveryFee.toFixed(2)}" /><small class="form-error" id="setting-delivery-fee-error"></small></div><div class="form-group"><label class="form-label" for="setting-free-delivery">Grátis a partir de (R$) *</label><input class="form-input" id="setting-free-delivery" type="number" min="0" max="9999" step="0.01" value="${value.freeDeliveryFrom.toFixed(2)}" /><small class="form-error" id="setting-free-delivery-error"></small></div></div><p class="store-settings-rule-summary">Referência atual: R$ 5,00 abaixo de R$ 15,00 · retirada grátis.</p></section>
+        </div>
+      </div>
+      <div class="store-settings-actions"><div><strong id="store-settings-state">${STORE_SETTINGS_FRONTEND_DEMO.dirty ? 'Alterações locais não salvas' : 'Nenhuma alteração pendente'}</strong><small>Salvar não envia dados ao Supabase nesta etapa.</small></div><button class="btn-secondary" id="store-settings-cancel" type="button" onclick="cancelStoreSettings()"${saving ? ' disabled' : ''}>Cancelar alterações</button><button class="btn-primary" id="store-settings-save" type="submit"${saving ? ' disabled' : ''}>${saving ? 'Salvando demonstração…' : 'Salvar demonstração'}</button></div>
+    </form>
+  </section>`;
+}
+
+function markStoreSettingsDirty() {
+  STORE_SETTINGS_FRONTEND_DEMO.dirty = true;
+  STORE_SETTINGS_FRONTEND_DEMO.feedback = null;
+  const state = document.getElementById('store-settings-state');
+  if (state) state.textContent = 'Alterações locais não salvas';
+}
+
+function toggleStorePauseFields() {
+  const enabled = document.getElementById('setting-pause-enabled').checked;
+  document.getElementById('setting-pause-start').disabled = !enabled;
+  document.getElementById('setting-pause-end').disabled = !enabled;
+}
+
+function settingValue(id) {
+  return document.getElementById(id).value.trim();
+}
+
+function numberSettingValue(id) {
+  const value = settingValue(id);
+  return value === '' ? Number.NaN : Number(value);
+}
+
+function clearStoreSettingErrors() {
+  document.querySelectorAll('#store-settings-form .input-error').forEach(element => element.classList.remove('input-error'));
+  document.querySelectorAll('#store-settings-form .form-error').forEach(element => { element.textContent = ''; });
+}
+
+function storeSettingError(id, message) {
+  const input = document.getElementById(id);
+  input?.classList.add('input-error');
+  const error = document.getElementById(`${id}-error`);
+  if (error) error.textContent = message;
+  return false;
+}
+
+function readStoreSettingsForm() {
+  return {
+    openTime:settingValue('setting-open-time'), closeTime:settingValue('setting-close-time'), pauseEnabled:document.getElementById('setting-pause-enabled').checked,
+    pauseStart:settingValue('setting-pause-start'), pauseEnd:settingValue('setting-pause-end'), whatsapp:settingValue('setting-whatsapp'), instagram:settingValue('setting-instagram'),
+    location:settingValue('setting-location'), latitude:settingValue('setting-latitude'), longitude:settingValue('setting-longitude'), deliveryEnabled:document.getElementById('setting-delivery-enabled').checked,
+    pickupEnabled:document.getElementById('setting-pickup-enabled').checked, pix:document.getElementById('setting-pix').checked, cash:document.getElementById('setting-cash').checked,
+    card:document.getElementById('setting-card').checked, deliveryEtaMin:numberSettingValue('setting-delivery-eta-min'), deliveryEtaMax:numberSettingValue('setting-delivery-eta-max'),
+    pickupEtaMin:numberSettingValue('setting-pickup-eta-min'), pickupEtaMax:numberSettingValue('setting-pickup-eta-max'), deliveryFee:numberSettingValue('setting-delivery-fee'),
+    freeDeliveryFrom:numberSettingValue('setting-free-delivery'),
+  };
+}
+
+function validateStoreSettings(value) {
+  let valid = true;
+  if (!/^\d{2}:\d{2}$/.test(value.openTime)) valid = storeSettingError('setting-open-time', 'Informe o horário de abertura.');
+  if (!/^\d{2}:\d{2}$/.test(value.closeTime) || value.closeTime === value.openTime) valid = storeSettingError('setting-close-time', 'Informe um fechamento diferente da abertura.');
+  if (value.pauseEnabled && (!value.pauseStart || !value.pauseEnd || value.pauseStart === value.pauseEnd)) valid = storeSettingError('setting-pause-end', 'Informe o início e o fim da pausa.');
+  if (value.whatsapp.replace(/\D/g, '').length < 12) valid = storeSettingError('setting-whatsapp', 'Informe um WhatsApp com DDI e DDD.');
+  if (!/^@[a-zA-Z0-9._]{1,30}$/.test(value.instagram)) valid = storeSettingError('setting-instagram', 'Use o formato @usuario.');
+  if (value.location.length < 3) valid = storeSettingError('setting-location', 'Informe a localização comercial.');
+  const latitude = Number(value.latitude); const longitude = Number(value.longitude);
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) valid = storeSettingError('setting-latitude', 'Latitude deve estar entre -90 e 90.');
+  if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) valid = storeSettingError('setting-longitude', 'Longitude deve estar entre -180 e 180.');
+  if (!value.deliveryEnabled && !value.pickupEnabled) { document.getElementById('setting-service-error').textContent = 'Selecione entrega ou retirada.'; valid = false; }
+  if (!value.pix && !value.cash && !value.card) { document.getElementById('setting-payment-error').textContent = 'Selecione pelo menos uma forma de pagamento.'; valid = false; }
+  [['delivery',value.deliveryEtaMin,value.deliveryEtaMax],['pickup',value.pickupEtaMin,value.pickupEtaMax]].forEach(([type,min,max]) => {
+    if (!Number.isInteger(min) || min < 1 || min > 240) valid = storeSettingError(`setting-${type}-eta-min`, 'Use um inteiro entre 1 e 240.');
+    if (!Number.isInteger(max) || max < min || max > 240) valid = storeSettingError(`setting-${type}-eta-max`, 'Deve ser maior ou igual ao mínimo.');
+  });
+  if (!Number.isFinite(value.deliveryFee) || value.deliveryFee < 0 || value.deliveryFee > 999) valid = storeSettingError('setting-delivery-fee', 'Informe um valor entre 0 e 999.');
+  if (!Number.isFinite(value.freeDeliveryFrom) || value.freeDeliveryFrom < 0 || value.freeDeliveryFrom > 9999) valid = storeSettingError('setting-free-delivery', 'Informe um valor entre 0 e 9.999.');
+  return valid;
+}
+
+function submitStoreSettings(event) {
+  event.preventDefault();
+  clearStoreSettingErrors();
+  const values = readStoreSettingsForm();
+  if (!validateStoreSettings(values)) return;
+  STORE_SETTINGS_FRONTEND_DEMO.saving = true;
+  document.getElementById('m-content').innerHTML = renderStoreSettings();
+  setTimeout(() => {
+    STORE_SETTINGS_FRONTEND_DEMO.values = values;
+    STORE_SETTINGS_FRONTEND_DEMO.saving = false;
+    STORE_SETTINGS_FRONTEND_DEMO.dirty = false;
+    STORE_SETTINGS_FRONTEND_DEMO.feedback = { type:'success', message:'Configurações salvas somente nesta sessão demonstrativa.' };
+    document.getElementById('m-content').innerHTML = renderStoreSettings();
+  }, 350);
+}
+
+function cancelStoreSettings() {
+  STORE_SETTINGS_FRONTEND_DEMO.dirty = false;
+  STORE_SETTINGS_FRONTEND_DEMO.feedback = { type:'neutral', message:'Alterações descartadas; os últimos valores locais foram restaurados.' };
+  document.getElementById('m-content').innerHTML = renderStoreSettings();
 }
 
 function toggleOrder(id) {
