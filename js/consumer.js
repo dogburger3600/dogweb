@@ -21,13 +21,13 @@ function escapeCartHtml(value) {
 }
 
 function saveCart() {
-  sessionStorage.setItem('dogburger_cart', JSON.stringify(cart.map(item => ({ pid:item.product.id, qty:item.qty, removedIngredients:item.removedIngredients || '', componentSelections:item.componentSelections || [] }))));
+  sessionStorage.setItem('dogburger_cart', JSON.stringify(cart.map(item => ({ pid:item.product.id, qty:item.qty, removedIngredients:item.removedIngredients || '' }))));
 }
 
 function restoreCart() {
   try {
     const saved = JSON.parse(sessionStorage.getItem('dogburger_cart') || '[]');
-    cart = saved.map(item => ({ product:getProduct(item.pid), qty:item.qty, removedIngredients:String(item.removedIngredients || '').slice(0,120), componentSelections:Array.isArray(item.componentSelections) ? item.componentSelections : [] })).filter(item => item.product && item.qty > 0);
+    cart = saved.map(item => ({ product:getProduct(item.pid), qty:item.qty, removedIngredients:String(item.removedIngredients || '').slice(0,120) })).filter(item => item.product && item.qty > 0);
     cart.forEach(item => { if (item.product.category !== 'lanches') item.removedIngredients = ''; });
   } catch {
     cart = [];
@@ -63,7 +63,7 @@ function renderProducts() {
   }
 
   el.innerHTML = list.map(p => {
-    const out = productAvailableUnits(p) <= 0;
+    const out = p.category === 'lanches' && Number(p.stock) <= 0;
     const cat = CAT_MAP[p.category];
     return `
       <div class="product-card${out ? ' out-of-stock' : ''}">
@@ -77,7 +77,7 @@ function renderProducts() {
           <p class="product-desc">${p.desc}</p>
           <div class="product-footer">
             <span class="product-price">R$ ${fmt(p.price)}</span>
-            <button class="btn-add" ${out ? 'disabled' : ''} onclick="prepareAddToCart(${p.id})">+ Adicionar</button>
+            <button class="btn-add" ${out ? 'disabled' : ''} onclick="addToCart(${p.id})">+ Adicionar</button>
           </div>
         </div>
       </div>`;
@@ -91,95 +91,42 @@ function updateCartBadge() {
   badge.style.display = count > 0 ? 'inline-block' : 'none';
 }
 
-function simpleAvailableUnits(product) {
-  if (!product || !product.active) return 0;
-  return product.inventoryTracked ? Math.max(0, Number(product.stock) || 0) : Number.POSITIVE_INFINITY;
-}
-
-function productAvailableUnits(product) {
-  if (!product?.active || product.sellable === false) return 0;
-  if (!product.isComposite) return simpleAvailableUnits(product);
-  const capacities = [];
-  product.fixedComponents.forEach(component => capacities.push(Math.floor(simpleAvailableUnits(component.product) / component.quantity)));
-  product.choiceGroups.forEach(group => capacities.push(Math.floor(group.options.reduce((sum, option) => sum + Math.floor(simpleAvailableUnits(option.product) / option.componentQuantity), 0) / group.requiredQuantity)));
-  return capacities.length ? Math.max(0, Math.min(...capacities)) : 0;
-}
-
-function selectionKey(selections) {
-  return JSON.stringify((selections || []).map(item => ({ groupId:Number(item.groupId), productId:Number(item.productId), quantity:Number(item.quantity) })).sort((a,b) => a.groupId - b.groupId || a.productId - b.productId));
-}
-
-function prepareAddToCart(pid) {
-  const product = getProduct(pid);
-  if (!product || productAvailableUnits(product) <= 0) return showToast('⛔ Produto esgotado.');
-  if (product.isComposite && product.choiceGroups.length) return openComponentChoice(product);
-  addToCart(pid, []);
-}
-
-function addToCart(pid, componentSelections = []) {
+function addToCart(pid) {
   const product = getProduct(pid);
   if (!product) return;
-  if (productAvailableUnits(product) <= 0) {
-    showToast('⛔ Produto esgotado.');
+  if (product.category === 'lanches' && Number(product.stock) <= 0) {
+    showToast('⛔ Este lanche está esgotado.');
     return;
   }
-  const existing = cart.find(i => i.product.id === pid && selectionKey(i.componentSelections) === selectionKey(componentSelections));
+  const existing = cart.find(i => i.product.id === pid);
   if (existing) {
-    if (existing.qty >= productAvailableUnits(product)) {
+    if (product.category === 'lanches' && existing.qty >= Number(product.stock)) {
       showToast('⚠️ Quantidade disponível atingida.');
       return;
     }
     existing.qty++;
-    existing.componentSelections = existing.componentSelections.map(selection => ({ ...selection, quantity:selection.quantity + (componentSelections.find(item => item.groupId === selection.groupId && item.productId === selection.productId)?.quantity || 0) }));
   } else {
-    cart.push({ product, qty:1, removedIngredients:'', componentSelections });
+    cart.push({ product, qty: 1, removedIngredients: '' });
   }
   updateCartBadge();
   renderCartItems();
   saveCart();
 }
 
-function updateQty(index, delta) {
-  const idx = Number(index);
+function updateQty(pid, delta) {
+  const idx = cart.findIndex(i => i.product.id === pid);
   if (idx === -1) return;
   
   const nextQuantity = cart[idx].qty + delta;
-  if (delta > 0 && nextQuantity > productAvailableUnits(cart[idx].product)) {
+  if (delta > 0 && cart[idx].product.category === 'lanches' && nextQuantity > Number(cart[idx].product.stock)) {
     showToast('⚠️ Quantidade disponível atingida.');
     return;
-  }
-  if (cart[idx].product.isComposite && cart[idx].componentSelections.length) {
-    cart[idx].componentSelections = cart[idx].componentSelections.map(selection => ({ ...selection, quantity:selection.quantity * nextQuantity / cart[idx].qty }));
   }
   cart[idx].qty = nextQuantity;
   if (cart[idx].qty <= 0) cart.splice(idx, 1);
   updateCartBadge();
   renderCartItems();
   saveCart();
-}
-
-function closeComponentChoice() {
-  document.getElementById('component-choice-modal')?.remove();
-}
-
-function openComponentChoice(product) {
-  const shell = document.createElement('div');
-  shell.id = 'component-choice-modal';
-  shell.className = 'component-choice-shell';
-  shell.innerHTML = `<div class="modal-overlay" onclick="closeComponentChoice()"></div><section class="modal component-choice-modal" role="dialog" aria-modal="true" aria-labelledby="component-choice-title"><h2 class="modal-title" id="component-choice-title">Personalize ${escapeCartHtml(product.name)}</h2><p class="modal-sub">Escolha as opções obrigatórias para uma unidade.</p><form onsubmit="submitComponentChoice(event, ${product.id})">${product.choiceGroups.map(group => `<fieldset class="component-choice-group"><legend>${escapeCartHtml(group.name)} <small>Escolha ${group.requiredQuantity}</small></legend>${group.options.map(option => { const available = Math.floor(simpleAvailableUnits(option.product) / option.componentQuantity); return `<label class="component-choice-option${available <= 0 ? ' is-disabled' : ''}"><span>${escapeCartHtml(option.product?.name || `Produto ${option.productId}`)}<small>${available <= 0 ? 'Esgotado' : `${available} disponível`}</small></span><input type="number" min="0" max="${Math.min(group.requiredQuantity, available)}" step="1" value="0" data-group-id="${group.id}" data-product-id="${option.productId}" ${available <= 0 ? 'disabled' : ''} /></label>`; }).join('')}</fieldset>`).join('')}<p class="form-error" id="component-choice-error"></p><div class="modal-actions"><button class="btn-secondary" type="button" onclick="closeComponentChoice()">Cancelar</button><button class="btn-primary" type="submit">Adicionar ao carrinho</button></div></form></section>`;
-  document.body.appendChild(shell);
-}
-
-function submitComponentChoice(event, productId) {
-  event.preventDefault();
-  const product = getProduct(productId);
-  const selections = [...event.currentTarget.querySelectorAll('input[data-group-id]')].map(input => ({ groupId:Number(input.dataset.groupId), productId:Number(input.dataset.productId), quantity:Number(input.value) })).filter(item => item.quantity > 0);
-  if (!product.choiceGroups.every(group => selections.filter(item => item.groupId === group.id).reduce((sum, item) => sum + item.quantity, 0) === group.requiredQuantity)) {
-    document.getElementById('component-choice-error').textContent = 'Complete todas as escolhas obrigatórias.';
-    return;
-  }
-  closeComponentChoice();
-  addToCart(productId, selections);
 }
 
 function toggleIngredientRemoval(pid, ingredientIndex, checked) {
@@ -209,7 +156,7 @@ function renderCartItems() {
     return;
   }
 
-  el.innerHTML = cart.map((i, cartIndex) => {
+  el.innerHTML = cart.map(i => {
     const isSnack = i.product.category === 'lanches';
     const ingredients = isSnack && Array.isArray(i.product.ingredients) ? i.product.ingredients : [];
     const removed = new Set(String(i.removedIngredients || '').split(',').map(value => value.trim()).filter(Boolean));
@@ -230,12 +177,11 @@ function renderCartItems() {
           <p class="cart-item-price">R$ ${fmt(i.product.price * i.qty)}</p>
         </div>
         <div class="qty-ctrl">
-          <button class="qty-btn" onclick="updateQty(${cartIndex}, -1)">−</button>
+          <button class="qty-btn" onclick="updateQty(${i.product.id}, -1)">−</button>
           <span class="qty-val">${i.qty}</span>
-          <button class="qty-btn plus" onclick="updateQty(${cartIndex}, 1)">+</button>
+          <button class="qty-btn plus" onclick="updateQty(${i.product.id}, 1)">+</button>
         </div>
       </div>
-      ${i.componentSelections?.length ? `<div class="cart-component-selections">${i.componentSelections.map(selection => { const group = i.product.choiceGroups.find(value => value.id === selection.groupId); const option = group?.options.find(value => value.productId === selection.productId); return `<small>${escapeCartHtml(group?.name || 'Escolha')}: ${selection.quantity}× ${escapeCartHtml(option?.product?.name || `Produto ${selection.productId}`)}</small>`; }).join('')}</div>` : ''}
       ${ingredientsEditor}
     </div>`;
   }).join('');
@@ -258,7 +204,7 @@ function closeCart() {
 function renderCheckoutSummary() {
   document.getElementById('checkout-order-summary').innerHTML = cart.map(item => `
     <div class="checkout-summary-item">
-      <div><strong>${item.qty}× ${escapeCartHtml(item.product.name)}</strong>${item.componentSelections?.map(selection => { const group = item.product.choiceGroups.find(value => value.id === selection.groupId); const option = group?.options.find(value => value.productId === selection.productId); return `<small>${escapeCartHtml(group?.name || 'Escolha')}: ${selection.quantity}× ${escapeCartHtml(option?.product?.name || `Produto ${selection.productId}`)}</small>`; }).join('') || ''}${item.removedIngredients ? `<small>Sem: ${escapeCartHtml(item.removedIngredients)}</small>` : ''}</div>
+      <div><strong>${item.qty}× ${escapeCartHtml(item.product.name)}</strong>${item.removedIngredients ? `<small>Sem: ${escapeCartHtml(item.removedIngredients)}</small>` : ''}</div>
       <span>R$ ${fmt(item.product.price * item.qty)}</span>
     </div>`).join('');
 }
