@@ -48,13 +48,25 @@ const Store = {
   async getOrders() {
     const { data, error } = await DB.from('orders').select('id, customer_id, customer_name, note, status, created_at, delivery_address, payment_method, change_for, order_items(product_id, quantity, unit_price, unit_cost, removed_ingredients)').order('created_at', { ascending:false });
     if (error) throw error;
+    const [{ data:cancellations, error:cancellationsError }, { data:history, error:historyError }] = await Promise.all([
+      DB.from('order_cancellations').select('order_id, reason, created_at'),
+      DB.from('order_status_history').select('order_id, from_status, to_status, changed_by, note, created_at').order('created_at', { ascending:true }),
+    ]);
+    if (cancellationsError) throw cancellationsError;
+    if (historyError) throw historyError;
+    const cancellationsByOrder = new Map(cancellations.map(item => [item.order_id, item]));
+    const historyByOrder = new Map();
+    history.forEach(item => {
+      if (!historyByOrder.has(item.order_id)) historyByOrder.set(item.order_id, []);
+      historyByOrder.get(item.order_id).push(item);
+    });
     const customerIds = [...new Set(data.map(order => order.customer_id).filter(Boolean))];
     const customersById = new Map();
     if (customerIds.length) {
       const { data: customers, error: customersError } = await DB.from('profiles').select('id, name, phone, email').in('id', customerIds);
       if (!customersError) customers.forEach(customer => customersById.set(customer.id, customer));
     }
-    return data.map(o => ({ id:`PED-${String(o.id).padStart(3,'0')}`, databaseId:o.id, customerId:o.customer_id, customerName:o.customer_name, customer:customersById.get(o.customer_id) || null, note:o.note, status:o.status, createdAt:new Date(o.created_at).getTime(), address:o.delivery_address, paymentMethod:o.payment_method, changeFor:o.change_for === null ? null : Number(o.change_for), items:o.order_items.map(i => ({ pid:i.product_id, qty:i.quantity, unitPrice:Number(i.unit_price), unitCost:Number(i.unit_cost), removedIngredients:i.removed_ingredients || '' })) }));
+    return data.map(o => ({ id:`PED-${String(o.id).padStart(3,'0')}`, databaseId:o.id, customerId:o.customer_id, customerName:o.customer_name, customer:customersById.get(o.customer_id) || null, note:o.note, status:o.status, createdAt:new Date(o.created_at).getTime(), address:o.delivery_address, paymentMethod:o.payment_method, changeFor:o.change_for === null ? null : Number(o.change_for), cancellation:cancellationsByOrder.get(o.id) || null, history:historyByOrder.get(o.id) || [], items:o.order_items.map(i => ({ pid:i.product_id, qty:i.quantity, unitPrice:Number(i.unit_price), unitCost:Number(i.unit_cost), removedIngredients:i.removed_ingredients || '' })) }));
   },
   async getExpenses() {
     const { data, error } = await DB.from('expenses').select('*').order('created_at', { ascending:false });
@@ -71,8 +83,14 @@ const Store = {
     if (error) throw error;
   },
   async updateOrderStatus(id, status) {
-    const { error } = await DB.from('orders').update({ status }).eq('id', id);
+    const { data, error } = await DB.rpc('transition_order_status', { p_order_id:id, p_to_status:status });
     if (error) throw error;
+    return data;
+  },
+  async cancelOrder(id, reason) {
+    const { data, error } = await DB.rpc('cancel_order', { p_order_id:id, p_reason:reason });
+    if (error) throw error;
+    return data;
   },
   async addExpense(expense) {
     const { error } = await DB.from('expenses').insert({ description:expense.description, amount:expense.amount, category:expense.category });
