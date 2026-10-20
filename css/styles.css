@@ -326,9 +326,6 @@ body { min-height: 100vh; }
 .m-topbar-title { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: var(--dark); }
 .m-online { display: flex; align-items: center; gap: 8px; }
 .m-online-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
-.m-online-dot[data-connection="connecting"] { background: #EAB308; }
-.m-online-dot[data-connection="reconnecting"] { background: #F97316; }
-.m-online-dot[data-connection="error"] { background: #DC2626; }
 .m-online-label { font-size: 0.75rem; color: var(--stone); font-weight: 600; }
 .topbar-actions { display: flex; align-items: center; gap: 16px; }
 .topbar-menu-link { color: var(--brand); font-family: var(--font-display); font-size: 0.75rem; font-weight: 800; text-decoration: none; }
@@ -399,13 +396,6 @@ body { min-height: 100vh; }
 .orders-readiness small { margin-top: 2px; color: var(--stone); font-size: 0.68rem; }
 .orders-readiness > span { padding: 4px 8px; border-radius: 99px; background: var(--white); color: #2563EB; font-size: 0.62rem; font-weight: 800; text-transform: uppercase; }
 .orders-readiness-dot { width: 9px; height: 9px; border: 3px solid #BFDBFE; border-radius: 50%; background: #3B82F6; }
-.realtime-readiness { transition: border-color 0.2s, background 0.2s; }
-.realtime-readiness.is-connected { border-color: #BBF7D0; background: #F0FDF4; }
-.realtime-readiness.is-reconnecting { border-color: #FED7AA; background: #FFF7ED; }
-.realtime-readiness.is-error { border-color: #FECACA; background: #FEF2F2; }
-.realtime-connection-dot { width: 20px; flex: 0 0 auto; font-size: 0.72rem; text-align: center; }
-.realtime-controls { display: flex; align-items: center; justify-content: flex-end; gap: 9px; }
-.realtime-last-sync { color: var(--stone-light); font-size: 0.62rem; white-space: nowrap; }
 .orders-feedback { padding: 11px 14px; border: 1px solid #BBF7D0; border-radius: 10px; background: #F0FDF4; color: #166534; font-size: 0.78rem; font-weight: 700; }
 .orders-filter-tabs { margin-bottom: 0; }
 .orders-list { min-width: 0; }
@@ -581,9 +571,7 @@ body { min-height: 100vh; }
 .dashboard-readiness strong { color: var(--dark); font-size: 0.82rem; }
 .dashboard-readiness small { margin-top: 2px; color: var(--stone); font-size: 0.7rem; }
 .dashboard-live-dot { width: 10px; height: 10px; flex: 0 0 auto; border: 3px solid #BFDBFE; border-radius: 50%; background: #3B82F6; }
-.dashboard-sound-status { padding: 8px 11px; border: 1px solid var(--border); border-radius: 9px; background: var(--white); color: var(--stone); font-family: var(--font-body); font-size: 0.72rem; font-weight: 700; opacity: 1; cursor: pointer; }
-.dashboard-sound-status:hover { border-color: #93C5FD; color: #1D4ED8; }
-.dashboard-sound-status.is-enabled { border-color: #86EFAC; background: #F0FDF4; color: #15803D; }
+.dashboard-sound-status { padding: 8px 11px; border: 1px solid var(--border); border-radius: 9px; background: var(--white); color: var(--stone); font-family: var(--font-body); font-size: 0.72rem; font-weight: 700; opacity: 1; cursor: not-allowed; }
 .dashboard-mock-label { position: absolute; right: 14px; bottom: -9px; padding: 2px 7px; border: 1px solid var(--surface); border-radius: 99px; background: var(--white); color: var(--stone-light); font-size: 0.56rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .dashboard-kpis { margin-bottom: 0; }
 .dashboard-operations-grid, .dashboard-feed-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
@@ -978,8 +966,6 @@ body { min-height: 100vh; }
   .dash-order-meta { align-items: flex-end; flex-direction: column; gap: 5px; }
   .orders-readiness { align-items: flex-start; flex-direction: column; }
   .orders-readiness > span { align-self: flex-start; }
-  .realtime-controls { width: 100%; align-items: stretch; flex-direction: column; }
-  .realtime-last-sync { white-space: normal; }
   .orders-filter-tabs { flex-wrap: nowrap; margin: 0 -14px; padding: 0 14px 4px; overflow-x: auto; scrollbar-width: none; }
   .orders-filter-tabs::-webkit-scrollbar { display: none; }
   .orders-filter-tabs .filter-tab { flex: 0 0 auto; }

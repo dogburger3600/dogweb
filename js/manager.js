@@ -12,17 +12,11 @@ let ordersFilter = 'todos';
 let reportDate = localDateKey(Date.now());
 let popupPreviewImageSource = '';
 
-// Estado efêmero da interface; as operações de pedido são confirmadas pelo backend.
-const ORDERS_UI_STATE = {
+// Estado demonstrativo exclusivo do frontend. Não altera pedidos nem persiste no Supabase.
+const ORDERS_FRONTEND_DEMO = {
+  cancellations: new Map(),
   cancellationDraftId: null,
   feedback: '',
-};
-
-const REALTIME_UI_STATE = {
-  connection: 'connecting',
-  detail: '',
-  soundEnabled: false,
-  lastSyncAt: null,
 };
 
 // Mock local de unidades de lanches prontos. Não representa ingredientes e não possui persistência.
@@ -66,6 +60,12 @@ const VIEW_TITLES = {
   configuracoes: 'Configurações da Loja',
 };
 
+// Mock exclusivamente visual. Será substituído pelas integrações de Realtime e áudio em Tasks futuras.
+const DASHBOARD_FRONTEND_MOCK = Object.freeze({
+  updateMode: 'manual',
+  soundAlert: 'planned',
+});
+
 function getProduct(pid) {
   return products.find(p => p.id === pid);
 }
@@ -78,74 +78,7 @@ function orderTotal(order) {
 }
 
 function activeOrders() {
-  return orders.filter(o => !o.cancellation && (o.status === 'pendente' || o.status === 'preparando'));
-}
-
-function realtimeStatusMeta() {
-  const states = {
-    connecting:{ label:'Conectando', detail:'Iniciando atualização automática', icon:'🟡' },
-    connected:{ label:'Atualização automática ativa', detail:'Dados reconciliados com o servidor', icon:'🟢' },
-    reconnecting:{ label:'Reconectando', detail:'Mantendo os dados atuais enquanto a conexão retorna', icon:'🟠' },
-    error:{ label:'Falha na atualização automática', detail:'A sincronização manual continua disponível', icon:'🔴' },
-  };
-  return states[REALTIME_UI_STATE.connection] || states.connecting;
-}
-
-function renderRealtimeReadiness(context) {
-  const status = realtimeStatusMeta();
-  const detail = REALTIME_UI_STATE.detail || status.detail;
-  const lastSync = REALTIME_UI_STATE.lastSyncAt
-    ? `Última sincronização ${new Date(REALTIME_UI_STATE.lastSyncAt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}`
-    : 'Aguardando primeira sincronização';
-  const wrapperClass = context === 'dashboard' ? 'dashboard-readiness' : 'orders-readiness';
-  return `<div class="${wrapperClass} realtime-readiness is-${REALTIME_UI_STATE.connection}" data-realtime-panel>
-    <div><span class="realtime-connection-dot" data-realtime-icon aria-hidden="true">${status.icon}</span><div><strong data-realtime-label>${status.label}</strong><small data-realtime-detail>${escapeManagerHtml(detail)}</small></div></div>
-    <div class="realtime-controls"><button class="dashboard-sound-status${REALTIME_UI_STATE.soundEnabled ? ' is-enabled' : ''}" type="button" onclick="toggleRealtimeSound()" aria-pressed="${REALTIME_UI_STATE.soundEnabled}" data-realtime-sound><span aria-hidden="true">${REALTIME_UI_STATE.soundEnabled ? '🔔' : '🔕'}</span> ${REALTIME_UI_STATE.soundEnabled ? 'Som habilitado' : 'Habilitar som'}</button><span class="realtime-last-sync" data-realtime-sync>${lastSync}</span></div>
-  </div>`;
-}
-
-function updateRealtimeUi(state) {
-  Object.assign(REALTIME_UI_STATE, state);
-  const status = realtimeStatusMeta();
-  const detail = REALTIME_UI_STATE.detail || status.detail;
-  document.querySelectorAll('[data-realtime-panel]').forEach(panel => {
-    panel.classList.remove('is-connecting', 'is-connected', 'is-reconnecting', 'is-error');
-    panel.classList.add(`is-${REALTIME_UI_STATE.connection}`);
-    panel.querySelector('[data-realtime-icon]').textContent = status.icon;
-    panel.querySelector('[data-realtime-label]').textContent = status.label;
-    panel.querySelector('[data-realtime-detail]').textContent = detail;
-    const soundButton = panel.querySelector('[data-realtime-sound]');
-    soundButton.classList.toggle('is-enabled', REALTIME_UI_STATE.soundEnabled);
-    soundButton.setAttribute('aria-pressed', String(REALTIME_UI_STATE.soundEnabled));
-    soundButton.innerHTML = `<span aria-hidden="true">${REALTIME_UI_STATE.soundEnabled ? '🔔' : '🔕'}</span> ${REALTIME_UI_STATE.soundEnabled ? 'Som habilitado' : 'Habilitar som'}`;
-    panel.querySelector('[data-realtime-sync]').textContent = REALTIME_UI_STATE.lastSyncAt
-      ? `Última sincronização ${new Date(REALTIME_UI_STATE.lastSyncAt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}`
-      : 'Aguardando primeira sincronização';
-  });
-  const onlineDot = document.querySelector('.m-online-dot');
-  if (onlineDot) onlineDot.dataset.connection = REALTIME_UI_STATE.connection;
-}
-
-async function toggleRealtimeSound() {
-  await window.ManagerRealtime?.toggleSound();
-}
-
-async function reconcileRealtimeOrders() {
-  orders = await Store.getOrders();
-  updateActiveOrdersBadge();
-  if (currentView === 'dashboard') document.getElementById('m-content').innerHTML = renderDashboard();
-  if (currentView === 'pedidos') document.getElementById('m-content').innerHTML = renderPedidos();
-  updateRealtimeUi(REALTIME_UI_STATE);
-  return orders.map(order => order.databaseId);
-}
-
-function startManagerRealtime() {
-  window.ManagerRealtime?.start({
-    client:DB,
-    initialOrderIds:orders.map(order => order.databaseId),
-    onReconcile:reconcileRealtimeOrders,
-    onState:updateRealtimeUi,
-  });
+  return orders.filter(o => o.status === 'pendente' || o.status === 'preparando');
 }
 
 async function setView(view) {
@@ -353,13 +286,22 @@ function renderDashboard() {
   const now = new Date().toDateString();
   const todayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === now);
   const active = activeOrders();
-  const newOrders = orders.filter(o => !o.cancellation && o.status === 'pendente');
-  const delivered = orders.filter(o => !o.cancellation && o.status === 'entregue').length;
-  const ready = orders.filter(o => !o.cancellation && o.status === 'pronto').length;
+  const newOrders = orders.filter(o => o.status === 'pendente');
+  const delivered = orders.filter(o => o.status === 'entregue').length;
+  const ready = orders.filter(o => o.status === 'pronto').length;
   const soldOutSnacks = products.filter(product => product.category === 'lanches' && Number(product.stock) <= 0);
 
   return `<section class="dashboard-page" aria-label="Visão operacional">
-    ${renderRealtimeReadiness('dashboard')}
+    <div class="dashboard-readiness" aria-label="Recursos preparados para integração futura">
+      <div>
+        <span class="dashboard-live-dot" aria-hidden="true"></span>
+        <div><strong>Atualização manual</strong><small>Tempo real preparado para integração futura</small></div>
+      </div>
+      <button class="dashboard-sound-status" type="button" disabled title="O alerta sonoro será habilitado em uma Task futura">
+        <span aria-hidden="true">🔕</span> Alerta sonoro em preparação
+      </button>
+      <span class="dashboard-mock-label">Mock frontend · ${DASHBOARD_FRONTEND_MOCK.updateMode} · ${DASHBOARD_FRONTEND_MOCK.soundAlert}</span>
+    </div>
 
     <div class="kpi-grid dashboard-kpis">
       ${kpiCard('Pedidos Hoje', String(todayOrders.length), '📋', '#F97316', 'recebidos hoje')}
@@ -409,7 +351,7 @@ function renderDashboard() {
 }
 
 function dashOrderRow(o) {
-  const sm = o.cancellation ? { label:'Cancelado', color:'#B91C1C', bg:'#FEE2E2' } : STATUS_META[o.status];
+  const sm = STATUS_META[o.status];
   return `<div class="dash-order-row">
     <div>
       <span class="dash-order-id">${o.id}</span>
@@ -424,20 +366,20 @@ function dashOrderRow(o) {
 
 /* ── PEDIDOS ── */
 function renderPedidos() {
-  const statuses = ['todos','pendente','preparando','pronto','entregue','cancelado'];
+  const statuses = ['todos','pendente','preparando','pronto','entregue','cancelado-demo'];
   const filtered = ordersFilter === 'todos'
     ? orders
-    : ordersFilter === 'cancelado'
-      ? orders.filter(order => order.cancellation)
-      : orders.filter(order => order.status === ordersFilter && !order.cancellation);
+    : ordersFilter === 'cancelado-demo'
+      ? orders.filter(order => ORDERS_FRONTEND_DEMO.cancellations.has(order.id))
+      : orders.filter(order => order.status === ordersFilter && !ORDERS_FRONTEND_DEMO.cancellations.has(order.id));
 
   const tabs = statuses.map(s => {
     const count = s === 'todos'
       ? orders.length
-      : s === 'cancelado'
-        ? orders.filter(order => order.cancellation).length
-        : orders.filter(o => o.status === s && !o.cancellation).length;
-    const label = s === 'todos' ? 'Todos' : s === 'cancelado' ? 'Cancelados' : STATUS_META[s].label;
+      : s === 'cancelado-demo'
+        ? ORDERS_FRONTEND_DEMO.cancellations.size
+        : orders.filter(o => o.status === s && !ORDERS_FRONTEND_DEMO.cancellations.has(o.id)).length;
+    const label = s === 'todos' ? 'Todos' : s === 'cancelado-demo' ? 'Cancelados (local)' : STATUS_META[s].label;
     return `<button class="filter-tab${ordersFilter === s ? ' active' : ''}" onclick="setPedidosFilter('${s}')">${label} (${count})</button>`;
   }).join('');
 
@@ -446,8 +388,11 @@ function renderPedidos() {
     : filtered.map(o => orderCard(o)).join('');
 
   return `<section class="orders-page" aria-label="Gestão de pedidos">
-    ${renderRealtimeReadiness('orders')}
-    ${ORDERS_UI_STATE.feedback ? `<div class="orders-feedback" role="status">✅ ${escapeManagerHtml(ORDERS_UI_STATE.feedback)}</div>` : ''}
+    <div class="orders-readiness">
+      <div><span class="orders-readiness-dot" aria-hidden="true"></span><div><strong>Atualização manual</strong><small>Realtime e alerta sonoro serão integrados futuramente</small></div></div>
+      <span>Frontend preparado</span>
+    </div>
+    ${ORDERS_FRONTEND_DEMO.feedback ? `<div class="orders-feedback" role="status">✅ ${escapeManagerHtml(ORDERS_FRONTEND_DEMO.feedback)}</div>` : ''}
     <div class="filter-tabs orders-filter-tabs">${tabs}</div>
     <div class="orders-list">${cards}</div>
     ${renderCancellationModal()}
@@ -457,8 +402,8 @@ function renderPedidos() {
 function renderOrdersEmptyState() {
   const filterLabel = ordersFilter === 'todos'
     ? 'pedidos'
-    : ordersFilter === 'cancelado'
-      ? 'pedidos cancelados'
+    : ordersFilter === 'cancelado-demo'
+      ? 'cancelamentos demonstrativos'
       : `pedidos ${STATUS_META[ordersFilter]?.label.toLowerCase() || ''}`;
   return `<div class="orders-empty-state"><span aria-hidden="true">📋</span><strong>Nenhum resultado</strong><p>Não há ${filterLabel} para exibir neste filtro.</p></div>`;
 }
@@ -469,19 +414,19 @@ function setPedidosFilter(s) {
 }
 
 function orderCard(o) {
-  const cancellation = o.cancellation;
-  const sm = cancellation ? { label:'Cancelado', color:'#B91C1C', bg:'#FEE2E2' } : STATUS_META[o.status];
+  const demoCancellation = ORDERS_FRONTEND_DEMO.cancellations.get(o.id);
+  const sm = demoCancellation ? { label:'Cancelado', color:'#B91C1C', bg:'#FEE2E2' } : STATUS_META[o.status];
   const next = NEXT_STATUS[o.status];
   const expanded = expandedOrders.has(o.id);
   const total = orderTotal(o);
 
-  return `<article class="order-card${cancellation ? ' is-demo-cancelled' : ''}" id="order-card-${o.id}">
+  return `<article class="order-card${demoCancellation ? ' is-demo-cancelled' : ''}" id="order-card-${o.id}">
     <div class="order-card-head" onclick="toggleOrder('${o.id}')" role="button" tabindex="0" aria-expanded="${expanded}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleOrder('${o.id}')} ">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
           <span class="order-id">${o.id}</span>
           <span class="status-badge" style="background:${sm.bg};color:${sm.color}">${sm.label}</span>
-          ${cancellation ? '<span class="orders-demo-badge">registrado</span>' : ''}
+          ${demoCancellation ? '<span class="orders-demo-badge">simulação local</span>' : ''}
         </div>
         <p class="order-meta">${escapeManagerHtml(o.customerName)} · ${o.items.length} ${o.items.length===1?'item':'itens'} · <span style="font-family:var(--font-mono)">${timeSince(o.createdAt)}</span></p>
       </div>
@@ -502,21 +447,23 @@ function orderCard(o) {
       ${o.address ? `<div class="order-address">📍 ${formatOrderAddress(o.address)}</div>` : ''}
       <div class="order-payment">💳 Pagamento na entrega: ${orderPaymentLabel(o)}</div>
       ${o.note ? `<div class="order-note">📝 ${escapeManagerHtml(o.note)}</div>` : ''}
-      ${renderOrderTimeline(o)}
+      ${renderOrderTimeline(o, demoCancellation)}
       <div class="order-actions no-print">
-        ${next && !cancellation ? `<button class="btn-advance" data-capability="advanceOrders" data-capability-mode="disable" onclick="advanceOrder('${o.id}','${next}')">Avançar → ${STATUS_META[next].label}</button>` : ''}
+        ${next && !demoCancellation ? `<button class="btn-advance" data-capability="advanceOrders" data-capability-mode="disable" onclick="advanceOrder('${o.id}','${next}')">Avançar → ${STATUS_META[next].label}</button>` : ''}
         <button class="order-action-button" type="button" onclick="printKitchenTicket('${o.id}')">🖨️ Imprimir comanda</button>
-        ${o.status !== 'entregue' && !cancellation ? `<button class="order-action-button is-danger" type="button" onclick="openOrderCancellation('${o.id}')">Cancelar pedido</button>` : ''}
+        ${o.status !== 'entregue' && !demoCancellation ? `<button class="order-action-button is-danger" type="button" onclick="openDemoCancellation('${o.id}')">Cancelar pedido</button>` : ''}
       </div>
       <div class="kitchen-ticket-footer"><strong>Comanda de cozinha · ${o.id}</strong><span>Emitida pelo navegador</span></div>
     </div>` : ''}
   </article>`;
 }
 
-function renderOrderTimeline(order) {
+function renderOrderTimeline(order, demoCancellation) {
+  const stages = ['pendente','preparando','pronto','entregue'];
+  const currentIndex = stages.indexOf(order.status);
   const events = [{ label:'Pedido recebido', detail:new Date(order.createdAt).toLocaleString('pt-BR') }];
-  order.history.forEach(item => events.push({ label:STATUS_META[item.to_status]?.label || item.to_status, detail:new Date(item.created_at).toLocaleString('pt-BR') }));
-  if (order.cancellation) events.push({ label:'Pedido cancelado', detail:`${order.cancellation.reason} · ${new Date(order.cancellation.created_at).toLocaleString('pt-BR')}`, cancelled:true });
+  stages.slice(1, currentIndex + 1).forEach(status => events.push({ label:STATUS_META[status].label, detail:'Estado registrado no pedido' }));
+  if (demoCancellation) events.push({ label:'Cancelamento demonstrativo', detail:`${demoCancellation.reason} · ${new Date(demoCancellation.at).toLocaleString('pt-BR')}`, cancelled:true });
   return `<section class="order-timeline" aria-label="Histórico visual do pedido">
     <h4>Histórico</h4>
     ${events.map(event => `<div class="order-timeline-event${event.cancelled ? ' is-cancelled' : ''}"><span aria-hidden="true"></span><div><strong>${escapeManagerHtml(event.label)}</strong><small>${escapeManagerHtml(event.detail)}</small></div></div>`).join('')}
@@ -524,56 +471,46 @@ function renderOrderTimeline(order) {
 }
 
 function renderCancellationModal() {
-  if (!ORDERS_UI_STATE.cancellationDraftId) return '';
-  const order = orders.find(item => item.id === ORDERS_UI_STATE.cancellationDraftId);
+  if (!ORDERS_FRONTEND_DEMO.cancellationDraftId) return '';
+  const order = orders.find(item => item.id === ORDERS_FRONTEND_DEMO.cancellationDraftId);
   if (!order) return '';
-  return `<div class="modal-overlay orders-cancel-overlay" onclick="closeOrderCancellation()"></div>
+  return `<div class="modal-overlay orders-cancel-overlay" onclick="closeDemoCancellation()"></div>
     <section class="modal orders-cancel-modal" role="dialog" aria-modal="true" aria-labelledby="cancel-order-title">
-      <span class="orders-demo-badge">operação definitiva</span>
+      <span class="orders-demo-badge">demonstração frontend</span>
       <h2 class="modal-title" id="cancel-order-title">Cancelar ${order.id}</h2>
-      <p class="modal-sub">O cancelamento e sua justificativa serão registrados no histórico do pedido.</p>
-      <form onsubmit="submitOrderCancellation(event)">
-        <div class="form-group"><label class="form-label" for="cancel-order-reason">Justificativa *</label><textarea class="form-textarea" id="cancel-order-reason" rows="4" minlength="3" maxlength="500" required placeholder="Informe o motivo do cancelamento"></textarea></div>
+      <p class="modal-sub">Esta ação é somente visual e não modifica o pedido real.</p>
+      <form onsubmit="submitDemoCancellation(event)">
+        <div class="form-group"><label class="form-label" for="cancel-order-reason">Justificativa *</label><textarea class="form-textarea" id="cancel-order-reason" rows="4" maxlength="240" required placeholder="Informe o motivo do cancelamento"></textarea></div>
         <p class="form-error" id="cancel-order-error"></p>
-        <div class="modal-actions"><button class="btn-secondary" type="button" onclick="closeOrderCancellation()">Voltar</button><button class="btn-primary" type="submit">Confirmar cancelamento</button></div>
+        <div class="modal-actions"><button class="btn-secondary" type="button" onclick="closeDemoCancellation()">Voltar</button><button class="btn-primary" type="submit">Confirmar simulação</button></div>
       </form>
     </section>`;
 }
 
-function openOrderCancellation(id) {
-  ORDERS_UI_STATE.cancellationDraftId = id;
+function openDemoCancellation(id) {
+  ORDERS_FRONTEND_DEMO.cancellationDraftId = id;
   document.getElementById('m-content').innerHTML = renderPedidos();
   setTimeout(() => document.getElementById('cancel-order-reason')?.focus(), 0);
 }
 
-function closeOrderCancellation() {
-  ORDERS_UI_STATE.cancellationDraftId = null;
+function closeDemoCancellation() {
+  ORDERS_FRONTEND_DEMO.cancellationDraftId = null;
   document.getElementById('m-content').innerHTML = renderPedidos();
 }
 
-async function submitOrderCancellation(event) {
+function submitDemoCancellation(event) {
   event.preventDefault();
   const reason = document.getElementById('cancel-order-reason').value.trim();
-  if (reason.length < 3) {
-    document.getElementById('cancel-order-error').textContent = 'A justificativa deve ter pelo menos 3 caracteres.';
+  if (!reason) {
+    document.getElementById('cancel-order-error').textContent = 'A justificativa é obrigatória.';
     return;
   }
-  const id = ORDERS_UI_STATE.cancellationDraftId;
-  const order = orders.find(item => item.id === id);
-  const button = event.submitter || event.currentTarget.querySelector('button[type="submit"]');
-  button.disabled = true;
-  try {
-    await Store.cancelOrder(order.databaseId, reason);
-    orders = await Store.getOrders();
-    ORDERS_UI_STATE.cancellationDraftId = null;
-    ORDERS_UI_STATE.feedback = `${id} cancelado com justificativa registrada.`;
-    expandedOrders.add(id);
-    updateActiveOrdersBadge();
-    document.getElementById('m-content').innerHTML = renderPedidos();
-  } catch (error) {
-    document.getElementById('cancel-order-error').textContent = `Não foi possível cancelar. ${error.message}`;
-    button.disabled = false;
-  }
+  const id = ORDERS_FRONTEND_DEMO.cancellationDraftId;
+  ORDERS_FRONTEND_DEMO.cancellations.set(id, { reason, at:Date.now() });
+  ORDERS_FRONTEND_DEMO.cancellationDraftId = null;
+  ORDERS_FRONTEND_DEMO.feedback = `${id} marcado como cancelado apenas nesta visualização.`;
+  expandedOrders.add(id);
+  document.getElementById('m-content').innerHTML = renderPedidos();
 }
 
 function printKitchenTicket(id) {
@@ -886,17 +823,16 @@ function toggleOrder(id) {
 async function advanceOrder(id, nextStatus) {
   const o = orders.find(o => o.id === id);
   if (o) {
+    o.status = nextStatus;
+    expandedOrders.add(id);
     try {
-      const result = await Store.updateOrderStatus(o.databaseId, nextStatus);
-      orders = await Store.getOrders();
-      expandedOrders.add(id);
-      nextStatus = result.status;
+      await Store.updateOrderStatus(o.databaseId, nextStatus);
     } catch (error) {
       alert(`Não foi possível atualizar o pedido. ${error.message}`);
       return;
     }
   }
-  ORDERS_UI_STATE.feedback = `${id} avançou para ${STATUS_META[nextStatus].label}.`;
+  ORDERS_FRONTEND_DEMO.feedback = `${id} avançou para ${STATUS_META[nextStatus].label}.`;
   updateActiveOrdersBadge();
   document.getElementById('m-content').innerHTML = renderPedidos();
 }
@@ -1283,7 +1219,6 @@ async function initManager() {
     window.UICapabilities?.init('manager');
     const requestedView = new URLSearchParams(window.location.search).get('view');
     await setView(VIEW_TITLES[requestedView] ? requestedView : 'dashboard');
-    startManagerRealtime();
   } else {
     document.getElementById('page-manager').classList.add('hidden');
     window.location.replace('entrar.html');
@@ -1291,7 +1226,6 @@ async function initManager() {
 }
 
 async function signOutManager() {
-  await window.ManagerRealtime?.stop();
   await DB.auth.signOut();
   window.location.reload();
 }
