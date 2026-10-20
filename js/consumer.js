@@ -63,7 +63,7 @@ function renderProducts() {
   }
 
   el.innerHTML = list.map(p => {
-    const out = false;
+    const out = p.category === 'lanches' && Number(p.stock) <= 0;
     const cat = CAT_MAP[p.category];
     return `
       <div class="product-card${out ? ' out-of-stock' : ''}">
@@ -94,8 +94,16 @@ function updateCartBadge() {
 function addToCart(pid) {
   const product = getProduct(pid);
   if (!product) return;
+  if (product.category === 'lanches' && Number(product.stock) <= 0) {
+    showToast('⛔ Este lanche está esgotado.');
+    return;
+  }
   const existing = cart.find(i => i.product.id === pid);
   if (existing) {
+    if (product.category === 'lanches' && existing.qty >= Number(product.stock)) {
+      showToast('⚠️ Quantidade disponível atingida.');
+      return;
+    }
     existing.qty++;
   } else {
     cart.push({ product, qty: 1, removedIngredients: '' });
@@ -109,7 +117,12 @@ function updateQty(pid, delta) {
   const idx = cart.findIndex(i => i.product.id === pid);
   if (idx === -1) return;
   
-  cart[idx].qty += delta;
+  const nextQuantity = cart[idx].qty + delta;
+  if (delta > 0 && cart[idx].product.category === 'lanches' && nextQuantity > Number(cart[idx].product.stock)) {
+    showToast('⚠️ Quantidade disponível atingida.');
+    return;
+  }
+  cart[idx].qty = nextQuantity;
   if (cart[idx].qty <= 0) cart.splice(idx, 1);
   updateCartBadge();
   renderCartItems();
