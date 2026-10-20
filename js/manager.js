@@ -59,11 +59,7 @@ const VIEW_TITLES = {
   configuracoes: 'Configurações da Loja',
 };
 
-// Mock exclusivamente visual. Será substituído pelas integrações de Realtime e áudio em Tasks futuras.
-const DASHBOARD_FRONTEND_MOCK = Object.freeze({
-  updateMode: 'manual',
-  soundAlert: 'planned',
-});
+const REALTIME_UI_STATE = { connection:'connecting', detail:'', soundEnabled:false, lastSyncAt:null };
 
 function getProduct(pid) {
   return products.find(p => p.id === pid);
@@ -79,6 +75,56 @@ function orderTotal(order) {
 function activeOrders() {
   return orders.filter(o => !o.cancellation && (o.status === 'pendente' || o.status === 'preparando'));
 }
+
+function realtimeStatusMeta() {
+  return {
+    connecting:{ label:'Conectando', detail:'Iniciando atualização automática', icon:'🟡' },
+    connected:{ label:'Atualização automática ativa', detail:'Dados reconciliados com o servidor', icon:'🟢' },
+    reconnecting:{ label:'Reconectando', detail:'Mantendo os dados atuais enquanto a conexão retorna', icon:'🟠' },
+    error:{ label:'Atualização automática indisponível', detail:'A sincronização manual continua disponível', icon:'🔴' },
+  }[REALTIME_UI_STATE.connection] || { label:'Conectando', detail:'Iniciando atualização automática', icon:'🟡' };
+}
+
+function renderRealtimeReadiness(context) {
+  const status = realtimeStatusMeta();
+  const lastSync = REALTIME_UI_STATE.lastSyncAt ? `Última sincronização ${new Date(REALTIME_UI_STATE.lastSyncAt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}` : 'Aguardando primeira sincronização';
+  const wrapperClass = context === 'dashboard' ? 'dashboard-readiness' : 'orders-readiness';
+  const soundLabel = REALTIME_UI_STATE.soundEnabled ? 'Som habilitado' : (REALTIME_UI_STATE.soundDetail ? 'Áudio indisponível' : 'Habilitar som');
+  return `<div class="${wrapperClass} realtime-readiness is-${REALTIME_UI_STATE.connection}" data-realtime-panel><div><span class="realtime-connection-dot" data-realtime-icon aria-hidden="true">${status.icon}</span><div><strong data-realtime-label>${status.label}</strong><small data-realtime-detail>${escapeManagerHtml(REALTIME_UI_STATE.detail || status.detail)}</small></div></div><div class="realtime-controls"><button class="dashboard-sound-status${REALTIME_UI_STATE.soundEnabled ? ' is-enabled' : ''}" type="button" onclick="toggleRealtimeSound()" aria-pressed="${REALTIME_UI_STATE.soundEnabled}" data-realtime-sound title="${escapeManagerHtml(REALTIME_UI_STATE.soundDetail)}"><span aria-hidden="true">${REALTIME_UI_STATE.soundEnabled ? '🔔' : '🔕'}</span> ${soundLabel}</button><span class="realtime-last-sync" data-realtime-sync>${lastSync}</span></div></div>`;
+}
+
+function updateRealtimeUi(state) {
+  Object.assign(REALTIME_UI_STATE, state);
+  const status = realtimeStatusMeta();
+  const lastSync = REALTIME_UI_STATE.lastSyncAt ? `Última sincronização ${new Date(REALTIME_UI_STATE.lastSyncAt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}` : 'Aguardando primeira sincronização';
+  document.querySelectorAll('[data-realtime-panel]').forEach(panel => {
+    panel.classList.remove('is-connecting', 'is-connected', 'is-reconnecting', 'is-error');
+    panel.classList.add(`is-${REALTIME_UI_STATE.connection}`);
+    panel.querySelector('[data-realtime-icon]').textContent = status.icon;
+    panel.querySelector('[data-realtime-label]').textContent = status.label;
+    panel.querySelector('[data-realtime-detail]').textContent = REALTIME_UI_STATE.detail || status.detail;
+    const button = panel.querySelector('[data-realtime-sound]');
+    button.classList.toggle('is-enabled', REALTIME_UI_STATE.soundEnabled);
+    button.setAttribute('aria-pressed', String(REALTIME_UI_STATE.soundEnabled));
+    const soundLabel = REALTIME_UI_STATE.soundEnabled ? 'Som habilitado' : (REALTIME_UI_STATE.soundDetail ? 'Áudio indisponível' : 'Habilitar som');
+    button.title = REALTIME_UI_STATE.soundDetail || '';
+    button.innerHTML = `<span aria-hidden="true">${REALTIME_UI_STATE.soundEnabled ? '🔔' : '🔕'}</span> ${soundLabel}`;
+    panel.querySelector('[data-realtime-sync]').textContent = lastSync;
+  });
+  const dot = document.querySelector('.m-online-dot');
+  if (dot) dot.dataset.connection = REALTIME_UI_STATE.connection;
+}
+async function toggleRealtimeSound() { await window.ManagerRealtime?.toggleSound(); }
+async function fetchRealtimeOrders() {
+  return Store.getOrders();
+}
+function applyRealtimeOrders(freshOrders) {
+  orders = freshOrders;
+  updateActiveOrdersBadge();
+  if (currentView === 'dashboard') document.getElementById('m-content').innerHTML = renderDashboard();
+  if (currentView === 'pedidos') document.getElementById('m-content').innerHTML = renderPedidos();
+}
+function startManagerRealtime() { window.ManagerRealtime?.start({ client:DB, initialOrderIds:orders.map(order => order.databaseId), fetchOrders:fetchRealtimeOrders, applyOrders:applyRealtimeOrders, onState:updateRealtimeUi }); }
 
 async function setView(view) {
   if (!VIEW_TITLES[view]) view = 'dashboard';
@@ -291,16 +337,7 @@ function renderDashboard() {
   const soldOutSnacks = products.filter(product => product.category === 'lanches' && Number(product.stock) <= 0);
 
   return `<section class="dashboard-page" aria-label="Visão operacional">
-    <div class="dashboard-readiness" aria-label="Recursos preparados para integração futura">
-      <div>
-        <span class="dashboard-live-dot" aria-hidden="true"></span>
-        <div><strong>Atualização manual</strong><small>Tempo real preparado para integração futura</small></div>
-      </div>
-      <button class="dashboard-sound-status" type="button" disabled title="O alerta sonoro será habilitado em uma Task futura">
-        <span aria-hidden="true">🔕</span> Alerta sonoro em preparação
-      </button>
-      <span class="dashboard-mock-label">Mock frontend · ${DASHBOARD_FRONTEND_MOCK.updateMode} · ${DASHBOARD_FRONTEND_MOCK.soundAlert}</span>
-    </div>
+    ${renderRealtimeReadiness('dashboard')}
 
     <div class="kpi-grid dashboard-kpis">
       ${kpiCard('Pedidos Hoje', String(todayOrders.length), '📋', '#F97316', 'recebidos hoje')}
@@ -387,10 +424,7 @@ function renderPedidos() {
     : filtered.map(o => orderCard(o)).join('');
 
   return `<section class="orders-page" aria-label="Gestão de pedidos">
-    <div class="orders-readiness">
-      <div><span class="orders-readiness-dot" aria-hidden="true"></span><div><strong>Atualização manual</strong><small>Realtime e alerta sonoro serão integrados futuramente</small></div></div>
-      <span>Frontend preparado</span>
-    </div>
+    ${renderRealtimeReadiness('orders')}
     ${ORDERS_UI_STATE.feedback ? `<div class="orders-feedback" role="status">✅ ${escapeManagerHtml(ORDERS_UI_STATE.feedback)}</div>` : ''}
     <div class="filter-tabs orders-filter-tabs">${tabs}</div>
     <div class="orders-list">${cards}</div>
@@ -1227,6 +1261,7 @@ async function initManager() {
     window.UICapabilities?.init('manager');
     const requestedView = new URLSearchParams(window.location.search).get('view');
     await setView(VIEW_TITLES[requestedView] ? requestedView : 'dashboard');
+    startManagerRealtime();
   } else {
     document.getElementById('page-manager').classList.add('hidden');
     window.location.replace('entrar.html');
@@ -1234,6 +1269,7 @@ async function initManager() {
 }
 
 async function signOutManager() {
+  await window.ManagerRealtime?.stop();
   await DB.auth.signOut();
   window.location.reload();
 }
