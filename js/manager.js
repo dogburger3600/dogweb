@@ -6,8 +6,6 @@ let expenses = [];
 
 let currentView = 'dashboard';
 let expandedOrders = new Set();
-let editingStock = null;
-let stockFilterCat = 'todos';
 let ordersFilter = 'todos';
 let reportDate = localDateKey(Date.now());
 let popupPreviewImageSource = '';
@@ -25,14 +23,13 @@ const REALTIME_UI_STATE = {
   lastSyncAt: null,
 };
 
-// Mock local de unidades de lanches prontos. Não representa ingredientes e não possui persistência.
-const SNACK_STOCK_FRONTEND_DEMO = {
-  quantities: new Map(),
-  minimums: new Map(),
-  history: [],
+// Estado visual; quantidades e histórico são sempre reconciliados com o backend.
+const SNACK_STOCK_UI_STATE = {
+  movements: [],
   filter: 'todos',
   restockProductId: null,
   feedback: null,
+  savingMinimums: new Set(),
 };
 
 // Configuração demonstrativa mantida somente na memória desta sessão.
@@ -131,10 +128,12 @@ async function toggleRealtimeSound() {
 }
 
 async function reconcileRealtimeOrders() {
-  orders = await Store.getOrders();
+  [orders, products] = await Promise.all([Store.getOrders(), Store.getAllProducts()]);
+  if (currentView === 'estoque-lanches') SNACK_STOCK_UI_STATE.movements = await Store.getStockMovements();
   updateActiveOrdersBadge();
   if (currentView === 'dashboard') document.getElementById('m-content').innerHTML = renderDashboard();
   if (currentView === 'pedidos') document.getElementById('m-content').innerHTML = renderPedidos();
+  if (currentView === 'estoque-lanches') document.getElementById('m-content').innerHTML = renderSnackStock();
   updateRealtimeUi(REALTIME_UI_STATE);
   return orders.map(order => order.databaseId);
 }
@@ -175,6 +174,7 @@ async function setView(view) {
   // Recarregar dados mais recentes da store
   try {
     [products, orders] = await Promise.all([Store.getAllProducts(), Store.getOrders()]);
+    if (view === 'estoque-lanches') SNACK_STOCK_UI_STATE.movements = await Store.getStockMovements();
   } catch (error) {
     content.innerHTML = view === 'dashboard'
       ? renderDashboardState('error', error.message)
@@ -564,7 +564,7 @@ async function submitOrderCancellation(event) {
   button.disabled = true;
   try {
     await Store.cancelOrder(order.databaseId, reason);
-    orders = await Store.getOrders();
+    [orders, products] = await Promise.all([Store.getOrders(), Store.getAllProducts()]);
     ORDERS_UI_STATE.cancellationDraftId = null;
     ORDERS_UI_STATE.feedback = `${id} cancelado com justificativa registrada.`;
     expandedOrders.add(id);
@@ -599,20 +599,9 @@ function normalizedStockNumber(value, fallback = 0) {
   return Number.isInteger(number) && number >= 0 ? number : fallback;
 }
 
-function initializeSnackStockDemo() {
-  snackStockProducts().forEach(product => {
-    if (!SNACK_STOCK_FRONTEND_DEMO.quantities.has(product.id)) {
-      SNACK_STOCK_FRONTEND_DEMO.quantities.set(product.id, normalizedStockNumber(product.stock));
-    }
-    if (!SNACK_STOCK_FRONTEND_DEMO.minimums.has(product.id)) {
-      SNACK_STOCK_FRONTEND_DEMO.minimums.set(product.id, normalizedStockNumber(product.minStock, 5));
-    }
-  });
-}
-
 function snackStockStatus(product) {
-  const quantity = SNACK_STOCK_FRONTEND_DEMO.quantities.get(product.id) ?? 0;
-  const minimum = SNACK_STOCK_FRONTEND_DEMO.minimums.get(product.id) ?? 0;
+  const quantity = normalizedStockNumber(product.stock);
+  const minimum = normalizedStockNumber(product.minStock);
   if (quantity === 0) return { key:'zero', label:'Esgotado', icon:'⛔' };
   if (quantity <= minimum) return { key:'baixo', label:'Baixo', icon:'⚠️' };
   return { key:'normal', label:'Normal', icon:'✅' };
@@ -620,19 +609,18 @@ function snackStockStatus(product) {
 
 function renderSnackStockState(state, detail = '') {
   if (state === 'loading') {
-    return `<section class="snack-stock-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando lanches...</strong><span>Preparando o controle local de unidades prontas.</span></section>`;
+    return `<section class="snack-stock-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando lanches...</strong><span>Consultando o estoque transacional.</span></section>`;
   }
   return `<section class="snack-stock-state is-error" role="alert"><span aria-hidden="true">⚠️</span><strong>Não foi possível carregar os lanches</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('estoque-lanches')">Tentar novamente</button></section>`;
 }
 
 function renderSnackStock() {
-  initializeSnackStockDemo();
   const snacks = snackStockProducts();
   const counts = { normal:0, baixo:0, zero:0 };
   snacks.forEach(product => { counts[snackStockStatus(product).key]++; });
-  const filtered = SNACK_STOCK_FRONTEND_DEMO.filter === 'todos'
+  const filtered = SNACK_STOCK_UI_STATE.filter === 'todos'
     ? snacks
-    : snacks.filter(product => snackStockStatus(product).key === SNACK_STOCK_FRONTEND_DEMO.filter);
+    : snacks.filter(product => snackStockStatus(product).key === SNACK_STOCK_UI_STATE.filter);
   const filters = [
     { key:'todos', label:'Todos', count:snacks.length },
     { key:'normal', label:'Normal', count:counts.normal },
@@ -640,19 +628,19 @@ function renderSnackStock() {
     { key:'zero', label:'Esgotado', count:counts.zero },
   ];
 
-  return `<section class="snack-stock-page" aria-label="Estoque local de lanches prontos">
+  return `<section class="snack-stock-page" aria-label="Estoque transacional de lanches prontos">
     <div class="snack-stock-intro">
-      <div><span aria-hidden="true">📦</span><div><strong>Unidades de lanches prontos</strong><p>Não inclui ingredientes, não realiza abatimento e não possui reset diário.</p></div></div>
-      <span>Mock local · sem persistência</span>
+      <div><span aria-hidden="true">📦</span><div><strong>Unidades de lanches prontos</strong><p>Estoque real, debitado na confirmação do pedido. Não inclui ingredientes nem possui reset diário.</p></div></div>
+      <span>Servidor · fonte de verdade</span>
     </div>
-    ${SNACK_STOCK_FRONTEND_DEMO.feedback ? `<div class="snack-stock-feedback is-${SNACK_STOCK_FRONTEND_DEMO.feedback.type}" role="status">${escapeManagerHtml(SNACK_STOCK_FRONTEND_DEMO.feedback.message)}</div>` : ''}
+    ${SNACK_STOCK_UI_STATE.feedback ? `<div class="snack-stock-feedback is-${SNACK_STOCK_UI_STATE.feedback.type}" role="status">${escapeManagerHtml(SNACK_STOCK_UI_STATE.feedback.message)}</div>` : ''}
     <div class="snack-stock-kpis">
       ${kpiCard('Lanches cadastrados', String(snacks.length), '🍔', '#F97316', 'somente categoria lanches')}
-      ${kpiCard('Estoque normal', String(counts.normal), '✅', '#16A34A', 'acima do mínimo local')}
+      ${kpiCard('Estoque normal', String(counts.normal), '✅', '#16A34A', 'acima do mínimo')}
       ${kpiCard('Estoque baixo', String(counts.baixo), '⚠️', '#D97706', 'no mínimo ou abaixo')}
-      ${kpiCard('Esgotados', String(counts.zero), '⛔', '#DC2626', 'quantidade local igual a zero')}
+      ${kpiCard('Esgotados', String(counts.zero), '⛔', '#DC2626', 'quantidade real igual a zero')}
     </div>
-    <div class="filter-tabs snack-stock-filters">${filters.map(filter => `<button class="filter-tab${SNACK_STOCK_FRONTEND_DEMO.filter === filter.key ? ' active' : ''}" type="button" onclick="setSnackStockFilter('${filter.key}')">${filter.label} (${filter.count})</button>`).join('')}</div>
+    <div class="filter-tabs snack-stock-filters">${filters.map(filter => `<button class="filter-tab${SNACK_STOCK_UI_STATE.filter === filter.key ? ' active' : ''}" type="button" onclick="setSnackStockFilter('${filter.key}')">${filter.label} (${filter.count})</button>`).join('')}</div>
     ${filtered.length ? `<div class="snack-stock-grid">${filtered.map(renderSnackStockCard).join('')}</div>` : `<div class="snack-stock-empty"><span aria-hidden="true">🍔</span><strong>Nenhum lanche neste estado</strong><p>Escolha outro filtro para continuar.</p></div>`}
     ${renderSnackStockHistory()}
     ${renderSnackRestockModal()}
@@ -660,43 +648,51 @@ function renderSnackStock() {
 }
 
 function renderSnackStockCard(product) {
-  const quantity = SNACK_STOCK_FRONTEND_DEMO.quantities.get(product.id) ?? 0;
-  const minimum = SNACK_STOCK_FRONTEND_DEMO.minimums.get(product.id) ?? 0;
+  const quantity = normalizedStockNumber(product.stock);
+  const minimum = normalizedStockNumber(product.minStock);
   const status = snackStockStatus(product);
   return `<article class="snack-stock-card is-${status.key}">
     <div class="snack-stock-card-head"><div class="snack-stock-product-icon" aria-hidden="true">🍔</div><div><h3>${escapeManagerHtml(product.name)}</h3><span class="snack-stock-status">${status.icon} ${status.label}</span></div></div>
     <div class="snack-stock-quantity"><strong>${quantity}</strong><span>unidades prontas</span></div>
-    <label class="snack-stock-minimum">Estoque mínimo local<input type="number" min="0" max="999" step="1" value="${minimum}" aria-label="Estoque mínimo de ${escapeManagerHtml(product.name)}" onchange="updateSnackStockMinimum(${JSON.stringify(product.id)}, this.value)" /></label>
+    <label class="snack-stock-minimum">Estoque mínimo<input type="number" min="0" max="999" step="1" value="${minimum}" aria-label="Estoque mínimo de ${escapeManagerHtml(product.name)}" onchange="updateSnackStockMinimum(${JSON.stringify(product.id)}, this.value)" ${SNACK_STOCK_UI_STATE.savingMinimums.has(product.id) ? 'disabled' : ''} /></label>
     <button class="btn-primary snack-stock-restock" type="button" data-capability="manageStock" data-capability-mode="disable" onclick="openSnackRestock(${JSON.stringify(product.id)})">+ Reposição manual</button>
   </article>`;
 }
 
 function setSnackStockFilter(filter) {
   if (!['todos','normal','baixo','zero'].includes(filter)) return;
-  SNACK_STOCK_FRONTEND_DEMO.filter = filter;
+  SNACK_STOCK_UI_STATE.filter = filter;
   document.getElementById('m-content').innerHTML = renderSnackStock();
 }
 
-function updateSnackStockMinimum(productId, value) {
+async function updateSnackStockMinimum(productId, value) {
   const minimum = Number(value);
   if (!Number.isInteger(minimum) || minimum < 0 || minimum > 999) {
-    SNACK_STOCK_FRONTEND_DEMO.feedback = { type:'error', message:'O estoque mínimo deve ser um número inteiro entre 0 e 999.' };
+    SNACK_STOCK_UI_STATE.feedback = { type:'error', message:'O estoque mínimo deve ser um número inteiro entre 0 e 999.' };
   } else {
-    SNACK_STOCK_FRONTEND_DEMO.minimums.set(productId, minimum);
-    SNACK_STOCK_FRONTEND_DEMO.feedback = { type:'success', message:'Estoque mínimo ajustado somente nesta sessão.' };
+    SNACK_STOCK_UI_STATE.savingMinimums.add(productId);
+    try {
+      await Store.setSnackMinStock(productId, minimum);
+      products = await Store.getAllProducts();
+      SNACK_STOCK_UI_STATE.feedback = { type:'success', message:'Estoque mínimo atualizado no servidor.' };
+    } catch (error) {
+      SNACK_STOCK_UI_STATE.feedback = { type:'error', message:`Não foi possível atualizar o estoque mínimo. ${error.message}` };
+    } finally {
+      SNACK_STOCK_UI_STATE.savingMinimums.delete(productId);
+    }
   }
   document.getElementById('m-content').innerHTML = renderSnackStock();
 }
 
 function renderSnackRestockModal() {
-  if (SNACK_STOCK_FRONTEND_DEMO.restockProductId === null) return '';
-  const product = snackStockProducts().find(item => item.id === SNACK_STOCK_FRONTEND_DEMO.restockProductId);
+  if (SNACK_STOCK_UI_STATE.restockProductId === null) return '';
+  const product = snackStockProducts().find(item => item.id === SNACK_STOCK_UI_STATE.restockProductId);
   if (!product) return '';
   return `<div class="modal-overlay snack-restock-overlay" onclick="closeSnackRestock()"></div>
     <section class="modal snack-restock-modal" role="dialog" aria-modal="true" aria-labelledby="snack-restock-title">
-      <span class="orders-demo-badge">reposição local</span>
+      <span class="orders-demo-badge">reposição auditada</span>
       <h2 class="modal-title" id="snack-restock-title">Repor ${escapeManagerHtml(product.name)}</h2>
-      <p class="modal-sub">A quantidade será somada apenas nesta sessão e não será enviada ao Supabase.</p>
+      <p class="modal-sub">A quantidade será somada de forma transacional e registrada no histórico.</p>
       <form onsubmit="submitSnackRestock(event)">
         <div class="form-group"><label class="form-label" for="snack-restock-amount">Quantidade a adicionar *</label><input class="form-input" id="snack-restock-amount" type="number" min="1" max="999" step="1" inputmode="numeric" required /></div>
         <p class="form-error" id="snack-restock-error"></p>
@@ -706,17 +702,17 @@ function renderSnackRestockModal() {
 }
 
 function openSnackRestock(productId) {
-  SNACK_STOCK_FRONTEND_DEMO.restockProductId = productId;
+  SNACK_STOCK_UI_STATE.restockProductId = productId;
   document.getElementById('m-content').innerHTML = renderSnackStock();
   setTimeout(() => document.getElementById('snack-restock-amount')?.focus(), 0);
 }
 
 function closeSnackRestock() {
-  SNACK_STOCK_FRONTEND_DEMO.restockProductId = null;
+  SNACK_STOCK_UI_STATE.restockProductId = null;
   document.getElementById('m-content').innerHTML = renderSnackStock();
 }
 
-function submitSnackRestock(event) {
+async function submitSnackRestock(event) {
   event.preventDefault();
   const amount = Number(document.getElementById('snack-restock-amount').value);
   const errorElement = document.getElementById('snack-restock-error');
@@ -724,23 +720,35 @@ function submitSnackRestock(event) {
     errorElement.textContent = 'Informe uma quantidade inteira entre 1 e 999.';
     return;
   }
-  const productId = SNACK_STOCK_FRONTEND_DEMO.restockProductId;
+  const productId = SNACK_STOCK_UI_STATE.restockProductId;
   const product = snackStockProducts().find(item => item.id === productId);
-  const current = SNACK_STOCK_FRONTEND_DEMO.quantities.get(productId) ?? 0;
+  const current = normalizedStockNumber(product?.stock);
   if (!product || current + amount > 9999) {
     errorElement.textContent = 'A quantidade total não pode ultrapassar 9.999 unidades.';
     return;
   }
-  SNACK_STOCK_FRONTEND_DEMO.quantities.set(productId, current + amount);
-  SNACK_STOCK_FRONTEND_DEMO.history.unshift({ productName:product.name, amount, at:Date.now() });
-  SNACK_STOCK_FRONTEND_DEMO.restockProductId = null;
-  SNACK_STOCK_FRONTEND_DEMO.feedback = { type:'success', message:`${amount} unidades adicionadas a ${product.name} somente nesta sessão.` };
+  const button = event.submitter || event.currentTarget.querySelector('button[type="submit"]');
+  button.disabled = true;
+  try {
+    await Store.restockSnackProduct(productId, amount, crypto.randomUUID());
+    [products, SNACK_STOCK_UI_STATE.movements] = await Promise.all([Store.getAllProducts(), Store.getStockMovements()]);
+    SNACK_STOCK_UI_STATE.restockProductId = null;
+    SNACK_STOCK_UI_STATE.feedback = { type:'success', message:`${amount} unidades adicionadas a ${product.name}.` };
+  } catch (error) {
+    errorElement.textContent = `Não foi possível repor o estoque. ${error.message}`;
+    button.disabled = false;
+    return;
+  }
   document.getElementById('m-content').innerHTML = renderSnackStock();
 }
 
 function renderSnackStockHistory() {
-  const entries = SNACK_STOCK_FRONTEND_DEMO.history.slice(0, 5);
-  return `<section class="card snack-stock-history"><div class="card-header"><div><span class="card-title">Histórico visual da sessão</span><p>Preparado para integração futura, sem persistência.</p></div></div>${entries.length ? entries.map(entry => `<div class="snack-stock-history-row"><span>+${entry.amount}</span><div><strong>${escapeManagerHtml(entry.productName)}</strong><small>${new Date(entry.at).toLocaleString('pt-BR')}</small></div></div>`).join('') : '<div class="snack-stock-history-empty">Nenhuma reposição local realizada nesta sessão.</div>'}</section>`;
+  const entries = SNACK_STOCK_UI_STATE.movements.slice(0, 10);
+  return `<section class="card snack-stock-history"><div class="card-header"><div><span class="card-title">Histórico de movimentações</span><p>Auditoria persistida pelo backend.</p></div></div>${entries.length ? entries.map(entry => { const product = getProduct(entry.product_id); const delta = Number(entry.quantity_delta); return `<div class="snack-stock-history-row"><span>${delta > 0 ? '+' : ''}${delta}</span><div><strong>${escapeManagerHtml(product?.name || `Produto ${entry.product_id}`)}</strong><small>${escapeManagerHtml(stockMovementLabel(entry.reason))} · saldo ${entry.resulting_stock} · ${new Date(entry.created_at).toLocaleString('pt-BR')}</small></div></div>`; }).join('') : '<div class="snack-stock-history-empty">Nenhuma movimentação registrada.</div>'}</section>`;
+}
+
+function stockMovementLabel(reason) {
+  return ({ manual_restock:'Reposição manual', order_debit:'Baixa por pedido', order_restore:'Restauração por cancelamento', manual_adjustment:'Ajuste manual' })[reason] || reason;
 }
 
 /* ── CONFIGURAÇÕES DA LOJA (FRONTEND) ── */
@@ -1046,93 +1054,6 @@ function renderRelatorios() {
       </div>
     </div>
   </section>`;
-}
-
-/* ── ESTOQUE ── */
-function renderEstoque() {
-  const catTabs = [{ key:'todos', label:'Todos' }, ...Object.entries(CAT_MAP).map(([k,v]) => ({ key:k, label:v.label }))];
-  const filtered = stockFilterCat === 'todos' ? products : products.filter(p => p.category === stockFilterCat);
-
-  const tabs = catTabs.map(c =>
-    `<button class="filter-tab${stockFilterCat === c.key ? ' active' : ''}" onclick="setStockFilter('${c.key}')">${c.label}</button>`
-  ).join('');
-
-  const rows = filtered.map((p) => {
-    const isOut = p.stock === 0;
-    const isLow = p.stock <= p.minStock;
-    const statusColor = isOut ? '#DC2626' : isLow ? '#D97706' : '#16A34A';
-    const statusBg = isOut ? '#FEE2E2' : isLow ? '#FEF3C7' : '#DCFCE7';
-    const statusLabel = isOut ? 'Esgotado' : isLow ? 'Baixo' : 'OK';
-    const cat = CAT_MAP[p.category];
-
-    return `<tr>
-      <td>
-        <div class="tbl-product">
-          <img class="tbl-img" src="${p.img}" alt="${p.name}" loading="lazy" />
-          <span class="tbl-name">${p.name}</span>
-        </div>
-      </td>
-      <td style="color:var(--stone);font-weight:600">${cat.emoji} ${cat.label}</td>
-      <td style="font-family:var(--font-mono);color:var(--green);font-weight:600">R$ ${fmt(p.price)}</td>
-      <td style="font-family:var(--font-mono);color:var(--stone)">R$ ${fmt(p.cost)}</td>
-      <td>
-        ${editingStock === p.id
-          ? `<input class="stock-input" id="stock-input-${p.id}" type="number" value="${p.stock}" min="0" onblur="saveStock(${p.id})" onkeydown="if(event.key==='Enter')saveStock(${p.id})" />`
-          : `<span style="font-family:var(--font-mono);font-weight:700;color:${isOut?'#DC2626':isLow?'#D97706':'var(--dark)'}">${p.stock} un.</span>`
-        }
-      </td>
-      <td style="font-family:var(--font-mono);color:var(--stone-light)">${p.minStock} un.</td>
-      <td><span class="status-badge" style="background:${statusBg};color:${statusColor}">${statusLabel}</span></td>
-      <td><button class="btn-edit" onclick="startEditStock(${p.id})">Editar</button></td>
-    </tr>`;
-  }).join('');
-
-  return `
-    <div class="filter-tabs">${tabs}</div>
-    <div class="stock-table" style="overflow-x:auto">
-      <table class="tbl">
-        <thead>
-          <tr>
-            <th>Produto</th><th>Categoria</th><th>Preço</th><th>Custo</th>
-            <th>Estoque</th><th>Mínimo</th><th>Status</th><th>Ação</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
-}
-
-function setStockFilter(cat) {
-  stockFilterCat = cat;
-  editingStock = null;
-  document.getElementById('m-content').innerHTML = renderEstoque();
-}
-
-function startEditStock(pid) {
-  editingStock = pid;
-  document.getElementById('m-content').innerHTML = renderEstoque();
-  const input = document.getElementById(`stock-input-${pid}`);
-  if (input) { input.focus(); input.select(); }
-}
-
-async function saveStock(pid) {
-  const input = document.getElementById(`stock-input-${pid}`);
-  if (input) {
-    const val = parseInt(input.value, 10);
-    if (!isNaN(val) && val >= 0) {
-      const p = getProduct(pid);
-      if (p) {
-        p.stock = val;
-        try {
-          await Store.updateProductStock(pid, val);
-        } catch (error) {
-          alert(`Não foi possível atualizar o estoque. ${error.message}`);
-        }
-      }
-    }
-  }
-  editingStock = null;
-  document.getElementById('m-content').innerHTML = renderEstoque();
 }
 
 /* ── FINANCEIRO ── */

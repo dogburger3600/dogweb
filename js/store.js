@@ -78,9 +78,20 @@ const Store = {
     if (error) throw error;
     return `PED-${String(data).padStart(3,'0')}`;
   },
-  async updateProductStock(id, stock) {
-    const { error } = await DB.from('products').update({ stock }).eq('id', id);
+  async getStockMovements(limit = 20) {
+    const { data, error } = await DB.from('product_stock_movements').select('id, product_id, quantity_delta, resulting_stock, reason, order_id, note, created_at').order('created_at', { ascending:false }).limit(limit);
     if (error) throw error;
+    return data;
+  },
+  async restockSnackProduct(id, quantity, operationId, note = null) {
+    const { data, error } = await DB.rpc('restock_snack_product', { p_product_id:id, p_quantity:quantity, p_operation_id:operationId, p_note:note });
+    if (error) throw error;
+    return data;
+  },
+  async setSnackMinStock(id, minStock) {
+    const { data, error } = await DB.rpc('set_snack_min_stock', { p_product_id:id, p_min_stock:minStock });
+    if (error) throw error;
+    return data;
   },
   async updateOrderStatus(id, status) {
     const { data, error } = await DB.rpc('transition_order_status', { p_order_id:id, p_to_status:status });
