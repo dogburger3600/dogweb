@@ -27,7 +27,10 @@ const REALTIME_UI_STATE = {
 const SNACK_STOCK_UI_STATE = {
   movements: [],
   filter: 'todos',
+  category: 'todos',
   restockProductId: null,
+  compositionProductId: null,
+  compositionDraft: null,
   feedback: null,
   savingMinimums: new Set(),
 };
@@ -72,6 +75,10 @@ function orderTotal(order) {
     const p = getProduct(i.pid);
     return s + (i.unitPrice ?? p?.price ?? 0) * i.qty;
   }, 0);
+}
+
+function orderItemChoiceSummary(item) {
+  return (item.componentSelections || []).map(selection => `<small class="order-item-removal">${escapeManagerHtml(selection.group_name || 'Escolha')}: ${selection.quantity}× ${escapeManagerHtml(selection.product_name || `Produto ${selection.product_id}`)}</small>`).join('');
 }
 
 function activeOrders() {
@@ -494,7 +501,7 @@ function orderCard(o) {
         ${o.items.map(i => {
           const p = getProduct(i.pid);
           return p ? `<div class="order-item-row">
-            <span class="order-item-name">${i.qty}× ${p.name}${i.removedIngredients ? `<small class="order-item-removal">Sem: ${escapeManagerHtml(i.removedIngredients)}</small>` : ''}</span>
+            <span class="order-item-name">${i.qty}× ${p.name}${orderItemChoiceSummary(i)}${i.removedIngredients ? `<small class="order-item-removal">Sem: ${escapeManagerHtml(i.removedIngredients)}</small>` : ''}</span>
             <span class="order-item-price">R$ ${fmt(i.unitPrice * i.qty)}</span>
           </div>` : '';
         }).join('')}
@@ -588,9 +595,9 @@ function printKitchenTicket(id) {
   }, 0);
 }
 
-/* ── ESTOQUE DE LANCHES PRONTOS (FRONTEND) ── */
+/* ── ESTOQUE GERAL E COMPOSICOES ── */
 function snackStockProducts() {
-  return products.filter(product => product.category === 'lanches');
+  return products;
 }
 
 function normalizedStockNumber(value, fallback = 0) {
@@ -600,68 +607,114 @@ function normalizedStockNumber(value, fallback = 0) {
 }
 
 function snackStockStatus(product) {
-  const quantity = normalizedStockNumber(product.stock);
+  const quantity = managerAvailableUnits(product);
   const minimum = normalizedStockNumber(product.minStock);
   if (quantity === 0) return { key:'zero', label:'Esgotado', icon:'⛔' };
   if (quantity <= minimum) return { key:'baixo', label:'Baixo', icon:'⚠️' };
   return { key:'normal', label:'Normal', icon:'✅' };
 }
 
+function managerSimpleAvailableUnits(product) {
+  if (!product || !product.active) return 0;
+  return product.inventoryTracked ? normalizedStockNumber(product.stock) : Number.POSITIVE_INFINITY;
+}
+
+function managerAvailableUnits(product) {
+  if (!product.isComposite) return product.inventoryTracked ? normalizedStockNumber(product.stock) : Number.POSITIVE_INFINITY;
+  const capacities = [];
+  product.fixedComponents.forEach(component => capacities.push(Math.floor(managerSimpleAvailableUnits(component.product) / component.quantity)));
+  product.choiceGroups.forEach(group => capacities.push(Math.floor(group.options.reduce((sum, option) => sum + Math.floor(managerSimpleAvailableUnits(option.product) / option.componentQuantity), 0) / group.requiredQuantity)));
+  return capacities.length ? Math.max(0, Math.min(...capacities)) : 0;
+}
+
 function renderSnackStockState(state, detail = '') {
   if (state === 'loading') {
-    return `<section class="snack-stock-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando lanches...</strong><span>Consultando o estoque transacional.</span></section>`;
+    return `<section class="snack-stock-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando produtos...</strong><span>Consultando o estoque transacional.</span></section>`;
   }
-  return `<section class="snack-stock-state is-error" role="alert"><span aria-hidden="true">⚠️</span><strong>Não foi possível carregar os lanches</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('estoque-lanches')">Tentar novamente</button></section>`;
+  return `<section class="snack-stock-state is-error" role="alert"><span aria-hidden="true">⚠️</span><strong>Não foi possível carregar os produtos</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('estoque-lanches')">Tentar novamente</button></section>`;
 }
 
 function renderSnackStock() {
   const snacks = snackStockProducts();
+  const categoryProducts = SNACK_STOCK_UI_STATE.category === 'todos' ? snacks : snacks.filter(product => product.category === SNACK_STOCK_UI_STATE.category);
   const counts = { normal:0, baixo:0, zero:0 };
-  snacks.forEach(product => { counts[snackStockStatus(product).key]++; });
+  categoryProducts.forEach(product => { counts[snackStockStatus(product).key]++; });
   const filtered = SNACK_STOCK_UI_STATE.filter === 'todos'
-    ? snacks
-    : snacks.filter(product => snackStockStatus(product).key === SNACK_STOCK_UI_STATE.filter);
+    ? categoryProducts
+    : categoryProducts.filter(product => snackStockStatus(product).key === SNACK_STOCK_UI_STATE.filter);
+  const categories = [...new Set(snacks.map(product => product.category))].sort();
   const filters = [
-    { key:'todos', label:'Todos', count:snacks.length },
+    { key:'todos', label:'Todos', count:categoryProducts.length },
     { key:'normal', label:'Normal', count:counts.normal },
     { key:'baixo', label:'Baixo', count:counts.baixo },
     { key:'zero', label:'Esgotado', count:counts.zero },
   ];
 
-  return `<section class="snack-stock-page" aria-label="Estoque transacional de lanches prontos">
+  return `<section class="snack-stock-page" aria-label="Estoque geral de produtos">
     <div class="snack-stock-intro">
-      <div><span aria-hidden="true">📦</span><div><strong>Unidades de lanches prontos</strong><p>Estoque real, debitado na confirmação do pedido. Não inclui ingredientes nem possui reset diário.</p></div></div>
+      <div><span aria-hidden="true">📦</span><div><strong>Produtos e unidades operacionais</strong><p>Estoque real de produtos; não inclui ingredientes e não possui reserva no carrinho.</p></div></div>
       <span>Servidor · fonte de verdade</span>
     </div>
     ${SNACK_STOCK_UI_STATE.feedback ? `<div class="snack-stock-feedback is-${SNACK_STOCK_UI_STATE.feedback.type}" role="status">${escapeManagerHtml(SNACK_STOCK_UI_STATE.feedback.message)}</div>` : ''}
     <div class="snack-stock-kpis">
-      ${kpiCard('Lanches cadastrados', String(snacks.length), '🍔', '#F97316', 'somente categoria lanches')}
+      ${kpiCard('Produtos cadastrados', String(snacks.length), '📦', '#F97316', 'categorias reais do cardápio')}
       ${kpiCard('Estoque normal', String(counts.normal), '✅', '#16A34A', 'acima do mínimo')}
       ${kpiCard('Estoque baixo', String(counts.baixo), '⚠️', '#D97706', 'no mínimo ou abaixo')}
       ${kpiCard('Esgotados', String(counts.zero), '⛔', '#DC2626', 'quantidade real igual a zero')}
     </div>
-    <div class="filter-tabs snack-stock-filters">${filters.map(filter => `<button class="filter-tab${SNACK_STOCK_UI_STATE.filter === filter.key ? ' active' : ''}" type="button" onclick="setSnackStockFilter('${filter.key}')">${filter.label} (${filter.count})</button>`).join('')}</div>
-    ${filtered.length ? `<div class="snack-stock-grid">${filtered.map(renderSnackStockCard).join('')}</div>` : `<div class="snack-stock-empty"><span aria-hidden="true">🍔</span><strong>Nenhum lanche neste estado</strong><p>Escolha outro filtro para continuar.</p></div>`}
+    <div class="stock-filter-row"><label>Categoria<select class="form-select" onchange="setStockCategory(this.value)"><option value="todos">Todas</option>${categories.map(category => `<option value="${escapeManagerHtml(category)}"${SNACK_STOCK_UI_STATE.category === category ? ' selected' : ''}>${escapeManagerHtml(CAT_MAP[category]?.label || category)}</option>`).join('')}</select></label><div class="filter-tabs snack-stock-filters">${filters.map(filter => `<button class="filter-tab${SNACK_STOCK_UI_STATE.filter === filter.key ? ' active' : ''}" type="button" onclick="setSnackStockFilter('${filter.key}')">${filter.label} (${filter.count})</button>`).join('')}</div></div>
+    ${filtered.length ? `<div class="snack-stock-grid">${filtered.map(renderSnackStockCard).join('')}</div>` : `<div class="snack-stock-empty"><span aria-hidden="true">📦</span><strong>Nenhum produto neste estado</strong><p>Escolha outro filtro para continuar.</p></div>`}
     ${renderSnackStockHistory()}
     ${renderSnackRestockModal()}
+    ${renderCompositionModal()}
   </section>`;
 }
 
 function renderSnackStockCard(product) {
-  const quantity = normalizedStockNumber(product.stock);
+  const quantity = managerAvailableUnits(product);
   const minimum = normalizedStockNumber(product.minStock);
   const status = snackStockStatus(product);
   return `<article class="snack-stock-card is-${status.key}">
-    <div class="snack-stock-card-head"><div class="snack-stock-product-icon" aria-hidden="true">🍔</div><div><h3>${escapeManagerHtml(product.name)}</h3><span class="snack-stock-status">${status.icon} ${status.label}</span></div></div>
-    <div class="snack-stock-quantity"><strong>${quantity}</strong><span>unidades prontas</span></div>
-    <label class="snack-stock-minimum">Estoque mínimo<input type="number" min="0" max="999" step="1" value="${minimum}" aria-label="Estoque mínimo de ${escapeManagerHtml(product.name)}" onchange="updateSnackStockMinimum(${JSON.stringify(product.id)}, this.value)" ${SNACK_STOCK_UI_STATE.savingMinimums.has(product.id) ? 'disabled' : ''} /></label>
-    <button class="btn-primary snack-stock-restock" type="button" data-capability="manageStock" data-capability-mode="disable" onclick="openSnackRestock(${JSON.stringify(product.id)})">+ Reposição manual</button>
+    <div class="snack-stock-card-head"><div class="snack-stock-product-icon" aria-hidden="true">${product.isComposite ? '🧩' : '📦'}</div><div><h3>${escapeManagerHtml(product.name)}</h3><span class="snack-stock-status">${status.icon} ${status.label}${product.isComposite ? ' · Produto composto' : product.inventoryTracked ? '' : ' · Sem controle'}</span></div></div>
+    <div class="snack-stock-quantity"><strong>${Number.isFinite(quantity) ? quantity : '∞'}</strong><span>${product.isComposite ? 'capacidade derivada' : product.inventoryTracked ? 'unidades' : 'não controlado'}</span></div>
+    ${product.isComposite ? renderCompositionSummary(product) : product.inventoryTracked ? `<label class="snack-stock-minimum">Estoque mínimo<input type="number" min="0" max="999" step="1" value="${minimum}" onchange="updateSnackStockMinimum(${product.id}, this.value)" /></label><button class="btn-primary snack-stock-restock" type="button" onclick="openSnackRestock(${product.id})">+ Reposição manual</button>` : `<button class="btn-secondary snack-stock-restock" type="button" onclick="enableProductInventory(${product.id})">Ativar controle de estoque</button>`}
+    <button class="order-action-button" type="button" onclick="toggleProductSellable(${product.id})">${product.sellable === false ? 'Tornar vendável' : 'Marcar como item interno'}</button>
+    <button class="order-action-button" type="button" onclick="openCompositionEditor(${product.id})">${product.isComposite ? 'Editar composição' : 'Transformar em composto'}</button>
   </article>`;
+}
+
+function renderCompositionSummary(product) {
+  const fixed = product.fixedComponents.map(item => `${escapeManagerHtml(item.product?.name || `Produto ${item.productId}`)} × ${item.quantity}`).join(', ') || 'Nenhum componente fixo';
+  const groups = product.choiceGroups.map(group => `${escapeManagerHtml(group.name)}: ${group.options.map(option => escapeManagerHtml(option.product?.name || `Produto ${option.productId}`)).join(', ')}`).join(' · ') || 'Nenhum grupo';
+  return `<div class="composition-summary"><small><strong>Fixos:</strong> ${fixed}</small><small><strong>Escolhas:</strong> ${groups}</small></div>`;
+}
+
+async function enableProductInventory(productId) {
+  try {
+    await Store.setProductInventorySettings(productId, true, getProduct(productId)?.sellable !== false);
+    products = await Store.getAllProducts();
+    SNACK_STOCK_UI_STATE.feedback = { type:'success', message:'Controle de estoque ativado.' };
+  } catch (error) { SNACK_STOCK_UI_STATE.feedback = { type:'error', message:error.message }; }
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
+async function toggleProductSellable(productId) {
+  const product = getProduct(productId);
+  try {
+    await Store.setProductInventorySettings(productId, product.inventoryTracked, product.sellable === false);
+    products = await Store.getAllProducts();
+  } catch (error) { SNACK_STOCK_UI_STATE.feedback = { type:'error', message:error.message }; }
+  document.getElementById('m-content').innerHTML = renderSnackStock();
 }
 
 function setSnackStockFilter(filter) {
   if (!['todos','normal','baixo','zero'].includes(filter)) return;
   SNACK_STOCK_UI_STATE.filter = filter;
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
+function setStockCategory(category) {
+  SNACK_STOCK_UI_STATE.category = category;
   document.getElementById('m-content').innerHTML = renderSnackStock();
 }
 
@@ -672,7 +725,7 @@ async function updateSnackStockMinimum(productId, value) {
   } else {
     SNACK_STOCK_UI_STATE.savingMinimums.add(productId);
     try {
-      await Store.setSnackMinStock(productId, minimum);
+      await Store.setProductMinStock(productId, minimum);
       products = await Store.getAllProducts();
       SNACK_STOCK_UI_STATE.feedback = { type:'success', message:'Estoque mínimo atualizado no servidor.' };
     } catch (error) {
@@ -730,7 +783,7 @@ async function submitSnackRestock(event) {
   const button = event.submitter || event.currentTarget.querySelector('button[type="submit"]');
   button.disabled = true;
   try {
-    await Store.restockSnackProduct(productId, amount, crypto.randomUUID());
+    await Store.restockProduct(productId, amount, crypto.randomUUID());
     [products, SNACK_STOCK_UI_STATE.movements] = await Promise.all([Store.getAllProducts(), Store.getStockMovements()]);
     SNACK_STOCK_UI_STATE.restockProductId = null;
     SNACK_STOCK_UI_STATE.feedback = { type:'success', message:`${amount} unidades adicionadas a ${product.name}.` };
@@ -749,6 +802,72 @@ function renderSnackStockHistory() {
 
 function stockMovementLabel(reason) {
   return ({ manual_restock:'Reposição manual', order_debit:'Baixa por pedido', order_restore:'Restauração por cancelamento', manual_adjustment:'Ajuste manual' })[reason] || reason;
+}
+
+function openCompositionEditor(productId) {
+  const product = getProduct(productId);
+  if (!product) return;
+  SNACK_STOCK_UI_STATE.compositionProductId = productId;
+  SNACK_STOCK_UI_STATE.compositionDraft = {
+    fixedComponents:product.fixedComponents.map(item => ({ productId:item.productId, quantity:item.quantity })),
+    choiceGroups:product.choiceGroups.map(group => ({ name:group.name, requiredQuantity:group.requiredQuantity, options:group.options.map(option => ({ productId:option.productId, componentQuantity:option.componentQuantity })) })),
+  };
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
+function closeCompositionEditor() {
+  SNACK_STOCK_UI_STATE.compositionProductId = null;
+  SNACK_STOCK_UI_STATE.compositionDraft = null;
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
+function compositionCandidates() {
+  return products.filter(item => item.id !== SNACK_STOCK_UI_STATE.compositionProductId && !item.isComposite && item.inventoryTracked);
+}
+
+function compositionProductOptions(selectedId = '') {
+  return `<option value="">Selecione um produto</option>${compositionCandidates().map(item => `<option value="${item.id}"${Number(selectedId) === item.id ? ' selected' : ''}>${escapeManagerHtml(item.name)}${item.sellable === false ? ' · item interno' : ''}${item.active ? '' : ' · inativo'}</option>`).join('')}`;
+}
+
+function rerenderCompositionEditor() { document.getElementById('m-content').innerHTML = renderSnackStock(); }
+function addFixedComponent() { SNACK_STOCK_UI_STATE.compositionDraft.fixedComponents.push({ productId:'', quantity:1 }); rerenderCompositionEditor(); }
+function removeFixedComponent(index) { SNACK_STOCK_UI_STATE.compositionDraft.fixedComponents.splice(index, 1); rerenderCompositionEditor(); }
+function updateFixedComponent(index, field, value) { SNACK_STOCK_UI_STATE.compositionDraft.fixedComponents[index][field] = Number(value); }
+function addChoiceGroup() { SNACK_STOCK_UI_STATE.compositionDraft.choiceGroups.push({ name:'', requiredQuantity:1, options:[] }); rerenderCompositionEditor(); }
+function removeChoiceGroup(index) { SNACK_STOCK_UI_STATE.compositionDraft.choiceGroups.splice(index, 1); rerenderCompositionEditor(); }
+function updateChoiceGroup(index, field, value) { SNACK_STOCK_UI_STATE.compositionDraft.choiceGroups[index][field] = field === 'requiredQuantity' ? Number(value) : value; }
+function addChoiceOption(groupIndex) { SNACK_STOCK_UI_STATE.compositionDraft.choiceGroups[groupIndex].options.push({ productId:'', componentQuantity:1 }); rerenderCompositionEditor(); }
+function removeChoiceOption(groupIndex, optionIndex) { SNACK_STOCK_UI_STATE.compositionDraft.choiceGroups[groupIndex].options.splice(optionIndex, 1); rerenderCompositionEditor(); }
+function updateChoiceOption(groupIndex, optionIndex, field, value) { SNACK_STOCK_UI_STATE.compositionDraft.choiceGroups[groupIndex].options[optionIndex][field] = Number(value); }
+
+function renderCompositionModal() {
+  if (SNACK_STOCK_UI_STATE.compositionProductId === null) return '';
+  const product = getProduct(SNACK_STOCK_UI_STATE.compositionProductId);
+  const draft = SNACK_STOCK_UI_STATE.compositionDraft;
+  if (!product || !draft) return '';
+  const fixedRows = draft.fixedComponents.map((item, index) => `<div class="composition-editor-row"><label>Produto<select class="form-select" onchange="updateFixedComponent(${index}, 'productId', this.value)">${compositionProductOptions(item.productId)}</select></label><label>Quantidade<input class="form-input" type="number" min="1" max="999" value="${item.quantity}" onchange="updateFixedComponent(${index}, 'quantity', this.value)" /></label><button class="composition-remove" type="button" onclick="removeFixedComponent(${index})">Remover</button></div>`).join('');
+  const groups = draft.choiceGroups.map((group, groupIndex) => `<fieldset class="composition-group"><legend>Grupo ${groupIndex + 1}</legend><div class="composition-group-fields"><label>Nome<input class="form-input" maxlength="80" value="${escapeManagerHtml(group.name)}" oninput="updateChoiceGroup(${groupIndex}, 'name', this.value)" /></label><label>Quantidade obrigatória<input class="form-input" type="number" min="1" max="999" value="${group.requiredQuantity}" onchange="updateChoiceGroup(${groupIndex}, 'requiredQuantity', this.value)" /></label><button class="composition-remove" type="button" onclick="removeChoiceGroup(${groupIndex})">Remover grupo</button></div><div class="composition-options"><strong>Opções</strong>${group.options.map((option, optionIndex) => `<div class="composition-editor-row"><label>Produto<select class="form-select" onchange="updateChoiceOption(${groupIndex}, ${optionIndex}, 'productId', this.value)">${compositionProductOptions(option.productId)}</select></label><label>Unidades debitadas<input class="form-input" type="number" min="1" max="999" value="${option.componentQuantity}" onchange="updateChoiceOption(${groupIndex}, ${optionIndex}, 'componentQuantity', this.value)" /></label><button class="composition-remove" type="button" onclick="removeChoiceOption(${groupIndex}, ${optionIndex})">Remover</button></div>`).join('') || '<p class="composition-empty">Nenhuma opção adicionada.</p>'}<button class="btn-secondary composition-add" type="button" onclick="addChoiceOption(${groupIndex})">+ Adicionar opção</button></div></fieldset>`).join('');
+  return `<div class="modal-overlay snack-restock-overlay" onclick="closeCompositionEditor()"></div><section class="modal composition-editor-modal" role="dialog" aria-modal="true"><h2 class="modal-title">Composição de ${escapeManagerHtml(product.name)}</h2><p class="modal-sub">Selecione produtos reais com estoque controlado. Itens internos também podem ser componentes.</p><form onsubmit="submitComposition(event)"><section class="composition-editor-section"><div class="composition-editor-heading"><div><strong>Componentes fixos</strong><small>Unidades sempre debitadas.</small></div><button class="btn-secondary" type="button" onclick="addFixedComponent()">+ Adicionar componente</button></div>${fixedRows || '<p class="composition-empty">Nenhum componente fixo.</p>'}</section><section class="composition-editor-section"><div class="composition-editor-heading"><div><strong>Grupos de escolha</strong><small>Opções selecionadas pelo cliente.</small></div><button class="btn-secondary" type="button" onclick="addChoiceGroup()">+ Adicionar grupo</button></div>${groups || '<p class="composition-empty">Nenhum grupo.</p>'}</section><p class="form-error" id="composition-error"></p><div class="modal-actions"><button class="btn-secondary" type="button" onclick="closeCompositionEditor()">Cancelar</button><button class="btn-primary" type="submit">Salvar composição</button></div></form></section>`;
+}
+
+async function submitComposition(event) {
+  event.preventDefault();
+  const draft = SNACK_STOCK_UI_STATE.compositionDraft;
+  const errorElement = document.getElementById('composition-error');
+  if (!draft || (!draft.fixedComponents.length && !draft.choiceGroups.length)) return void (errorElement.textContent = 'Adicione ao menos um componente ou grupo.');
+  const fixedIds = draft.fixedComponents.map(item => item.productId);
+  if (draft.fixedComponents.some(item => !item.productId || !Number.isInteger(item.quantity) || item.quantity < 1) || new Set(fixedIds).size !== fixedIds.length) return void (errorElement.textContent = 'Revise produtos, quantidades e duplicidades dos componentes.');
+  if (draft.choiceGroups.some(group => group.name.trim().length < 2 || !Number.isInteger(group.requiredQuantity) || group.requiredQuantity < 1 || !group.options.length || group.options.some(option => !option.productId || !Number.isInteger(option.componentQuantity) || option.componentQuantity < 1) || new Set(group.options.map(option => option.productId)).size !== group.options.length)) return void (errorElement.textContent = 'Revise nomes, quantidades, opções e duplicidades dos grupos.');
+  const button = event.submitter;
+  button.disabled = true;
+  try {
+    await Store.saveProductComposition(SNACK_STOCK_UI_STATE.compositionProductId, draft.fixedComponents.map(item => ({ product_id:item.productId, quantity:item.quantity })), draft.choiceGroups.map(group => ({ name:group.name.trim(), required_quantity:group.requiredQuantity, options:group.options.map(option => ({ product_id:option.productId, component_quantity:option.componentQuantity })) })));
+    products = await Store.getAllProducts();
+    SNACK_STOCK_UI_STATE.compositionProductId = null;
+    SNACK_STOCK_UI_STATE.compositionDraft = null;
+    SNACK_STOCK_UI_STATE.feedback = { type:'success', message:'Composição atualizada no servidor.' };
+    rerenderCompositionEditor();
+  } catch (error) { errorElement.textContent = `Não foi possível salvar. ${error.message}`; button.disabled = false; }
 }
 
 /* ── CONFIGURAÇÕES DA LOJA (FRONTEND) ── */
@@ -1009,7 +1128,7 @@ function renderRelatorios() {
     const customer = order.customer || {};
     const items = order.items.map(item => {
       const product = getProduct(item.pid);
-      return `<span><strong>${item.qty}×</strong> ${escapeManagerHtml(product?.name || `Produto #${item.pid}`)} <small>R$ ${fmt(item.unitPrice * item.qty)}</small>${item.removedIngredients ? `<em>Sem: ${escapeManagerHtml(item.removedIngredients)}</em>` : ''}</span>`;
+      return `<span><strong>${item.qty}×</strong> ${escapeManagerHtml(product?.name || `Produto #${item.pid}`)} <small>R$ ${fmt(item.unitPrice * item.qty)}</small>${orderItemChoiceSummary(item)}${item.removedIngredients ? `<em>Sem: ${escapeManagerHtml(item.removedIngredients)}</em>` : ''}</span>`;
     }).join('');
     const address = order.address ? formatOrderAddress(order.address) : 'Não informado';
     return `<tr>

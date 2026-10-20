@@ -103,7 +103,7 @@ function renderMenuProducts() {
         <div class="menu-edit-title"><h2>${escapeHtml(product.name)}</h2><strong>R$ ${fmt(product.price)}</strong></div>
         <p>${escapeHtml(product.desc)}</p>
         ${product.category === 'lanches' && product.ingredients.length ? `<p class="menu-edit-ingredients"><strong>Ingredientes:</strong> ${product.ingredients.map(escapeHtml).join(', ')}</p>` : ''}
-        <div class="menu-edit-meta"><span>${product.active ? '● Disponível' : '○ Desativado'}</span>${product.category === 'lanches' ? `<span>Estoque: <b>${Number(product.stock) || 0}</b></span>` : '<span>Sem estoque de lanche</span>'}</div>
+        <div class="menu-edit-meta"><span>${product.active ? '● Disponível' : '○ Desativado'}</span>${product.isComposite ? '<span>Composto · disponibilidade derivada</span>' : product.inventoryTracked ? `<span>Estoque: <b>${Number(product.stock) || 0}</b></span>` : '<span>Sem controle de estoque</span>'}</div>
         <div class="menu-edit-actions">
           <button class="btn-edit-product" data-action="edit" data-id="${product.id}" data-capability="manageMenu" data-capability-mode="disable">Editar</button>
           <button class="${product.active ? 'btn-delete-product' : 'btn-restore-product'}" data-action="toggle" data-id="${product.id}" data-capability="manageMenu" data-capability-mode="disable">${product.active ? 'Excluir' : 'Restaurar'}</button>
@@ -132,6 +132,7 @@ function openProductModal(product = null) {
   document.getElementById('product-category').value = product?.category || 'lanches';
   document.getElementById('product-ingredients').value = (product?.ingredients || []).join(', ');
   updateIngredientsField();
+  document.getElementById('product-ready-stock-group').classList.toggle('hidden', !product?.inventoryTracked && !product?.isComposite);
   document.getElementById('product-image').value = '';
   document.getElementById('product-current-image').value = product?.img || '';
   document.getElementById('product-price').value = product?.price ?? '';
