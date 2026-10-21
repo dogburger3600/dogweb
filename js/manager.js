@@ -74,6 +74,20 @@ function orderTotal(order) {
   }, 0);
 }
 
+function renderOrderFinancialSummary(order) {
+  const hasB05Snapshot = ['delivery', 'pickup'].includes(order.fulfillmentMethod)
+    && [order.subtotal, order.deliveryFee, order.total].every(Number.isFinite);
+  if (!hasB05Snapshot) return '';
+  const deliveryFee = order.fulfillmentMethod === 'pickup' || order.deliveryFee === 0
+    ? 'Grátis'
+    : `R$ ${fmt(order.deliveryFee)}`;
+  return `<dl class="order-financial-summary">
+    <div><dt>Subtotal</dt><dd>R$ ${fmt(order.subtotal)}</dd></div>
+    <div><dt>Taxa de entrega</dt><dd>${deliveryFee}</dd></div>
+    <div class="order-financial-total"><dt>Total</dt><dd>R$ ${fmt(order.total)}</dd></div>
+  </dl>`;
+}
+
 function activeOrders() {
   return orders.filter(o => !o.cancellation && (o.status === 'pendente' || o.status === 'preparando'));
 }
@@ -482,6 +496,7 @@ function orderCard(o) {
           </div>` : '';
         }).join('')}
       </div>
+      ${renderOrderFinancialSummary(o)}
       ${o.address ? `<div class="order-address">📍 ${formatOrderAddress(o.address)}</div>` : ''}
       <div class="order-payment">💳 Pagamento na entrega: ${orderPaymentLabel(o)}</div>
       ${o.note ? `<div class="order-note">📝 ${escapeManagerHtml(o.note)}</div>` : ''}
