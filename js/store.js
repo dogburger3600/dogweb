@@ -46,7 +46,7 @@ const Store = {
     if (error) throw error;
   },
   async getOrders() {
-    const { data, error } = await DB.from('orders').select('id, customer_id, customer_name, note, status, created_at, delivery_address, payment_method, change_for, order_items(product_id, quantity, unit_price, unit_cost, removed_ingredients)').order('created_at', { ascending:false });
+    const { data, error } = await DB.from('orders').select('id, customer_id, customer_name, note, status, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, quantity, unit_price, unit_cost, removed_ingredients)').order('created_at', { ascending:false });
     if (error) throw error;
     const [{ data:cancellations, error:cancellationsError }, { data:history, error:historyError }] = await Promise.all([
       DB.from('order_cancellations').select('order_id, reason, created_at'),
@@ -66,7 +66,7 @@ const Store = {
       const { data: customers, error: customersError } = await DB.from('profiles').select('id, name, phone, email').in('id', customerIds);
       if (!customersError) customers.forEach(customer => customersById.set(customer.id, customer));
     }
-    return data.map(o => ({ id:`PED-${String(o.id).padStart(3,'0')}`, databaseId:o.id, customerId:o.customer_id, customerName:o.customer_name, customer:customersById.get(o.customer_id) || null, note:o.note, status:o.status, createdAt:new Date(o.created_at).getTime(), address:o.delivery_address, paymentMethod:o.payment_method, changeFor:o.change_for === null ? null : Number(o.change_for), cancellation:cancellationsByOrder.get(o.id) || null, history:historyByOrder.get(o.id) || [], items:o.order_items.map(i => ({ pid:i.product_id, qty:i.quantity, unitPrice:Number(i.unit_price), unitCost:Number(i.unit_cost), removedIngredients:i.removed_ingredients || '' })) }));
+    return data.map(o => ({ id:`PED-${String(o.id).padStart(3,'0')}`, databaseId:o.id, customerId:o.customer_id, customerName:o.customer_name, customer:customersById.get(o.customer_id) || null, note:o.note, status:o.status, createdAt:new Date(o.created_at).getTime(), address:o.delivery_address, paymentMethod:o.payment_method, changeFor:o.change_for === null ? null : Number(o.change_for), fulfillmentMethod:o.fulfillment_method, subtotal:o.subtotal === null ? null : Number(o.subtotal), deliveryFee:o.delivery_fee === null ? null : Number(o.delivery_fee), total:o.total === null ? null : Number(o.total), etaMin:o.eta_min === null ? null : Number(o.eta_min), etaMax:o.eta_max === null ? null : Number(o.eta_max), cancellation:cancellationsByOrder.get(o.id) || null, history:historyByOrder.get(o.id) || [], items:o.order_items.map(i => ({ pid:i.product_id, qty:i.quantity, unitPrice:Number(i.unit_price), unitCost:Number(i.unit_cost), removedIngredients:i.removed_ingredients || '' })) }));
   },
   async getExpenses() {
     const { data, error } = await DB.from('expenses').select('*').order('created_at', { ascending:false });

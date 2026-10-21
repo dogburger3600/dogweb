@@ -68,7 +68,7 @@ function getProduct(pid) {
 }
 
 function orderTotal(order) {
-  return order.items.reduce((s, i) => {
+  return Number.isFinite(order.total) ? order.total : order.items.reduce((s, i) => {
     const p = getProduct(i.pid);
     return s + (i.unitPrice ?? p?.price ?? 0) * i.qty;
   }, 0);
