@@ -29,7 +29,7 @@ function formatOrderAddress(address) {
 async function loadOrderHistory() {
   const list = document.getElementById('profile-orders-list');
   let { data: orders, error } = await DB.from('orders')
-    .select('id, status, note, created_at, delivery_address, payment_method, change_for, order_items(product_id, product_name, quantity, unit_price, removed_ingredients)')
+    .select('id, status, note, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, product_name, quantity, unit_price, removed_ingredients)')
     .order('created_at', { ascending:false });
 
   if (error?.code === '42703') {
@@ -66,7 +66,26 @@ async function loadOrderHistory() {
   const paymentLabels = { pix:'Pix', credito:'Crédito', debito:'Débito', dinheiro:'Dinheiro' };
 
   list.innerHTML = orders.map(order => {
-    const total = order.order_items.reduce((sum, item) => sum + Number(item.unit_price) * item.quantity, 0);
+    const legacyTotal = order.order_items.reduce((sum, item) => sum + Number(item.unit_price) * item.quantity, 0);
+    const subtotal = order.subtotal == null ? null : Number(order.subtotal);
+    const deliveryFee = order.delivery_fee == null ? null : Number(order.delivery_fee);
+    const authoritativeTotal = order.total == null ? null : Number(order.total);
+    const total = Number.isFinite(authoritativeTotal) ? authoritativeTotal : legacyTotal;
+    const hasB05Snapshot = ['delivery', 'pickup'].includes(order.fulfillment_method)
+      && [subtotal, deliveryFee, authoritativeTotal].every(Number.isFinite);
+    const deliveryFeeLabel = hasB05Snapshot
+      ? order.fulfillment_method === 'pickup' || deliveryFee === 0
+        ? 'Grátis'
+        : `R$ ${deliveryFee.toLocaleString('pt-BR', {minimumFractionDigits:2})}`
+      : '';
+    const financialSummary = hasB05Snapshot ? `<dl class="history-order-financial">
+      <div><dt>Subtotal</dt><dd>R$ ${subtotal.toLocaleString('pt-BR', {minimumFractionDigits:2})}</dd></div>
+      <div><dt>Taxa de entrega</dt><dd>${deliveryFeeLabel}</dd></div>
+      <div class="history-order-financial-total"><dt>Total</dt><dd>R$ ${authoritativeTotal.toLocaleString('pt-BR', {minimumFractionDigits:2})}</dd></div>
+    </dl>` : '';
+    const address = order.fulfillment_method === 'pickup'
+      ? 'Retirada no local'
+      : formatOrderAddress(order.delivery_address);
     const status = statusMeta[order.status] || statusMeta.pendente;
     const date = new Date(order.created_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' });
     const items = order.order_items.map(item => `<div class="history-item">
@@ -80,8 +99,8 @@ async function loadOrderHistory() {
         <span class="status-badge" style="background:${status.bg};color:${status.color}">${status.label}</span>
         <strong class="history-order-total">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
       </div>
-      <div class="history-order-body">${items}<div class="history-order-details">
-        <div class="history-detail"><span>📍</span><span>${escapeProfileHtml(formatOrderAddress(order.delivery_address))}</span></div>
+      <div class="history-order-body">${items}${financialSummary}<div class="history-order-details">
+        <div class="history-detail"><span>📍</span><span>${escapeProfileHtml(address)}</span></div>
         ${order.payment_method ? `<div class="history-detail"><span>💳</span><span>Pagamento na entrega: ${paymentLabels[order.payment_method] || order.payment_method}${order.payment_method === 'dinheiro' && order.change_for !== null ? ` · troco para R$ ${Number(order.change_for).toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</span></div>` : ''}
         ${order.note ? `<div class="history-detail"><span>📝</span><span>${escapeProfileHtml(order.note)}</span></div>` : ''}
       </div></div>

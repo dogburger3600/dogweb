@@ -862,6 +862,12 @@ body { min-height: 100vh; }
 .history-item-unit { display: block; color: var(--stone-light); font-size: 0.68rem; font-weight: 600; }
 .history-item-removal { display: block; margin-top: 2px; color: var(--brand-dark); font-size: 0.68rem; font-weight: 700; }
 .history-item-price { color: var(--stone); font-family: var(--font-mono); font-size: 0.78rem; white-space: nowrap; }
+.history-order-financial { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--surface); border-radius: 9px; background: var(--bg); }
+.history-order-financial > div { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 3px 0; color: var(--stone); font-size: 0.76rem; }
+.history-order-financial dt, .history-order-financial dd { margin: 0; }
+.history-order-financial dd { font-family: var(--font-mono); }
+.history-order-financial .history-order-financial-total { margin-top: 4px; padding-top: 7px; border-top: 1px solid var(--border); color: var(--dark); font-family: var(--font-display); font-size: 0.86rem; font-weight: 800; }
+.history-order-financial .history-order-financial-total dd { font-family: var(--font-display); }
 .history-order-details { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--surface); }
 .history-detail { display: flex; align-items: flex-start; gap: 8px; color: var(--stone); font-size: 0.76rem; line-height: 1.4; }
 
