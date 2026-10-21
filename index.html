@@ -91,6 +91,15 @@
     <div><span>📍</span><div><small>Entregar em</small><strong id="checkout-address-text"></strong></div></div>
     <a href="perfil.html">Alterar</a>
   </div>
+  <fieldset class="payment-fieldset" id="fulfillment-fieldset">
+    <legend>Como deseja receber?</legend>
+    <div class="payment-options">
+      <label><input type="radio" name="fulfillment-method" value="delivery" checked /><span>Entrega</span></label>
+      <label><input type="radio" name="fulfillment-method" value="pickup" /><span>Retirada</span></label>
+    </div>
+    <small id="checkout-eta"></small>
+  </fieldset>
+  <div class="checkout-summary-box" id="checkout-totals" aria-live="polite"></div>
   <div class="form-group">
     <label class="form-label">Observações</label>
     <textarea class="form-textarea" id="order-note" rows="3" placeholder="Informe suas preferências"></textarea>

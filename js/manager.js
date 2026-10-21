@@ -27,8 +27,8 @@ const SNACK_STOCK_UI_STATE = {
   savingMinimums: new Set(),
 };
 
-// Configuração demonstrativa mantida somente na memória desta sessão.
-const STORE_SETTINGS_FRONTEND_DEMO = {
+// Estado reconciliado com a configuração persistida no servidor.
+const storeSettingsState = {
   values: {
     openTime: '18:00', closeTime: '23:30', pauseEnabled: false, pauseStart: '20:30', pauseEnd: '21:00',
     whatsapp: '+55 (88) 99623-9679', instagram: '@dogburgertaua', location: 'Dog Burguer, Tauá/CE',
@@ -40,6 +40,9 @@ const STORE_SETTINGS_FRONTEND_DEMO = {
   saving: false,
   feedback: null,
 };
+
+function mapStoreSettings(settings) { return { openTime:settings.open_time, closeTime:settings.close_time, pauseEnabled:settings.pause_enabled, pauseStart:settings.pause_start || '', pauseEnd:settings.pause_end || '', whatsapp:settings.whatsapp, instagram:settings.instagram, location:settings.location_name, latitude:String(settings.latitude), longitude:String(settings.longitude), deliveryEnabled:settings.delivery_enabled, pickupEnabled:settings.pickup_enabled, pix:settings.accepts_pix, cash:settings.accepts_cash, card:settings.accepts_card, deliveryEtaMin:settings.delivery_eta_min, deliveryEtaMax:settings.delivery_eta_max, pickupEtaMin:settings.pickup_eta_min, pickupEtaMax:settings.pickup_eta_max, deliveryFee:Number(settings.delivery_fee), freeDeliveryFrom:Number(settings.free_delivery_from) }; }
+function storeSettingsPayload(value) { return { open_time:value.openTime, close_time:value.closeTime, pause_enabled:value.pauseEnabled, pause_start:value.pauseStart || null, pause_end:value.pauseEnd || null, whatsapp:value.whatsapp, instagram:value.instagram, location_name:value.location, latitude:value.latitude, longitude:value.longitude, delivery_enabled:value.deliveryEnabled, pickup_enabled:value.pickupEnabled, accepts_pix:value.pix, accepts_cash:value.cash, accepts_card:value.card, delivery_eta_min:value.deliveryEtaMin, delivery_eta_max:value.deliveryEtaMax, pickup_eta_min:value.pickupEtaMin, pickup_eta_max:value.pickupEtaMax, delivery_fee:value.deliveryFee, free_delivery_from:value.freeDeliveryFrom }; }
 
 // Controle visual dos filtros de relatórios. Não altera consultas nem critérios financeiros.
 const REPORTS_FRONTEND_DEMO = {
@@ -140,7 +143,9 @@ async function setView(view) {
   updateActiveOrdersBadge();
 
   if (view === 'configuracoes') {
-    document.getElementById('m-content').innerHTML = renderStoreSettings();
+    document.getElementById('m-content').innerHTML = '<div class="card">Carregando configurações…</div>';
+    try { storeSettingsState.values = mapStoreSettings(await Store.getStoreSettings()); storeSettingsState.feedback = null; document.getElementById('m-content').innerHTML = renderStoreSettings(); }
+    catch (error) { document.getElementById('m-content').innerHTML = `<div class="card">Não foi possível carregar as configurações. ${escapeManagerHtml(error.message || '')}</div>`; }
     return;
   }
 
@@ -739,11 +744,11 @@ function storeSettingsSection(icon, title, subtitle, content) {
 }
 
 function renderStoreSettings() {
-  const value = STORE_SETTINGS_FRONTEND_DEMO.values;
-  const feedback = STORE_SETTINGS_FRONTEND_DEMO.feedback;
-  const saving = STORE_SETTINGS_FRONTEND_DEMO.saving;
+  const value = storeSettingsState.values;
+  const feedback = storeSettingsState.feedback;
+  const saving = storeSettingsState.saving;
   return `<section class="store-settings-page">
-    <div class="store-settings-readiness"><div><span aria-hidden="true">⚙️</span><div><strong>Parâmetros operacionais e comerciais</strong><p>Prévia administrativa local, ainda sem persistência ou efeito na loja.</p></div></div><span>Configuração local · demonstração</span></div>
+    <div class="store-settings-readiness"><div><span aria-hidden="true">⚙️</span><div><strong>Parâmetros operacionais e comerciais</strong><p>Configurações operacionais aplicadas pelo servidor.</p></div></div><span>Configuração persistida</span></div>
     ${feedback ? `<div class="store-settings-feedback is-${feedback.type}" role="status">${escapeManagerHtml(feedback.message)}</div>` : ''}
     <form id="store-settings-form" onsubmit="submitStoreSettings(event)" oninput="markStoreSettingsDirty()" novalidate>
       <div class="store-settings-layout">
@@ -767,14 +772,14 @@ function renderStoreSettings() {
           <section class="card store-settings-section is-sensitive" data-future-capability="manageSensitiveRules"><div class="store-settings-section-head"><div><span aria-hidden="true">🔐</span><div><strong>Regras comerciais sensíveis</strong><small>Taxas e condições de entrega</small></div></div><span class="store-settings-owner-badge">edição futura: owner</span></div><div class="store-settings-grid"><div class="form-group"><label class="form-label" for="setting-delivery-fee">Taxa padrão (R$) *</label><input class="form-input" id="setting-delivery-fee" type="number" min="0" max="999" step="0.01" value="${value.deliveryFee.toFixed(2)}" /><small class="form-error" id="setting-delivery-fee-error"></small></div><div class="form-group"><label class="form-label" for="setting-free-delivery">Grátis a partir de (R$) *</label><input class="form-input" id="setting-free-delivery" type="number" min="0" max="9999" step="0.01" value="${value.freeDeliveryFrom.toFixed(2)}" /><small class="form-error" id="setting-free-delivery-error"></small></div></div><p class="store-settings-rule-summary">Referência atual: R$ 5,00 abaixo de R$ 15,00 · retirada grátis.</p></section>
         </div>
       </div>
-      <div class="store-settings-actions"><div><strong id="store-settings-state">${STORE_SETTINGS_FRONTEND_DEMO.dirty ? 'Alterações locais não salvas' : 'Nenhuma alteração pendente'}</strong><small>Salvar não envia dados ao Supabase nesta etapa.</small></div><button class="btn-secondary" id="store-settings-cancel" type="button" onclick="cancelStoreSettings()"${saving ? ' disabled' : ''}>Cancelar alterações</button><button class="btn-primary" id="store-settings-save" type="submit" data-capability="manageSettings" data-capability-mode="disable"${saving ? ' disabled' : ''}>${saving ? 'Salvando demonstração…' : 'Salvar demonstração'}</button></div>
+      <div class="store-settings-actions"><div><strong id="store-settings-state">${storeSettingsState.dirty ? 'Alterações não salvas' : 'Nenhuma alteração pendente'}</strong><small>As configurações são validadas e salvas no servidor.</small></div><button class="btn-secondary" id="store-settings-cancel" type="button" onclick="cancelStoreSettings()"${saving ? ' disabled' : ''}>Cancelar alterações</button><button class="btn-primary" id="store-settings-save" type="submit" data-capability="manageSettings" data-capability-mode="disable"${saving ? ' disabled' : ''}>${saving ? 'Salvando…' : 'Salvar configurações'}</button></div>
     </form>
   </section>`;
 }
 
 function markStoreSettingsDirty() {
-  STORE_SETTINGS_FRONTEND_DEMO.dirty = true;
-  STORE_SETTINGS_FRONTEND_DEMO.feedback = null;
+  storeSettingsState.dirty = true;
+  storeSettingsState.feedback = null;
   const state = document.getElementById('store-settings-state');
   if (state) state.textContent = 'Alterações locais não salvas';
 }
@@ -841,25 +846,26 @@ function validateStoreSettings(value) {
   return valid;
 }
 
-function submitStoreSettings(event) {
+async function submitStoreSettings(event) {
   event.preventDefault();
   clearStoreSettingErrors();
   const values = readStoreSettingsForm();
   if (!validateStoreSettings(values)) return;
-  STORE_SETTINGS_FRONTEND_DEMO.saving = true;
+  if (storeSettingsState.saving) return;
+  storeSettingsState.saving = true;
   document.getElementById('m-content').innerHTML = renderStoreSettings();
-  setTimeout(() => {
-    STORE_SETTINGS_FRONTEND_DEMO.values = values;
-    STORE_SETTINGS_FRONTEND_DEMO.saving = false;
-    STORE_SETTINGS_FRONTEND_DEMO.dirty = false;
-    STORE_SETTINGS_FRONTEND_DEMO.feedback = { type:'success', message:'Configurações salvas somente nesta sessão demonstrativa.' };
+  try {
+    storeSettingsState.values = mapStoreSettings(await Store.updateStoreSettings(storeSettingsPayload(values)));
+    storeSettingsState.saving = false;
+    storeSettingsState.dirty = false;
+    storeSettingsState.feedback = { type:'success', message:'Configurações salvas no servidor.' };
     document.getElementById('m-content').innerHTML = renderStoreSettings();
-  }, 350);
+  } catch (error) { storeSettingsState.saving = false; storeSettingsState.feedback = { type:'error', message:error.message || 'Não foi possível salvar as configurações.' }; document.getElementById('m-content').innerHTML = renderStoreSettings(); }
 }
 
 function cancelStoreSettings() {
-  STORE_SETTINGS_FRONTEND_DEMO.dirty = false;
-  STORE_SETTINGS_FRONTEND_DEMO.feedback = { type:'neutral', message:'Alterações descartadas; os últimos valores locais foram restaurados.' };
+  storeSettingsState.dirty = false;
+  storeSettingsState.feedback = { type:'neutral', message:'Alterações descartadas; os últimos valores do servidor foram restaurados.' };
   document.getElementById('m-content').innerHTML = renderStoreSettings();
 }
 

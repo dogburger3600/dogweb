@@ -2,6 +2,7 @@
 
 let products = [];
 let cart = [];
+let checkoutSettings = null;
 let activeCategory = 'todos';
 
 function getProduct(pid) {
@@ -208,6 +209,15 @@ function renderCheckoutSummary() {
       <span>R$ ${fmt(item.product.price * item.qty)}</span>
     </div>`).join('');
 }
+function selectedFulfillmentMethod() { return document.querySelector('input[name="fulfillment-method"]:checked')?.value; }
+function renderCheckoutSettings() {
+  const method = selectedFulfillmentMethod(); if (!checkoutSettings || !method) return;
+  const subtotal = cartTotal(); const fee = method === 'delivery' && subtotal < Number(checkoutSettings.free_delivery_from) ? Number(checkoutSettings.delivery_fee) : 0;
+  const eta = method === 'delivery' ? `${checkoutSettings.delivery_eta_min}–${checkoutSettings.delivery_eta_max}` : `${checkoutSettings.pickup_eta_min}–${checkoutSettings.pickup_eta_max}`;
+  document.getElementById('checkout-eta').textContent = `Previsão: ${eta} min`;
+  document.getElementById('checkout-totals').innerHTML = `<div class="checkout-summary-item"><span>Subtotal</span><span>R$ ${fmt(subtotal)}</span></div><div class="checkout-summary-item"><span>Taxa</span><span>${fee ? `R$ ${fmt(fee)}` : 'Grátis'}</span></div><div class="checkout-summary-item"><strong>Total estimado</strong><strong>R$ ${fmt(subtotal + fee)}</strong></div>`;
+  document.getElementById('checkout-address').classList.toggle('hidden', method !== 'delivery');
+}
 
 function updatePaymentOptions() {
   const method = document.querySelector('input[name="payment-method"]:checked')?.value;
@@ -232,6 +242,7 @@ async function openCheckout() {
     window.location.href = 'entrar.html?returnTo=index.html&checkout=1';
     return;
   }
+  try { checkoutSettings = await Store.getStoreSettings(); } catch (error) { alert(`Não foi possível carregar as configurações. ${error.message || ''}`); return; }
   const count = cart.length;
   const total = cartTotal();
   document.getElementById('checkout-sub').textContent =
@@ -239,7 +250,10 @@ async function openCheckout() {
   renderCheckoutSummary();
   document.getElementById('customer-name').value = '';
   document.getElementById('order-note').value = '';
-  document.querySelector('input[name="payment-method"][value="pix"]').checked = true;
+  document.querySelectorAll('input[name="fulfillment-method"]').forEach(input => { input.disabled = input.value === 'delivery' ? !checkoutSettings.delivery_enabled : !checkoutSettings.pickup_enabled; });
+  document.querySelector(`input[name="fulfillment-method"][value="${checkoutSettings.delivery_enabled ? 'delivery' : 'pickup'}"]`).checked = true;
+  document.querySelectorAll('input[name="payment-method"]').forEach(input => { input.disabled = input.value === 'pix' ? !checkoutSettings.accepts_pix : input.value === 'dinheiro' ? !checkoutSettings.accepts_cash : !checkoutSettings.accepts_card; });
+  document.querySelector(`input[name="payment-method"]:not(:disabled)`).checked = true;
   updatePaymentOptions();
   closeCart();
   document.getElementById('checkout-overlay').classList.remove('hidden');
@@ -252,8 +266,8 @@ async function openCheckout() {
     document.getElementById('customer-name').value = profile.name || '';
     const firstLine = [profile.street, profile.address_number].filter(Boolean).join(', ');
     document.getElementById('checkout-address-text').textContent = `${firstLine}${profile.address_complement ? ` · ${profile.address_complement}` : ''}${profile.neighborhood ? ` — ${profile.neighborhood}` : ''}`;
-    addressBox.classList.remove('hidden');
   }
+  renderCheckoutSettings();
 }
 
 function closeCheckout() {
@@ -265,6 +279,7 @@ async function placeOrder() {
   const name = document.getElementById('customer-name').value.trim();
   const note = document.getElementById('order-note').value.trim();
   const paymentMethod = document.querySelector('input[name="payment-method"]:checked')?.value;
+  const fulfillmentMethod = selectedFulfillmentMethod();
   const needsChange = paymentMethod === 'dinheiro' && document.getElementById('needs-change').checked;
   const changeFor = needsChange ? Number(document.getElementById('change-for').value) : null;
   if (!name) {
@@ -275,7 +290,8 @@ async function placeOrder() {
     alert('Escolha a forma de pagamento.');
     return;
   }
-  if (needsChange && (!Number.isFinite(changeFor) || changeFor < cartTotal())) {
+  const fee = fulfillmentMethod === 'delivery' && cartTotal() < Number(checkoutSettings.free_delivery_from) ? Number(checkoutSettings.delivery_fee) : 0;
+  if (needsChange && (!Number.isFinite(changeFor) || changeFor < cartTotal() + fee)) {
     alert('Informe um valor para troco igual ou maior que o total do pedido.');
     return;
   }
@@ -284,14 +300,14 @@ async function placeOrder() {
   button.disabled = true;
   button.textContent = 'Enviando pedido...';
   try {
-    const id = await Store.placeOrder(name, note, cart, paymentMethod, changeFor);
+    const order = await Store.placeOrder(name, note, cart, paymentMethod, changeFor, fulfillmentMethod);
     products = await Store.getProducts();
     cart = [];
     sessionStorage.removeItem('dogburger_cart');
     updateCartBadge();
     renderProducts();
     closeCheckout();
-    showToast(`✅ Pedido ${id} realizado com sucesso!`);
+    showToast(`✅ ${order.order_code} confirmado · ${order.fulfillment_method === 'delivery' ? 'Entrega' : 'Retirada'} · Subtotal R$ ${fmt(order.subtotal)} · Taxa ${order.delivery_fee ? `R$ ${fmt(order.delivery_fee)}` : 'Grátis'} · Total R$ ${fmt(order.total)} · ${order.eta_min}–${order.eta_max} min`);
   } catch (error) {
     alert(`Não foi possível realizar o pedido. ${error.message || 'Tente novamente.'}`);
   } finally {
@@ -301,6 +317,7 @@ async function placeOrder() {
 }
 
 document.querySelectorAll('input[name="payment-method"]').forEach(input => input.addEventListener('change', updatePaymentOptions));
+document.querySelectorAll('input[name="fulfillment-method"]').forEach(input => input.addEventListener('change', renderCheckoutSettings));
 document.getElementById('needs-change').addEventListener('change', updateChangeOptions);
 
 function showToast(msg) {

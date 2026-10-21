@@ -73,10 +73,28 @@ const Store = {
     if (error) throw error;
     return data.map(e => ({ id:e.id, description:e.description, amount:Number(e.amount), category:e.category, date:new Date(e.created_at).getTime() }));
   },
-  async placeOrder(customerName, note, items, paymentMethod, changeFor) {
-    const { data, error } = await DB.rpc('place_order', { p_customer_name:customerName, p_note:note, p_items:items.map(i => ({ product_id:i.product.id, quantity:i.qty, removed_ingredients:i.product.category === 'lanches' ? (i.removedIngredients || '') : '' })), p_payment_method:paymentMethod, p_change_for:changeFor });
+  async getStoreSettings() {
+    const { data, error } = await DB.rpc('get_store_settings');
     if (error) throw error;
-    return `PED-${String(data).padStart(3,'0')}`;
+    return data;
+  },
+  async updateStoreSettings(settings) {
+    const { data, error } = await DB.rpc('update_store_settings', { p_settings:settings });
+    if (error) throw error;
+    return data;
+  },
+  async placeOrder(customerName, note, items, paymentMethod, changeFor, fulfillmentMethod) {
+    const { data, error } = await DB.rpc('place_order', { p_customer_name:customerName, p_note:note, p_items:items.map(i => ({ product_id:i.product.id, quantity:i.qty, removed_ingredients:i.product.category === 'lanches' ? (i.removedIngredients || '') : '' })), p_payment_method:paymentMethod, p_change_for:changeFor, p_fulfillment_method:fulfillmentMethod });
+    if (error) throw error;
+    const orderId = Number(data?.order_id);
+    const numbers = ['subtotal', 'delivery_fee', 'total'];
+    if (!Number.isInteger(orderId) || orderId <= 0 || !['delivery', 'pickup'].includes(data?.fulfillment_method)
+      || !numbers.every(key => Number.isFinite(Number(data?.[key])))
+      || !Number.isInteger(Number(data?.eta_min)) || !Number.isInteger(Number(data?.eta_max))) {
+      throw new Error('Resposta inválida do servidor ao criar o pedido.');
+    }
+    return { order_id:orderId, order_code:`PED-${String(orderId).padStart(3,'0')}`, fulfillment_method:data.fulfillment_method,
+      subtotal:Number(data.subtotal), delivery_fee:Number(data.delivery_fee), total:Number(data.total), eta_min:Number(data.eta_min), eta_max:Number(data.eta_max) };
   },
   async getStockMovements(limit = 20) {
     const { data, error } = await DB.from('product_stock_movements').select('id, product_id, quantity_delta, resulting_stock, reason, order_id, note, created_at').order('created_at', { ascending:false }).limit(limit);
