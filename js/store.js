@@ -73,6 +73,14 @@ const Store = {
     if (error) throw error;
     return data.map(e => ({ id:e.id, description:e.description, amount:Number(e.amount), category:e.category, date:new Date(e.created_at).getTime() }));
   },
+  async getManagerReport(startDate, endDate) {
+    const { data, error } = await DB.rpc('get_manager_report', { p_start_date:startDate, p_end_date:endDate });
+    if (error) throw error;
+    if (!data || typeof data !== 'object' || !data.summary || !Array.isArray(data.orders) || !data.coverage) {
+      throw new Error('Resposta inválida do servidor ao carregar os relatórios.');
+    }
+    return data;
+  },
   async getStoreSettings() {
     const { data, error } = await DB.rpc('get_store_settings');
     if (error) throw error;

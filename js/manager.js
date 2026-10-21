@@ -9,7 +9,7 @@ let expandedOrders = new Set();
 let editingStock = null;
 let stockFilterCat = 'todos';
 let ordersFilter = 'todos';
-let reportDate = localDateKey(Date.now());
+let reportDate = fortalezaDateKey();
 let popupPreviewImageSource = '';
 
 // Estado efêmero da tela. O ciclo de vida e os cancelamentos são persistidos pelas RPCs B02.
@@ -45,11 +45,13 @@ function mapStoreSettings(settings) { return { openTime:settings.open_time, clos
 function storeSettingsPayload(value) { return { open_time:value.openTime, close_time:value.closeTime, pause_enabled:value.pauseEnabled, pause_start:value.pauseStart || null, pause_end:value.pauseEnd || null, whatsapp:value.whatsapp, instagram:value.instagram, location_name:value.location, latitude:value.latitude, longitude:value.longitude, delivery_enabled:value.deliveryEnabled, pickup_enabled:value.pickupEnabled, accepts_pix:value.pix, accepts_cash:value.cash, accepts_card:value.card, delivery_eta_min:value.deliveryEtaMin, delivery_eta_max:value.deliveryEtaMax, pickup_eta_min:value.pickupEtaMin, pickup_eta_max:value.pickupEtaMax, delivery_fee:value.deliveryFee, free_delivery_from:value.freeDeliveryFrom }; }
 
 // Controle visual dos filtros de relatórios. Não altera consultas nem critérios financeiros.
-const REPORTS_FRONTEND_DEMO = {
+const REPORTS_UI_STATE = {
   period: 'day',
   customStart: reportDate,
   customEnd: reportDate,
   error: '',
+  report: null,
+  requestId: 0,
 };
 
 const VIEW_TITLES = {
@@ -163,10 +165,14 @@ async function setView(view) {
     return;
   }
 
+  if (view === 'relatorios') {
+    await loadManagerReport();
+    return;
+  }
+
   const content = document.getElementById('m-content');
   if (view === 'dashboard') content.innerHTML = renderDashboardState('loading');
   if (view === 'estoque-lanches') content.innerHTML = renderSnackStockState('loading');
-  if (view === 'relatorios') content.innerHTML = renderReportsState('loading');
 
   // Recarregar dados mais recentes da store
   try {
@@ -177,15 +183,12 @@ async function setView(view) {
       ? renderDashboardState('error', error.message)
       : view === 'estoque-lanches'
         ? renderSnackStockState('error', error.message)
-        : view === 'relatorios'
-          ? renderReportsState('error', error.message)
-          : `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${error.message}</div>`;
+        : `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${error.message}</div>`;
     return;
   }
 
   if (view === 'dashboard')  content.innerHTML = renderDashboard();
   if (view === 'pedidos')    content.innerHTML = renderPedidos();
-  if (view === 'relatorios') content.innerHTML = renderRelatorios();
   if (view === 'estoque-lanches') content.innerHTML = renderSnackStock();
   if (view === 'popup') {
     content.innerHTML = renderPopupEditor();
@@ -909,67 +912,8 @@ async function advanceOrder(id, nextStatus) {
 }
 
 /* ── RELATÓRIOS ── */
-function localDateKey(timestamp) {
-  const date = new Date(timestamp);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 function escapeManagerHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]);
-}
-
-function setReportDate(value) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
-  reportDate = value;
-  REPORTS_FRONTEND_DEMO.period = 'day';
-  REPORTS_FRONTEND_DEMO.error = '';
-  document.getElementById('m-content').innerHTML = renderRelatorios();
-}
-
-function shiftReportDate(days) {
-  const date = new Date(`${reportDate}T12:00:00`);
-  date.setDate(date.getDate() + days);
-  setReportDate(localDateKey(date));
-}
-
-function showTodayReport() {
-  setReportDate(localDateKey(Date.now()));
-}
-
-function setReportPeriod(period) {
-  if (!['day','seven','thirty','custom'].includes(period)) return;
-  REPORTS_FRONTEND_DEMO.period = period;
-  REPORTS_FRONTEND_DEMO.error = '';
-  if (period !== 'custom') reportDate = localDateKey(Date.now());
-  document.getElementById('m-content').innerHTML = renderRelatorios();
-}
-
-function applyCustomReportRange() {
-  const start = document.getElementById('report-custom-start').value;
-  const end = document.getElementById('report-custom-end').value;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end) {
-    REPORTS_FRONTEND_DEMO.error = 'Informe um período personalizado válido, com a data inicial anterior ou igual à final.';
-    document.getElementById('report-range-error').textContent = REPORTS_FRONTEND_DEMO.error;
-    return;
-  }
-  REPORTS_FRONTEND_DEMO.customStart = start;
-  REPORTS_FRONTEND_DEMO.customEnd = end;
-  REPORTS_FRONTEND_DEMO.error = '';
-  document.getElementById('m-content').innerHTML = renderRelatorios();
-}
-
-function reportPeriodRange() {
-  if (REPORTS_FRONTEND_DEMO.period === 'custom') {
-    return { start:REPORTS_FRONTEND_DEMO.customStart, end:REPORTS_FRONTEND_DEMO.customEnd };
-  }
-  const end = REPORTS_FRONTEND_DEMO.period === 'day' ? reportDate : localDateKey(Date.now());
-  const startDate = new Date(`${end}T12:00:00`);
-  if (REPORTS_FRONTEND_DEMO.period === 'seven') startDate.setDate(startDate.getDate() - 6);
-  if (REPORTS_FRONTEND_DEMO.period === 'thirty') startDate.setDate(startDate.getDate() - 29);
-  return { start:localDateKey(startDate), end };
 }
 
 function reportPeriodLabel(range) {
@@ -978,80 +922,127 @@ function reportPeriodLabel(range) {
   return `${format(range.start)} — ${format(range.end)}`;
 }
 
+// B06: os cálculos financeiros são recebidos da RPC; o navegador controla apenas período e apresentação.
+function fortalezaDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone:'America/Fortaleza', year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(date);
+  const value = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+
+function shiftCivilDate(value, days) {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
+async function setReportDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+  reportDate = value;
+  REPORTS_UI_STATE.period = 'day';
+  REPORTS_UI_STATE.error = '';
+  await loadManagerReport();
+}
+
+function shiftReportDate(days) { setReportDate(shiftCivilDate(reportDate, days)); }
+function showTodayReport() { setReportDate(fortalezaDateKey()); }
+
+async function setReportPeriod(period) {
+  if (!['day','seven','thirty','custom'].includes(period)) return;
+  REPORTS_UI_STATE.period = period;
+  REPORTS_UI_STATE.error = '';
+  if (period !== 'custom') reportDate = fortalezaDateKey();
+  if (period === 'custom') document.getElementById('m-content').innerHTML = renderRelatorios();
+  else await loadManagerReport();
+}
+
+async function applyCustomReportRange() {
+  const start = document.getElementById('report-custom-start').value;
+  const end = document.getElementById('report-custom-end').value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || start > end) {
+    REPORTS_UI_STATE.error = 'Informe um período personalizado válido, com a data inicial anterior ou igual à final.';
+    document.getElementById('report-range-error').textContent = REPORTS_UI_STATE.error;
+    return;
+  }
+  REPORTS_UI_STATE.customStart = start;
+  REPORTS_UI_STATE.customEnd = end;
+  REPORTS_UI_STATE.error = '';
+  await loadManagerReport();
+}
+
+function reportPeriodRange() {
+  if (REPORTS_UI_STATE.period === 'custom') return { start:REPORTS_UI_STATE.customStart, end:REPORTS_UI_STATE.customEnd };
+  const end = REPORTS_UI_STATE.period === 'day' ? reportDate : fortalezaDateKey();
+  const offset = REPORTS_UI_STATE.period === 'seven' ? -6 : REPORTS_UI_STATE.period === 'thirty' ? -29 : 0;
+  return { start:shiftCivilDate(end, offset), end };
+}
+
 function renderReportsState(state, detail = '') {
-  if (state === 'loading') return `<section class="reports-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando relatórios...</strong><span>Organizando os dados financeiros disponíveis.</span></section>`;
+  if (state === 'loading') return `<section class="reports-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando relatórios...</strong><span>Consultando os indicadores financeiros consolidados.</span></section>`;
   return `<section class="reports-state is-error" role="alert"><span aria-hidden="true">⚠️</span><strong>Não foi possível carregar os relatórios</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('relatorios')">Tentar novamente</button></section>`;
+}
+
+async function loadManagerReport() {
+  const content = document.getElementById('m-content');
+  const range = reportPeriodRange();
+  const requestId = ++REPORTS_UI_STATE.requestId;
+  content.innerHTML = renderReportsState('loading');
+  try {
+    const report = await Store.getManagerReport(range.start, range.end);
+    if (requestId !== REPORTS_UI_STATE.requestId || currentView !== 'relatorios') return;
+    REPORTS_UI_STATE.report = report;
+    content.innerHTML = renderRelatorios();
+  } catch (error) {
+    if (requestId !== REPORTS_UI_STATE.requestId || currentView !== 'relatorios') return;
+    REPORTS_UI_STATE.report = null;
+    content.innerHTML = renderReportsState('error', error.message);
+  }
 }
 
 function renderRelatorios() {
   const range = reportPeriodRange();
-  const selectedOrders = orders.filter(order => {
-    const date = localDateKey(order.createdAt);
-    return date >= range.start && date <= range.end;
-  });
-  const selectedExpenses = expenses.filter(expense => {
-    const date = localDateKey(expense.date);
-    return date >= range.start && date <= range.end;
-  });
-  const attendedOrders = selectedOrders.filter(order => order.status === 'entregue');
-  const periodRevenue = selectedOrders.reduce((total, order) => total + orderTotal(order), 0);
-  const periodCost = selectedOrders.reduce((total, order) => total + order.items.reduce((subtotal, item) => {
-    const product = getProduct(item.pid);
-    return subtotal + (item.unitCost ?? product?.cost ?? 0) * item.qty;
-  }, 0), 0);
-  const periodExpenses = selectedExpenses.reduce((total, expense) => total + expense.amount, 0);
-  const periodResult = periodRevenue - periodCost - periodExpenses;
-  const averageTicket = selectedOrders.length ? periodRevenue / selectedOrders.length : 0;
-
+  const report = REPORTS_UI_STATE.report;
+  if (!report) return renderReportsState('loading');
+  const summary = report.summary;
+  const coverage = report.coverage;
+  const selectedOrders = report.orders;
   const rows = selectedOrders.map(order => {
-    const status = STATUS_META[order.status] || { label:order.status, color:'#57534E', bg:'#F5F5F4' };
-    const customer = order.customer || {};
-    const items = order.items.map(item => {
-      const product = getProduct(item.pid);
-      return `<span><strong>${item.qty}×</strong> ${escapeManagerHtml(product?.name || `Produto #${item.pid}`)} <small>R$ ${fmt(item.unitPrice * item.qty)}</small>${item.removedIngredients ? `<em>Sem: ${escapeManagerHtml(item.removedIngredients)}</em>` : ''}</span>`;
-    }).join('');
-    const address = order.address ? formatOrderAddress(order.address) : 'Não informado';
+    const items = order.items.map(item => `<span><strong>${item.quantity}×</strong> ${escapeManagerHtml(item.product_name || 'Produto')} <small>R$ ${fmt(item.line_total)}</small>${item.removed_ingredients ? `<em>Sem: ${escapeManagerHtml(item.removed_ingredients)}</em>` : ''}</span>`).join('');
     return `<tr>
-      <td><strong class="report-order-id">${order.id}</strong><small>${new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' })}</small></td>
-      <td><strong>${escapeManagerHtml(order.customerName)}</strong><small>${escapeManagerHtml(customer.phone || 'Telefone não informado')}</small><small>${escapeManagerHtml(customer.email || 'E-mail não informado')}</small></td>
+      <td><strong class="report-order-id">PED-${String(order.id).padStart(3, '0')}</strong><small>${escapeManagerHtml(order.recognized_at_label)}</small></td>
+      <td><strong>${escapeManagerHtml(order.customer_name)}</strong></td>
       <td><div class="report-products-list">${items || '<span>Nenhum item</span>'}</div></td>
-      <td><span class="report-address">${address}</span>${order.note ? `<small class="report-note">Observação: ${escapeManagerHtml(order.note)}</small>` : ''}</td>
-      <td><span class="report-payment">${escapeManagerHtml(orderPaymentLabel(order))}</span></td>
-      <td><strong class="report-value">R$ ${fmt(orderTotal(order))}</strong></td>
-      <td><span class="status-badge" style="background:${status.bg};color:${status.color}">${escapeManagerHtml(status.label)}</span></td>
+      <td><span class="report-address">${order.fulfillment_method === 'pickup' ? 'Retirada' : order.fulfillment_method === 'delivery' ? 'Entrega' : 'Histórico'}</span></td>
+      <td><span class="report-payment">${escapeManagerHtml(PAYMENT_LABELS[order.payment_method] || 'Não informado')}</span></td>
+      <td><strong class="report-value">R$ ${fmt(order.revenue)}</strong></td>
+      <td><span class="status-badge" style="background:#F5F5F4;color:#78716C">Entregue</span></td>
     </tr>`;
   }).join('');
+  const incomplete = Number(coverage.orders_without_complete_b05_snapshot) > 0 || Number(coverage.items_without_unit_cost) > 0 || Number(coverage.orders_using_created_at_fallback) > 0;
 
   return `<section class="reports-page">
-    <div class="report-readiness"><div><span aria-hidden="true">📊</span><div><strong>Visão financeira em preparação</strong><p>Os indicadores preservam os dados atuais; critérios definitivos serão consolidados no backend.</p></div></div><span>sem alteração de consultas</span></div>
+    <div class="report-readiness"><div><span aria-hidden="true">📊</span><div><strong>Indicadores financeiros consolidados</strong><p>Somente vendas entregues e não canceladas, reconhecidas no horário oficial de Fortaleza.</p></div></div><span>fonte server-side</span></div>
     <div class="card report-filter-card">
       <div class="report-filter-head"><div><span class="report-calendar-label">Período do relatório</span><h2>${escapeManagerHtml(reportPeriodLabel(range))}</h2></div><div class="report-period-tabs">
-        <button type="button" class="${REPORTS_FRONTEND_DEMO.period === 'day' ? 'active' : ''}" onclick="setReportPeriod('day')">Dia</button>
-        <button type="button" class="${REPORTS_FRONTEND_DEMO.period === 'seven' ? 'active' : ''}" onclick="setReportPeriod('seven')">7 dias</button>
-        <button type="button" class="${REPORTS_FRONTEND_DEMO.period === 'thirty' ? 'active' : ''}" onclick="setReportPeriod('thirty')">30 dias</button>
-        <button type="button" class="${REPORTS_FRONTEND_DEMO.period === 'custom' ? 'active' : ''}" onclick="setReportPeriod('custom')">Personalizado</button>
+        <button type="button" class="${REPORTS_UI_STATE.period === 'day' ? 'active' : ''}" onclick="setReportPeriod('day')">Dia</button>
+        <button type="button" class="${REPORTS_UI_STATE.period === 'seven' ? 'active' : ''}" onclick="setReportPeriod('seven')">7 dias</button>
+        <button type="button" class="${REPORTS_UI_STATE.period === 'thirty' ? 'active' : ''}" onclick="setReportPeriod('thirty')">30 dias</button>
+        <button type="button" class="${REPORTS_UI_STATE.period === 'custom' ? 'active' : ''}" onclick="setReportPeriod('custom')">Personalizado</button>
       </div></div>
-      ${REPORTS_FRONTEND_DEMO.period === 'day' ? `<div class="report-calendar-controls"><button type="button" title="Dia anterior" aria-label="Dia anterior" onclick="shiftReportDate(-1)">←</button><input id="report-date" type="date" value="${reportDate}" aria-label="Selecionar dia do relatório" onchange="setReportDate(this.value)" /><button type="button" title="Próximo dia" aria-label="Próximo dia" onclick="shiftReportDate(1)">→</button><button class="report-today-button" type="button" onclick="showTodayReport()">Hoje</button></div>` : ''}
-      ${REPORTS_FRONTEND_DEMO.period === 'custom' ? `<div class="report-custom-range"><label>Data inicial<input id="report-custom-start" type="date" value="${REPORTS_FRONTEND_DEMO.customStart}" /></label><span aria-hidden="true">→</span><label>Data final<input id="report-custom-end" type="date" value="${REPORTS_FRONTEND_DEMO.customEnd}" /></label><button class="btn-primary" type="button" onclick="applyCustomReportRange()">Aplicar período</button></div><p class="form-error" id="report-range-error">${escapeManagerHtml(REPORTS_FRONTEND_DEMO.error)}</p>` : ''}
+      ${REPORTS_UI_STATE.period === 'day' ? `<div class="report-calendar-controls"><button type="button" title="Dia anterior" aria-label="Dia anterior" onclick="shiftReportDate(-1)">←</button><input id="report-date" type="date" value="${reportDate}" aria-label="Selecionar dia do relatório" onchange="setReportDate(this.value)" /><button type="button" title="Próximo dia" aria-label="Próximo dia" onclick="shiftReportDate(1)">→</button><button class="report-today-button" type="button" onclick="showTodayReport()">Hoje</button></div>` : ''}
+      ${REPORTS_UI_STATE.period === 'custom' ? `<div class="report-custom-range"><label>Data inicial<input id="report-custom-start" type="date" value="${REPORTS_UI_STATE.customStart}" /></label><span aria-hidden="true">→</span><label>Data final<input id="report-custom-end" type="date" value="${REPORTS_UI_STATE.customEnd}" /></label><button class="btn-primary" type="button" onclick="applyCustomReportRange()">Aplicar período</button></div><p class="form-error" id="report-range-error">${escapeManagerHtml(REPORTS_UI_STATE.error)}</p>` : ''}
     </div>
-
-    <div class="report-backend-note"><span aria-hidden="true">🛡️</span><div><strong>Preparado para conciliação futura</strong><p>Cancelamentos ou vendas não realizadas continuam incluídos conforme o comportamento atual. A exclusão dependerá de critérios consolidados no backend.</p></div></div>
-
+    ${incomplete ? `<div class="report-backend-note"><span aria-hidden="true">ℹ️</span><div><strong>Cobertura histórica parcial</strong><p>${coverage.orders_using_item_total_fallback} venda(s) usam o valor comprovado dos itens; ${coverage.orders_using_created_at_fallback} usam a criação como data histórica; ${coverage.items_without_unit_cost} item(ns) não possuem custo registrado.</p></div></div>` : ''}
     <div class="kpi-grid report-kpis">
-      ${kpiCard('Vendas no período', `R$ ${fmt(periodRevenue)}`, '💵', '#16A34A', `${selectedOrders.length} pedidos registrados`)}
-      ${kpiCard('Custos dos produtos', `R$ ${fmt(periodCost)}`, '🧾', '#D97706', 'estimativa com dados atuais')}
-      ${kpiCard('Despesas no período', `R$ ${fmt(periodExpenses)}`, '📤', '#DC2626', `${selectedExpenses.length} registros disponíveis`)}
-      ${kpiCard('Resultado estimado', `R$ ${fmt(periodResult)}`, '📈', periodResult >= 0 ? '#2563EB' : '#DC2626', 'vendas − custos − despesas')}
-      ${kpiCard('Pedidos atendidos', String(attendedOrders.length), '✅', '#7C3AED', 'pedidos entregues')}
-      ${kpiCard('Ticket médio', `R$ ${fmt(averageTicket)}`, '🧮', '#D97706', 'média dos pedidos registrados')}
+      ${kpiCard('Faturamento', `R$ ${fmt(summary.revenue)}`, '💵', '#16A34A', `${summary.sales_count} vendas realizadas`)}
+      ${kpiCard('Custos dos produtos', `R$ ${fmt(summary.product_cost)}`, '🧾', '#D97706', 'snapshots dos itens vendidos')}
+      ${kpiCard('Despesas no período', `R$ ${fmt(summary.expenses)}`, '📤', '#DC2626', `${summary.expense_count} registros`)}
+      ${kpiCard('Resultado', `R$ ${fmt(summary.result)}`, '📈', Number(summary.result) >= 0 ? '#2563EB' : '#DC2626', 'faturamento − custos − despesas')}
+      ${kpiCard('Pedidos atendidos', String(summary.sales_count), '✅', '#7C3AED', 'entregues e não cancelados')}
+      ${kpiCard('Ticket médio', `R$ ${fmt(summary.average_ticket)}`, '🧮', '#D97706', 'média das vendas realizadas')}
     </div>
-
-    <div class="card report-orders-card">
-      <div>
-        <div class="card-header report-orders-header"><div><span class="card-title">Pedidos do período</span><p>${selectedOrders.length} ${selectedOrders.length === 1 ? 'pedido encontrado' : 'pedidos encontrados'}</p></div></div>
-        ${selectedOrders.length ? `<div class="report-table-wrap"><table class="report-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="report-empty"><span>📅</span><strong>Nenhum pedido neste período</strong><p>Escolha outro filtro ou período personalizado para consultar.</p></div>'}
-      </div>
-    </div>
+    <div class="card report-orders-card"><div>
+      <div class="card-header report-orders-header"><div><span class="card-title">Vendas realizadas no período</span><p>${selectedOrders.length} ${selectedOrders.length === 1 ? 'venda encontrada' : 'vendas encontradas'}</p></div></div>
+      ${selectedOrders.length ? `<div class="report-table-wrap"><table class="report-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="report-empty"><span>📅</span><strong>Nenhuma venda realizada neste período</strong><p>Escolha outro filtro ou período personalizado para consultar.</p></div>'}
+    </div></div>
   </section>`;
 }
 
