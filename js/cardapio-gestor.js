@@ -68,7 +68,7 @@ async function verifyMenuManager() {
   const { data: { user } } = await DB.auth.getUser();
   if (!user) return false;
   const { data } = await DB.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  return data?.role === 'manager';
+  return ['owner', 'manager'].includes(data?.role) ? data.role : null;
 }
 
 function renderMenuProducts() {
@@ -243,12 +243,13 @@ document.getElementById('show-archived').addEventListener('change', renderMenuPr
 document.getElementById('menu-manager-logout').addEventListener('click', async () => { await DB.auth.signOut(); window.location.replace('index.html'); });
 
 (async () => {
-  if (!(await verifyMenuManager())) {
+  const role = await verifyMenuManager();
+  if (!role) {
     window.location.replace('entrar.html');
     return;
   }
   document.getElementById('menu-manager-loading').classList.add('hidden');
   document.getElementById('page-menu-manager').classList.remove('hidden');
-  window.UICapabilities?.init('manager');
+  window.UICapabilities?.init(role);
   await loadMenuProducts();
 })();

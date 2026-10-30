@@ -11,6 +11,7 @@ let stockFilterCat = 'todos';
 let ordersFilter = 'todos';
 let reportDate = fortalezaDateKey();
 let popupPreviewImageSource = '';
+let currentManagerRole = null;
 
 // Estado efêmero da tela. O ciclo de vida e os cancelamentos são persistidos pelas RPCs B02.
 const ORDERS_UI_STATE = {
@@ -146,6 +147,8 @@ function startManagerRealtime() { window.ManagerRealtime?.start({ client:DB, ini
 
 async function setView(view) {
   if (!VIEW_TITLES[view]) view = 'dashboard';
+  const requiredCapability = window.UICapabilities?.ROUTE_CAPABILITIES?.[view];
+  if (requiredCapability && !window.UICapabilities.can(currentManagerRole, requiredCapability)) view = 'dashboard';
   currentView = view;
   document.getElementById('view-title').textContent = VIEW_TITLES[view];
   Object.keys(VIEW_TITLES).forEach(v => {
@@ -176,14 +179,14 @@ async function setView(view) {
 
   // Recarregar dados mais recentes da store
   try {
-    [products, orders] = await Promise.all([Store.getAllProducts(), Store.getOrders()]);
+    [products, orders] = await Promise.all([loadProductsForCurrentRole(), Store.getOrders()]);
     if (view === 'estoque-lanches') SNACK_STOCK_UI_STATE.movements = await Store.getStockMovements();
   } catch (error) {
     content.innerHTML = view === 'dashboard'
       ? renderDashboardState('error', error.message)
       : view === 'estoque-lanches'
         ? renderSnackStockState('error', error.message)
-        : `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${error.message}</div>`;
+        : `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${escapeManagerHtml(error.message || '')}</div>`;
     return;
   }
 
@@ -225,13 +228,13 @@ function popupLocalDate(iso) {
   return new Date(date.getTime() - offset * 60000).toISOString().slice(0,16);
 }
 
-function updatePopupPreview(source) {
-  popupPreviewImageSource = source || '';
+function updatePopupPreview(source, allowLocalObjectUrl = false) {
+  popupPreviewImageSource = safeManagerImageUrl(source, allowLocalObjectUrl);
   const preview = document.getElementById('popup-image-preview');
   const prompt = document.getElementById('popup-image-prompt');
-  if (source) { preview.src = source; preview.classList.remove('hidden'); prompt.classList.add('hidden'); }
+  if (popupPreviewImageSource) { preview.src = popupPreviewImageSource; preview.classList.remove('hidden'); prompt.classList.add('hidden'); }
   else { preview.removeAttribute('src'); preview.classList.add('hidden'); prompt.classList.remove('hidden'); }
-  updatePopupLivePreview(source);
+  updatePopupLivePreview();
 }
 
 function updatePopupLivePreview(imageSource) {
@@ -271,22 +274,23 @@ async function initPopupEditor() {
   try {
     const popup = await Store.getPopupSettings();
     if (popup) {
+      const imageUrl = safeManagerImageUrl(popup.image_url);
       document.getElementById('popup-title').value = popup.title || '';
       document.getElementById('popup-message').value = popup.message || '';
-      document.getElementById('popup-image-url').value = popup.image_url || '';
+      document.getElementById('popup-image-url').value = imageUrl;
       document.getElementById('popup-button-text').value = popup.button_text || '';
       document.getElementById('popup-button-url').value = popup.button_url || '';
       document.getElementById('popup-starts-at').value = popupLocalDate(popup.starts_at);
       document.getElementById('popup-ends-at').value = popupLocalDate(popup.ends_at);
       document.getElementById('popup-active').checked = popup.active;
-      updatePopupPreview(popup.image_url || '');
+      updatePopupPreview(imageUrl);
     }
     updatePopupLivePreview();
   } catch (error) { errorElement.textContent = `Não foi possível carregar. ${error.message}`; }
 
   document.getElementById('choose-popup-image').addEventListener('click', () => document.getElementById('popup-image-file').click());
   document.getElementById('popup-image-upload').addEventListener('click', event => { if (!event.target.closest('button')) document.getElementById('popup-image-file').click(); });
-  document.getElementById('popup-image-file').addEventListener('change', event => { const file = event.target.files[0]; if (file) updatePopupPreview(URL.createObjectURL(file)); });
+  document.getElementById('popup-image-file').addEventListener('change', event => { const file = event.target.files[0]; if (file) updatePopupPreview(URL.createObjectURL(file), true); });
   ['popup-title','popup-message','popup-button-text','popup-button-url','popup-starts-at','popup-ends-at'].forEach(id => document.getElementById(id).addEventListener('input', () => updatePopupLivePreview()));
   document.getElementById('popup-active').addEventListener('change', () => updatePopupLivePreview());
   document.getElementById('popup-editor-form').addEventListener('submit', savePopupEditor);
@@ -385,7 +389,7 @@ function renderDashboard() {
           <span class="dashboard-count-badge ${soldOutSnacks.length ? 'is-alert' : 'is-ok'}">${soldOutSnacks.length}</span>
         </div>
         ${soldOutSnacks.length
-          ? `<div class="dashboard-stock-alert"><span aria-hidden="true">⚠️</span><div><strong>${soldOutSnacks.length} ${soldOutSnacks.length === 1 ? 'lanche sinalizado' : 'lanches sinalizados'} como esgotado</strong><p>${soldOutSnacks.slice(0,3).map(product => escapeManagerHtml(product.name)).join(', ')}${soldOutSnacks.length > 3 ? ` e mais ${soldOutSnacks.length - 3}` : ''}</p></div></div><button class="dashboard-text-button" type="button" onclick="setView('estoque-lanches')">Abrir área preparada →</button>`
+          ? `<div class="dashboard-stock-alert"><span aria-hidden="true">⚠️</span><div><strong>${soldOutSnacks.length} ${soldOutSnacks.length === 1 ? 'lanche sinalizado' : 'lanches sinalizados'} como esgotado</strong><p>${soldOutSnacks.slice(0,3).map(product => escapeManagerHtml(product.name)).join(', ')}${soldOutSnacks.length > 3 ? ` e mais ${soldOutSnacks.length - 3}` : ''}</p></div></div><button class="dashboard-text-button" type="button" data-capability="manageStock" onclick="setView('estoque-lanches')">Abrir área preparada →</button>`
           : renderDashboardEmpty('🍔', 'Nenhum alerta visual', 'Não há lanches com quantidade zero nos dados atuais.')}
       </article>
     </div>
@@ -413,7 +417,7 @@ function dashOrderRow(o) {
   return `<div class="dash-order-row">
     <div>
       <span class="dash-order-id">${o.id}</span>
-      <span style="margin-left:8px;font-size:0.8rem;color:var(--stone)">${o.customerName}</span>
+      <span style="margin-left:8px;font-size:0.8rem;color:var(--stone)">${escapeManagerHtml(o.customerName)}</span>
     </div>
     <div class="dash-order-meta">
       <span class="dash-order-time">${timeSince(o.createdAt)}</span>
@@ -493,10 +497,11 @@ function orderCard(o) {
       <div class="order-items-list">
         ${o.items.map(i => {
           const p = getProduct(i.pid);
-          return p ? `<div class="order-item-row">
-            <span class="order-item-name">${i.qty}× ${p.name}${i.removedIngredients ? `<small class="order-item-removal">Sem: ${escapeManagerHtml(i.removedIngredients)}</small>` : ''}</span>
+          const productName = p?.name || i.productName || 'Produto indisponível';
+          return `<div class="order-item-row">
+            <span class="order-item-name">${i.qty}× ${escapeManagerHtml(productName)}${i.removedIngredients ? `<small class="order-item-removal">Sem: ${escapeManagerHtml(i.removedIngredients)}</small>` : ''}</span>
             <span class="order-item-price">R$ ${fmt(i.unitPrice * i.qty)}</span>
-          </div>` : '';
+          </div>`;
         }).join('')}
       </div>
       ${renderOrderFinancialSummary(o)}
@@ -507,7 +512,7 @@ function orderCard(o) {
       <div class="order-actions no-print">
         ${next && !cancellation ? `<button class="btn-advance" data-capability="advanceOrders" data-capability-mode="disable" onclick="advanceOrder('${o.id}','${next}')">Avançar → ${STATUS_META[next].label}</button>` : ''}
         <button class="order-action-button" type="button" onclick="printKitchenTicket('${o.id}')">🖨️ Imprimir comanda</button>
-        ${o.status !== 'entregue' && !cancellation ? `<button class="order-action-button is-danger" type="button" onclick="openOrderCancellation('${o.id}')">Cancelar pedido</button>` : ''}
+        ${o.status !== 'entregue' && !cancellation ? `<button class="order-action-button is-danger" type="button" data-capability="cancelOrders" onclick="openOrderCancellation('${o.id}')">Cancelar pedido</button>` : ''}
       </div>
       <div class="kitchen-ticket-footer"><strong>Comanda de cozinha · ${o.id}</strong><span>Emitida pelo navegador</span></div>
     </div>` : ''}
@@ -517,7 +522,13 @@ function orderCard(o) {
 function renderOrderTimeline(order) {
   const events = [{ label:'Pedido recebido', detail:new Date(order.createdAt).toLocaleString('pt-BR') }];
   order.history.forEach(item => events.push({ label:STATUS_META[item.to_status]?.label || item.to_status, detail:new Date(item.created_at).toLocaleString('pt-BR') }));
-  if (order.cancellation) events.push({ label:'Pedido cancelado', detail:`${order.cancellation.reason} · ${new Date(order.cancellation.created_at).toLocaleString('pt-BR')}`, cancelled:true });
+  if (order.cancellation) events.push({
+    label:'Pedido cancelado',
+    detail:order.cancellation.reason && order.cancellation.created_at
+      ? `${order.cancellation.reason} · ${new Date(order.cancellation.created_at).toLocaleString('pt-BR')}`
+      : 'Cancelamento registrado',
+    cancelled:true,
+  });
   return `<section class="order-timeline" aria-label="Histórico visual do pedido">
     <h4>Histórico</h4>
     ${events.map(event => `<div class="order-timeline-event${event.cancelled ? ' is-cancelled' : ''}"><span aria-hidden="true"></span><div><strong>${escapeManagerHtml(event.label)}</strong><small>${escapeManagerHtml(event.detail)}</small></div></div>`).join('')}
@@ -565,7 +576,7 @@ async function submitOrderCancellation(event) {
   button.disabled = true;
   try {
     await Store.cancelOrder(order.databaseId, reason);
-    [orders, products] = await Promise.all([Store.getOrders(), Store.getAllProducts()]);
+    [orders, products] = await Promise.all([Store.getOrders(), loadProductsForCurrentRole()]);
     ORDERS_UI_STATE.cancellationDraftId = null;
     ORDERS_UI_STATE.feedback = `${id} cancelado com justificativa registrada.`;
     expandedOrders.add(id);
@@ -674,7 +685,7 @@ async function updateSnackStockMinimum(productId, value) {
     SNACK_STOCK_UI_STATE.savingMinimums.add(productId);
     try {
       await Store.setSnackMinStock(productId, minimum);
-      products = await Store.getAllProducts();
+      products = await loadProductsForCurrentRole();
       SNACK_STOCK_UI_STATE.feedback = { type:'success', message:'Estoque mínimo atualizado no servidor.' };
     } catch (error) {
       SNACK_STOCK_UI_STATE.feedback = { type:'error', message:`Não foi possível atualizar o estoque mínimo. ${error.message}` };
@@ -732,7 +743,7 @@ async function submitSnackRestock(event) {
   button.disabled = true;
   try {
     await Store.restockSnackProduct(productId, amount, crypto.randomUUID());
-    [products, SNACK_STOCK_UI_STATE.movements] = await Promise.all([Store.getAllProducts(), Store.getStockMovements()]);
+    [products, SNACK_STOCK_UI_STATE.movements] = await Promise.all([loadProductsForCurrentRole(), Store.getStockMovements()]);
     SNACK_STOCK_UI_STATE.restockProductId = null;
     SNACK_STOCK_UI_STATE.feedback = { type:'success', message:`${amount} unidades adicionadas a ${product.name}.` };
   } catch (error) {
@@ -916,6 +927,13 @@ function escapeManagerHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]);
 }
 
+function safeManagerImageUrl(value, allowLocalObjectUrl = false) {
+  try {
+    const url = new URL(String(value || ''), window.location.href);
+    return ['http:', 'https:'].includes(url.protocol) || (allowLocalObjectUrl && url.protocol === 'blob:') ? url.href : '';
+  } catch { return ''; }
+}
+
 function reportPeriodLabel(range) {
   const format = value => new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
   if (range.start === range.end) return new Date(`${range.start}T12:00:00`).toLocaleDateString('pt-BR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' });
@@ -1066,8 +1084,8 @@ function renderEstoque() {
     return `<tr>
       <td>
         <div class="tbl-product">
-          <img class="tbl-img" src="${p.img}" alt="${p.name}" loading="lazy" />
-          <span class="tbl-name">${p.name}</span>
+          <img class="tbl-img" src="${escapeManagerHtml(safeManagerImageUrl(p.img) || 'dogburger.png')}" alt="${escapeManagerHtml(p.name)}" loading="lazy" />
+          <span class="tbl-name">${escapeManagerHtml(p.name)}</span>
         </div>
       </td>
       <td style="color:var(--stone);font-weight:600">${cat.emoji} ${cat.label}</td>
@@ -1156,7 +1174,7 @@ function renderFinanceiro() {
 
   const prodBars = topProds.map(p => `<div>
     <div class="bar-row-label">
-      <span class="bar-row-name" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</span>
+      <span class="bar-row-name" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeManagerHtml(p.name)}</span>
       <span class="bar-row-val">R$ ${fmt(p.rev)}</span>
     </div>
     <div class="bar-track"><div class="bar-fill" style="width:${(p.rev/maxRev*100)}%"></div></div>
@@ -1165,7 +1183,7 @@ function renderFinanceiro() {
   const expRows = expenses.slice(0, 10).map(e => `
     <div class="expense-row">
       <div>
-        <p class="exp-name">${e.description}</p>
+        <p class="exp-name">${escapeManagerHtml(e.description)}</p>
         <p class="exp-meta">${EXPENSE_LABELS[e.category]} · ${new Date(e.date).toLocaleDateString('pt-BR')}</p>
       </div>
       <span class="exp-amount">− R$ ${fmt(e.amount)}</span>
@@ -1254,17 +1272,23 @@ async function verifyManager() {
   const { data: { user } } = await DB.auth.getUser();
   if (!user) return false;
   const { data, error } = await DB.from('profiles').select('role').eq('id', user.id).single();
-  return !error && data?.role === 'manager';
+  return !error && ['owner', 'manager', 'attendant'].includes(data?.role) ? data.role : null;
+}
+
+function loadProductsForCurrentRole() {
+  return ['owner', 'manager'].includes(currentManagerRole) ? Store.getAllProducts() : Store.getProducts();
 }
 
 async function initManager() {
-  if (await verifyManager()) {
+  const role = await verifyManager();
+  if (role) {
+    currentManagerRole = role;
     const { data: { user } } = await DB.auth.getUser();
     const { data: profile } = await DB.from('profiles').select('name').eq('id', user.id).maybeSingle();
     document.querySelector('.m-online-label').textContent = profile?.name || user.email;
-    document.getElementById('manager-login').classList.add('hidden');
+    document.getElementById('manager-login')?.classList.add('hidden');
     document.getElementById('page-manager').classList.remove('hidden');
-    window.UICapabilities?.init('manager');
+    window.UICapabilities?.init(role);
     const requestedView = new URLSearchParams(window.location.search).get('view');
     await setView(VIEW_TITLES[requestedView] ? requestedView : 'dashboard');
     startManagerRealtime();
@@ -1279,24 +1303,5 @@ async function signOutManager() {
   await DB.auth.signOut();
   window.location.reload();
 }
-
-document.getElementById('manager-login-form').addEventListener('submit', async event => {
-  event.preventDefault();
-  const errorElement = document.getElementById('manager-login-error');
-  const button = event.currentTarget.querySelector('button');
-  errorElement.textContent = '';
-  button.disabled = true;
-  const { error } = await DB.auth.signInWithPassword({
-    email: document.getElementById('manager-email').value.trim(),
-    password: document.getElementById('manager-password').value,
-  });
-  if (error || !(await verifyManager())) {
-    await DB.auth.signOut();
-    errorElement.textContent = error ? 'E-mail ou senha inválidos.' : 'Esta conta não possui acesso de gestor.';
-    button.disabled = false;
-    return;
-  }
-  await initManager();
-});
 
 initManager();

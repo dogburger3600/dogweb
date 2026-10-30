@@ -7,11 +7,14 @@
     viewDashboard:        Object.freeze(['owner','manager','attendant']),
     viewOrders:           Object.freeze(['owner','manager','attendant']),
     advanceOrders:        Object.freeze(['owner','manager','attendant']),
+    cancelOrders:         Object.freeze(['owner','manager']),
     viewReports:          Object.freeze(['owner','manager']),
     manageStock:          Object.freeze(['owner','manager']),
     manageMenu:           Object.freeze(['owner','manager']),
     managePopup:          Object.freeze(['owner','manager']),
     manageSettings:       Object.freeze(['owner','manager']),
+    viewAudit:            Object.freeze(['owner','manager']),
+    manageRoles:          Object.freeze(['owner']),
     manageSensitiveRules:Object.freeze(['owner']),
     viewCustomerCatalog:  Object.freeze(['owner','manager','attendant','customer']),
   });
@@ -47,7 +50,7 @@
   }
 
   function apply(root = document, role = currentRole) {
-    currentRole = ROLE_LABELS[role] ? role : 'manager';
+    currentRole = ROLE_LABELS[role] ? role : 'customer';
     if (root.matches?.('[data-capability]')) applyElement(root, currentRole);
     root.querySelectorAll?.('[data-capability]').forEach(element => applyElement(element, currentRole));
     document.documentElement.dataset.visualRole = currentRole;

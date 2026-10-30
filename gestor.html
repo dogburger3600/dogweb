@@ -11,25 +11,6 @@
 </head>
 <body>
 
-<div id="manager-login" class="manager-login hidden">
-  <form id="manager-login-form" class="signup-card manager-login-card">
-    <img src="dogburger.png" alt="Dog Burger" class="auth-page-logo" />
-    <h2>Acesso do gestor</h2>
-    <p class="signup-card-sub">Entre com uma conta autorizada.</p>
-    <div class="form-group">
-      <label class="form-label" for="manager-email">E-mail</label>
-      <input class="form-input" id="manager-email" type="email" autocomplete="email" required />
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="manager-password">Senha</label>
-      <input class="form-input" id="manager-password" type="password" autocomplete="current-password" required />
-    </div>
-    <p id="manager-login-error" class="form-error"></p>
-    <button class="btn-primary signup-submit" type="submit">Entrar</button>
-    <a href="index.html" class="manager-back-link">← Voltar ao cardápio</a>
-  </form>
-</div>
-
 <div id="page-manager" class="hidden">
   <aside class="m-sidebar">
     <div class="m-sidebar-header">
@@ -75,7 +56,7 @@
     <header class="m-topbar">
       <h1 class="m-topbar-title" id="view-title">Dashboard</h1>
       <div class="topbar-actions">
-        <a href="cardapio-gestor.html" class="topbar-menu-link">Editar Cardápio</a>
+        <a href="cardapio-gestor.html" class="topbar-menu-link" data-capability="manageMenu">Editar Cardápio</a>
         <div class="m-online">
           <div class="m-online-dot"></div>
           <span class="m-online-label">Online</span>

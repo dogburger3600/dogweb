@@ -21,6 +21,13 @@ function escapeCartHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]);
 }
 
+function safeProductImageUrl(value) {
+  try {
+    const url = new URL(String(value || ''), window.location.href);
+    return ['http:', 'https:'].includes(url.protocol) ? escapeCartHtml(url.href) : '';
+  } catch { return ''; }
+}
+
 function saveCart() {
   sessionStorage.setItem('dogburger_cart', JSON.stringify(cart.map(item => ({ pid:item.product.id, qty:item.qty, removedIngredients:item.removedIngredients || '' }))));
 }
@@ -65,17 +72,18 @@ function renderProducts() {
 
   el.innerHTML = list.map(p => {
     const out = p.category === 'lanches' && Number(p.stock) <= 0;
-    const cat = CAT_MAP[p.category];
+    const cat = CAT_MAP[p.category] || { emoji:'🍽️', label:'Produto' };
+    const imageUrl = safeProductImageUrl(p.img) || 'dogburger.png';
     return `
       <div class="product-card${out ? ' out-of-stock' : ''}">
         <div class="product-img-wrap">
-          <img src="${p.img}" alt="${p.name}" loading="lazy" />
-          <span class="product-cat-badge">${cat.emoji} ${cat.label}</span>
+          <img src="${imageUrl}" alt="${escapeCartHtml(p.name)}" loading="lazy" />
+          <span class="product-cat-badge">${cat.emoji} ${escapeCartHtml(cat.label)}</span>
           ${out ? `<div class="out-label"><span>Esgotado</span></div>` : ''}
         </div>
         <div class="product-body">
-          <p class="product-name">${p.name}</p>
-          <p class="product-desc">${p.desc}</p>
+          <p class="product-name">${escapeCartHtml(p.name)}</p>
+          <p class="product-desc">${escapeCartHtml(p.desc)}</p>
           <div class="product-footer">
             <span class="product-price">R$ ${fmt(p.price)}</span>
             <button class="btn-add" ${out ? 'disabled' : ''} onclick="addToCart(${p.id})">+ Adicionar</button>
@@ -172,7 +180,7 @@ function renderCartItems() {
     return `
     <div class="cart-item">
       <div class="cart-item-main">
-        <img src="${i.product.img}" alt="${escapeCartHtml(i.product.name)}" />
+        <img src="${safeProductImageUrl(i.product.img) || 'dogburger.png'}" alt="${escapeCartHtml(i.product.name)}" />
         <div class="cart-item-info">
           <p class="cart-item-name">${escapeCartHtml(i.product.name)}</p>
           <p class="cart-item-price">R$ ${fmt(i.product.price * i.qty)}</p>
@@ -365,11 +373,15 @@ async function loadHomePopup() {
     document.getElementById('home-popup-message').textContent = popup.message;
 
     const image = document.getElementById('home-popup-image');
-    if (popup.image_url) {
-      image.src = popup.image_url;
+    const imageUrl = safePopupUrl(popup.image_url);
+    if (imageUrl) {
+      image.src = imageUrl;
       image.alt = popup.title;
       image.classList.remove('hidden');
-    } else image.classList.add('hidden');
+    } else {
+      image.removeAttribute('src');
+      image.classList.add('hidden');
+    }
 
     const action = document.getElementById('home-popup-action');
     const actionUrl = safePopupUrl(popup.button_url);
@@ -406,7 +418,12 @@ async function initConsumer() {
       await openCheckout();
     }
   } catch (error) {
-    document.getElementById('products-grid').innerHTML = `<p style="grid-column:1/-1;text-align:center;color:var(--red)">Não foi possível carregar o cardápio. ${error.message}</p>`;
+    const grid = document.getElementById('products-grid');
+    grid.replaceChildren();
+    const message = document.createElement('p');
+    message.style.cssText = 'grid-column:1/-1;text-align:center;color:var(--red)';
+    message.textContent = `Não foi possível carregar o cardápio. ${error.message || ''}`;
+    grid.appendChild(message);
   }
   await loadHomePopup();
 }

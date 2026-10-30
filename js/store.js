@@ -2,12 +2,12 @@
 
 const Store = {
   async getProducts() {
-    const { data, error } = await DB.from('products').select('*').eq('active', true).order('name');
+    const { data, error } = await DB.from('products').select('id, name, description, ingredients, price, category, image_url, stock, min_stock, active, created_at').eq('active', true).order('name');
     if (error) throw error;
-    return data.map(p => ({ id:p.id, name:p.name, desc:p.description, ingredients:Array.isArray(p.ingredients) ? p.ingredients : [], price:Number(p.price), cost:Number(p.cost), category:p.category, img:p.image_url, stock:p.stock, minStock:p.min_stock }));
+    return data.map(p => ({ id:p.id, name:p.name, desc:p.description, ingredients:Array.isArray(p.ingredients) ? p.ingredients : [], price:Number(p.price), category:p.category, img:p.image_url, stock:p.stock, minStock:p.min_stock }));
   },
   async getAllProducts() {
-    const { data, error } = await DB.from('products').select('*').order('created_at', { ascending:false });
+    const { data, error } = await DB.rpc('get_admin_products');
     if (error) throw error;
     return data.map(p => ({ id:p.id, name:p.name, desc:p.description, ingredients:Array.isArray(p.ingredients) ? p.ingredients : [], price:Number(p.price), cost:Number(p.cost), category:p.category, img:p.image_url, stock:p.stock, minStock:p.min_stock, active:p.active }));
   },
@@ -46,27 +46,32 @@ const Store = {
     if (error) throw error;
   },
   async getOrders() {
-    const { data, error } = await DB.from('orders').select('id, customer_id, customer_name, note, status, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, quantity, unit_price, unit_cost, removed_ingredients)').order('created_at', { ascending:false });
+    const { data, error } = await DB.from('orders').select('id, customer_id, customer_name, note, status, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, product_name, quantity, unit_price, removed_ingredients)').order('created_at', { ascending:false });
     if (error) throw error;
-    const [{ data:cancellations, error:cancellationsError }, { data:history, error:historyError }] = await Promise.all([
+    const [{ data:cancellations, error:cancellationsError }, { data:history, error:historyError }, costsResult, flagsResult] = await Promise.all([
       DB.from('order_cancellations').select('order_id, reason, created_at'),
       DB.from('order_status_history').select('order_id, from_status, to_status, changed_by, note, created_at').order('created_at', { ascending:true }),
+      DB.rpc('get_admin_order_costs'),
+      DB.rpc('get_operational_cancellation_flags'),
     ]);
-    if (cancellationsError) throw cancellationsError;
+    let visibleCancellations = cancellations || [];
+    if (cancellationsError) {
+      if (flagsResult.error) throw cancellationsError;
+      visibleCancellations = (flagsResult.data || []).map(item => ({ order_id:item.order_id, reason:null, created_at:null }));
+    }
+    const knownCancellationIds = new Set(visibleCancellations.map(item => item.order_id));
+    (flagsResult.data || []).forEach(item => {
+      if (!knownCancellationIds.has(item.order_id)) visibleCancellations.push({ order_id:item.order_id, reason:null, created_at:null });
+    });
     if (historyError) throw historyError;
-    const cancellationsByOrder = new Map(cancellations.map(item => [item.order_id, item]));
+    const costsByItem = new Map((costsResult.data || []).map(item => [`${item.order_id}:${item.product_id}`, item.unit_cost === null ? null : Number(item.unit_cost)]));
+    const cancellationsByOrder = new Map(visibleCancellations.map(item => [item.order_id, item]));
     const historyByOrder = new Map();
     history.forEach(item => {
       if (!historyByOrder.has(item.order_id)) historyByOrder.set(item.order_id, []);
       historyByOrder.get(item.order_id).push(item);
     });
-    const customerIds = [...new Set(data.map(order => order.customer_id).filter(Boolean))];
-    const customersById = new Map();
-    if (customerIds.length) {
-      const { data: customers, error: customersError } = await DB.from('profiles').select('id, name, phone, email').in('id', customerIds);
-      if (!customersError) customers.forEach(customer => customersById.set(customer.id, customer));
-    }
-    return data.map(o => ({ id:`PED-${String(o.id).padStart(3,'0')}`, databaseId:o.id, customerId:o.customer_id, customerName:o.customer_name, customer:customersById.get(o.customer_id) || null, note:o.note, status:o.status, createdAt:new Date(o.created_at).getTime(), address:o.delivery_address, paymentMethod:o.payment_method, changeFor:o.change_for === null ? null : Number(o.change_for), fulfillmentMethod:o.fulfillment_method, subtotal:o.subtotal === null ? null : Number(o.subtotal), deliveryFee:o.delivery_fee === null ? null : Number(o.delivery_fee), total:o.total === null ? null : Number(o.total), etaMin:o.eta_min === null ? null : Number(o.eta_min), etaMax:o.eta_max === null ? null : Number(o.eta_max), cancellation:cancellationsByOrder.get(o.id) || null, history:historyByOrder.get(o.id) || [], items:o.order_items.map(i => ({ pid:i.product_id, qty:i.quantity, unitPrice:Number(i.unit_price), unitCost:Number(i.unit_cost), removedIngredients:i.removed_ingredients || '' })) }));
+    return data.map(o => ({ id:`PED-${String(o.id).padStart(3,'0')}`, databaseId:o.id, customerId:o.customer_id, customerName:o.customer_name, note:o.note, status:o.status, createdAt:new Date(o.created_at).getTime(), address:o.delivery_address, paymentMethod:o.payment_method, changeFor:o.change_for === null ? null : Number(o.change_for), fulfillmentMethod:o.fulfillment_method, subtotal:o.subtotal === null ? null : Number(o.subtotal), deliveryFee:o.delivery_fee === null ? null : Number(o.delivery_fee), total:o.total === null ? null : Number(o.total), etaMin:o.eta_min === null ? null : Number(o.eta_min), etaMax:o.eta_max === null ? null : Number(o.eta_max), cancellation:cancellationsByOrder.get(o.id) || null, history:historyByOrder.get(o.id) || [], items:o.order_items.map(i => ({ pid:i.product_id, productName:i.product_name, qty:i.quantity, unitPrice:Number(i.unit_price), unitCost:costsByItem.get(`${o.id}:${i.product_id}`) ?? null, removedIngredients:i.removed_ingredients || '' })) }));
   },
   async getExpenses() {
     const { data, error } = await DB.from('expenses').select('*').order('created_at', { ascending:false });

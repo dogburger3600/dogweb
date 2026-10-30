@@ -36,7 +36,7 @@ async function redirectAuthenticatedUser() {
   const customerDestination = params.get('returnTo') === 'index.html'
     ? `index.html${params.get('checkout') === '1' ? '?checkout=1' : ''}`
     : 'index.html';
-  window.location.replace(profile?.role === 'manager' ? 'gestor.html' : customerDestination);
+  window.location.replace(['owner', 'manager', 'attendant'].includes(profile?.role) ? 'gestor.html' : customerDestination);
   return true;
 }
 

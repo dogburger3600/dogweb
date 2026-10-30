@@ -17,7 +17,7 @@ async function updateHeaderAuth() {
   document.getElementById('header-user-avatar').textContent = name.charAt(0).toUpperCase();
   guestActions.classList.add('hidden');
   userActions.classList.remove('hidden');
-  document.getElementById('manager-shortcut').classList.toggle('hidden', profile?.role !== 'manager');
+  document.getElementById('manager-shortcut').classList.toggle('hidden', !['owner', 'manager', 'attendant'].includes(profile?.role));
 }
 
 document.getElementById('header-logout').addEventListener('click', async () => {
