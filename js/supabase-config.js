@@ -1,7 +1,7 @@
 'use strict';
 
-const SUPABASE_URL = 'https://zjgycljvodpaeewawbxz.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable__nbiWIg7c0jJS3grjMV5ag_CaxcL7vA';
+const SUPABASE_URL = 'https://ewoakhqtnnpweutnyaxq.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_PWhSGwM2HPqzy9-I2N0m5g_9nGFJ1zG';
 const TURNSTILE_SITE_KEY = '0x4AAAAAAFP3cN53ref7l7RU';
 
 const DB = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
