@@ -64,6 +64,19 @@ const VIEW_TITLES = {
   configuracoes: 'Configurações da Loja',
 };
 
+const VIEW_DESCRIPTIONS = {
+  dashboard: 'Visão geral da operação em tempo real',
+  pedidos: 'Acompanhe e atualize o fluxo de atendimento',
+  relatorios: 'Consulte desempenho e resultados financeiros',
+  'estoque-lanches': 'Controle a disponibilidade dos produtos prontos',
+  popup: 'Gerencie a comunicação exibida aos clientes',
+  configuracoes: 'Ajuste horários, entrega e dados da loja',
+};
+
+function managerIcon(name, className = 'manager-icon') {
+  return `<svg class="${className}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
+}
+
 const REALTIME_UI_STATE = { connection:'connecting', detail:'', soundEnabled:false, lastSyncAt:null };
 
 function getProduct(pid) {
@@ -109,7 +122,9 @@ function renderRealtimeReadiness(context) {
   const lastSync = REALTIME_UI_STATE.lastSyncAt ? `Última sincronização ${new Date(REALTIME_UI_STATE.lastSyncAt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}` : 'Aguardando primeira sincronização';
   const wrapperClass = context === 'dashboard' ? 'dashboard-readiness' : 'orders-readiness';
   const soundLabel = REALTIME_UI_STATE.soundEnabled ? 'Som habilitado' : (REALTIME_UI_STATE.soundDetail ? 'Áudio indisponível' : 'Habilitar som');
-  return `<div class="${wrapperClass} realtime-readiness is-${REALTIME_UI_STATE.connection}" data-realtime-panel><div><span class="realtime-connection-dot" data-realtime-icon aria-hidden="true">${status.icon}</span><div><strong data-realtime-label>${status.label}</strong><small data-realtime-detail>${escapeManagerHtml(REALTIME_UI_STATE.detail || status.detail)}</small></div></div><div class="realtime-controls"><button class="dashboard-sound-status${REALTIME_UI_STATE.soundEnabled ? ' is-enabled' : ''}" type="button" onclick="toggleRealtimeSound()" aria-pressed="${REALTIME_UI_STATE.soundEnabled}" data-realtime-sound title="${escapeManagerHtml(REALTIME_UI_STATE.soundDetail)}"><span aria-hidden="true">${REALTIME_UI_STATE.soundEnabled ? '🔔' : '🔕'}</span> ${soundLabel}</button><span class="realtime-last-sync" data-realtime-sync>${lastSync}</span></div></div>`;
+  const statusVisual = context === 'dashboard' ? managerIcon('activity', 'manager-icon realtime-status-icon') : status.icon;
+  const soundVisual = context === 'dashboard' ? managerIcon(REALTIME_UI_STATE.soundEnabled ? 'volume' : 'volume-off') : `<span aria-hidden="true">${REALTIME_UI_STATE.soundEnabled ? '🔔' : '🔕'}</span>`;
+  return `<div class="${wrapperClass} realtime-readiness is-${REALTIME_UI_STATE.connection}" data-realtime-panel><div><span class="realtime-connection-dot" data-realtime-icon aria-hidden="true">${statusVisual}</span><div><strong data-realtime-label>${status.label}</strong><small data-realtime-detail>${escapeManagerHtml(REALTIME_UI_STATE.detail || status.detail)}</small></div></div><div class="realtime-controls"><button class="dashboard-sound-status${REALTIME_UI_STATE.soundEnabled ? ' is-enabled' : ''}" type="button" onclick="toggleRealtimeSound()" aria-pressed="${REALTIME_UI_STATE.soundEnabled}" data-realtime-sound title="${escapeManagerHtml(REALTIME_UI_STATE.soundDetail)}">${soundVisual}<span>${soundLabel}</span></button><span class="realtime-last-sync" data-realtime-sync>${lastSync}</span></div></div>`;
 }
 
 function updateRealtimeUi(state) {
@@ -119,7 +134,10 @@ function updateRealtimeUi(state) {
   document.querySelectorAll('[data-realtime-panel]').forEach(panel => {
     panel.classList.remove('is-connecting', 'is-connected', 'is-reconnecting', 'is-error');
     panel.classList.add(`is-${REALTIME_UI_STATE.connection}`);
-    panel.querySelector('[data-realtime-icon]').textContent = status.icon;
+    const icon = panel.querySelector('[data-realtime-icon]');
+    icon.innerHTML = panel.classList.contains('dashboard-readiness')
+      ? managerIcon('activity', 'manager-icon realtime-status-icon')
+      : status.icon;
     panel.querySelector('[data-realtime-label]').textContent = status.label;
     panel.querySelector('[data-realtime-detail]').textContent = REALTIME_UI_STATE.detail || status.detail;
     const button = panel.querySelector('[data-realtime-sound]');
@@ -127,7 +145,9 @@ function updateRealtimeUi(state) {
     button.setAttribute('aria-pressed', String(REALTIME_UI_STATE.soundEnabled));
     const soundLabel = REALTIME_UI_STATE.soundEnabled ? 'Som habilitado' : (REALTIME_UI_STATE.soundDetail ? 'Áudio indisponível' : 'Habilitar som');
     button.title = REALTIME_UI_STATE.soundDetail || '';
-    button.innerHTML = `<span aria-hidden="true">${REALTIME_UI_STATE.soundEnabled ? '🔔' : '🔕'}</span> ${soundLabel}`;
+    button.innerHTML = panel.classList.contains('dashboard-readiness')
+      ? `${managerIcon(REALTIME_UI_STATE.soundEnabled ? 'volume' : 'volume-off')}<span>${soundLabel}</span>`
+      : `<span aria-hidden="true">${REALTIME_UI_STATE.soundEnabled ? '🔔' : '🔕'}</span><span>${soundLabel}</span>`;
     panel.querySelector('[data-realtime-sync]').textContent = lastSync;
   });
   const dot = document.querySelector('.m-online-dot');
@@ -151,9 +171,14 @@ async function setView(view) {
   if (requiredCapability && !window.UICapabilities.can(currentManagerRole, requiredCapability)) view = 'dashboard';
   currentView = view;
   document.getElementById('view-title').textContent = VIEW_TITLES[view];
+  document.getElementById('view-description').textContent = VIEW_DESCRIPTIONS[view];
   Object.keys(VIEW_TITLES).forEach(v => {
     const btn = document.getElementById(`nav-${v}`);
-    if (btn) btn.classList.toggle('active', v === view);
+    if (btn) {
+      btn.classList.toggle('active', v === view);
+      if (v === view) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
+    }
   });
   const pageUrl = new URL(window.location.href);
   if (view === 'dashboard') pageUrl.searchParams.delete('view');
@@ -338,7 +363,7 @@ function renderDashboardState(state, detail = '') {
     </section>`;
   }
   return `<section class="dashboard-state dashboard-state-error" role="alert">
-    <span class="dashboard-state-icon" aria-hidden="true">⚠️</span>
+    <span class="dashboard-state-icon" aria-hidden="true">${managerIcon('alert')}</span>
     <strong>Não foi possível carregar o Dashboard</strong>
     <span>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</span>
     <button type="button" onclick="setView('dashboard')">Tentar novamente</button>
@@ -366,10 +391,10 @@ function renderDashboard() {
     ${renderRealtimeReadiness('dashboard')}
 
     <div class="kpi-grid dashboard-kpis">
-      ${kpiCard('Pedidos Hoje', String(todayOrders.length), '📋', '#F97316', 'recebidos hoje')}
-      ${kpiCard('Pedidos Ativos', String(active.length), '👨‍🍳', '#2563EB', 'pendentes ou preparando')}
-      ${kpiCard('Prontos', String(ready), '✅', '#16A34A', 'aguardando entrega')}
-      ${kpiCard('Entregues', String(delivered), '🛵', '#7C3AED', 'total de pedidos')}
+      ${kpiCard('Pedidos Hoje', String(todayOrders.length), managerIcon('calendar'), '#EA580C', 'recebidos hoje')}
+      ${kpiCard('Pedidos Ativos', String(active.length), managerIcon('activity'), '#1D4ED8', 'pendentes ou preparando')}
+      ${kpiCard('Prontos', String(ready), managerIcon('check'), '#15803D', 'aguardando entrega')}
+      ${kpiCard('Entregues', String(delivered), managerIcon('delivery'), '#57534E', 'total de pedidos')}
     </div>
 
     <div class="dashboard-operations-grid">
@@ -379,8 +404,8 @@ function renderDashboard() {
           <span class="dashboard-count-badge">${newOrders.length}</span>
         </div>
         ${newOrders.length
-          ? `<div class="dashboard-order-list">${newOrders.slice(0,4).map(o => dashOrderRow(o)).join('')}</div><button class="dashboard-text-button" type="button" onclick="setView('pedidos')">Ver todos os pedidos →</button>`
-          : renderDashboardEmpty('✨', 'Fila em dia', 'Nenhum pedido novo aguardando atendimento.')}
+          ? `<div class="dashboard-order-list">${newOrders.slice(0,4).map(o => dashOrderRow(o)).join('')}</div><button class="dashboard-text-button" type="button" onclick="setView('pedidos')">Ver todos os pedidos${managerIcon('chevron')}</button>`
+          : renderDashboardEmpty(managerIcon('spark'), 'Fila em dia', 'Nenhum pedido novo aguardando atendimento.')}
       </article>
 
       <article class="card dashboard-operation-card">
@@ -389,8 +414,8 @@ function renderDashboard() {
           <span class="dashboard-count-badge ${soldOutSnacks.length ? 'is-alert' : 'is-ok'}">${soldOutSnacks.length}</span>
         </div>
         ${soldOutSnacks.length
-          ? `<div class="dashboard-stock-alert"><span aria-hidden="true">⚠️</span><div><strong>${soldOutSnacks.length} ${soldOutSnacks.length === 1 ? 'lanche sinalizado' : 'lanches sinalizados'} como esgotado</strong><p>${soldOutSnacks.slice(0,3).map(product => escapeManagerHtml(product.name)).join(', ')}${soldOutSnacks.length > 3 ? ` e mais ${soldOutSnacks.length - 3}` : ''}</p></div></div><button class="dashboard-text-button" type="button" data-capability="manageStock" onclick="setView('estoque-lanches')">Abrir área preparada →</button>`
-          : renderDashboardEmpty('🍔', 'Nenhum alerta visual', 'Não há lanches com quantidade zero nos dados atuais.')}
+          ? `<div class="dashboard-stock-alert"><span aria-hidden="true">${managerIcon('alert')}</span><div><strong>${soldOutSnacks.length} ${soldOutSnacks.length === 1 ? 'lanche sinalizado' : 'lanches sinalizados'} como esgotado</strong><p>${soldOutSnacks.slice(0,3).map(product => escapeManagerHtml(product.name)).join(', ')}${soldOutSnacks.length > 3 ? ` e mais ${soldOutSnacks.length - 3}` : ''}</p></div></div><button class="dashboard-text-button" type="button" data-capability="manageStock" onclick="setView('estoque-lanches')">Abrir área preparada${managerIcon('chevron')}</button>`
+          : renderDashboardEmpty(managerIcon('menu'), 'Nenhum alerta visual', 'Não há lanches com quantidade zero nos dados atuais.')}
       </article>
     </div>
 
@@ -399,14 +424,14 @@ function renderDashboard() {
         <div class="card-header dashboard-card-header"><div><span class="card-title">Pedidos ativos</span><p>Pendentes ou em preparo</p></div><span class="dashboard-count-badge">${active.length}</span></div>
         ${active.length
           ? active.slice(0,5).map(o => dashOrderRow(o)).join('')
-          : renderDashboardEmpty('👨‍🍳', 'Nenhum pedido ativo', 'Os próximos pedidos aparecerão nesta área.')}
+          : renderDashboardEmpty(managerIcon('activity'), 'Nenhum pedido ativo', 'Os próximos pedidos aparecerão nesta área.')}
       </article>
 
       <article class="card">
         <div class="card-header dashboard-card-header"><div><span class="card-title">Últimos pedidos</span><p>Movimentação mais recente</p></div></div>
         ${orders.length
           ? orders.slice(0,5).map(o => dashOrderRow(o)).join('')
-          : renderDashboardEmpty('📋', 'Nenhum pedido registrado', 'O histórico recente aparecerá quando houver pedidos.')}
+          : renderDashboardEmpty(managerIcon('orders'), 'Nenhum pedido registrado', 'O histórico recente aparecerá quando houver pedidos.')}
       </article>
     </div>
   </section>`;
@@ -417,7 +442,7 @@ function dashOrderRow(o) {
   return `<div class="dash-order-row">
     <div>
       <span class="dash-order-id">${o.id}</span>
-      <span style="margin-left:8px;font-size:0.8rem;color:var(--stone)">${escapeManagerHtml(o.customerName)}</span>
+      <span class="dash-order-customer">${escapeManagerHtml(o.customerName)}</span>
     </div>
     <div class="dash-order-meta">
       <span class="dash-order-time">${timeSince(o.createdAt)}</span>

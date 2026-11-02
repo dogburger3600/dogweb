@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Lanche Express - Área do Gestor</title>
+  <title>Dog Burger - Área do Gestor</title>
   <link rel="icon" type="image/png" href="dogburger.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -11,7 +11,27 @@
 </head>
 <body>
 
-<div id="page-manager" class="hidden">
+<div id="page-manager" class="dashboard-shell hidden">
+  <svg class="manager-icon-sprite" aria-hidden="true">
+    <symbol id="icon-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+    <symbol id="icon-orders" viewBox="0 0 24 24"><path d="M9 5h6"/><path d="M9 9h6"/><path d="M9 13h4"/><path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-4 2-4-2-3 2V5a2 2 0 0 1 2-2Z"/></symbol>
+    <symbol id="icon-reports" viewBox="0 0 24 24"><path d="M4 19V9"/><path d="M10 19V5"/><path d="M16 19v-7"/><path d="M22 19H2"/></symbol>
+    <symbol id="icon-stock" viewBox="0 0 24 24"><path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5"/><path d="M4 12.5 12 17l8-4.5"/><path d="M4 17.5 12 22l8-4.5"/></symbol>
+    <symbol id="icon-menu" viewBox="0 0 24 24"><path d="M5 11a7 7 0 0 1 14 0"/><path d="M3 11h18"/><path d="M4 11v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M7 16v2a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3v-2"/></symbol>
+    <symbol id="icon-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 13v-2Z"/><path d="M11.6 15.4 13 21H7l-1.5-7"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+    <symbol id="icon-store" viewBox="0 0 24 24"><path d="M3 9h18l-2-5H5L3 9Z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></symbol>
+    <symbol id="icon-logout" viewBox="0 0 24 24"><path d="M10 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5"/><path d="m15 16 4-4-4-4"/><path d="M19 12H9"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="icon-volume" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 9a4 4 0 0 1 0 6"/><path d="M18 6a8 8 0 0 1 0 12"/></symbol>
+    <symbol id="icon-volume-off" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="m16 10 5 5"/><path d="m21 10-5 5"/></symbol>
+    <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M3 10h18"/></symbol>
+    <symbol id="icon-activity" viewBox="0 0 24 24"><path d="M3 12h4l2.5-7 5 14 2.5-7h4"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></symbol>
+    <symbol id="icon-delivery" viewBox="0 0 24 24"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+    <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 3 1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3Z"/><path d="m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z"/></symbol>
+    <symbol id="icon-alert" viewBox="0 0 24 24"><path d="M10.3 4.1 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 4.1a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  </svg>
   <aside class="m-sidebar">
     <div class="m-sidebar-header">
       <div class="m-sidebar-logo">
@@ -23,43 +43,47 @@
       </div>
     </div>
     <nav class="m-nav">
-      <button class="m-nav-btn active" id="nav-dashboard" type="button" title="Dashboard" data-capability="viewDashboard" onclick="setView('dashboard')">
-        <span aria-hidden="true">📊</span><span class="m-nav-label">Dashboard</span>
+      <button class="m-nav-btn active" id="nav-dashboard" type="button" title="Dashboard" data-capability="viewDashboard" aria-current="page" onclick="setView('dashboard')">
+        <svg class="manager-icon" aria-hidden="true"><use href="#icon-dashboard"></use></svg><span class="m-nav-label">Dashboard</span>
       </button>
       <button class="m-nav-btn" id="nav-pedidos" type="button" title="Pedidos" data-capability="viewOrders" onclick="setView('pedidos')">
-        <span aria-hidden="true">📋</span><span class="m-nav-label">Pedidos</span>
+        <svg class="manager-icon" aria-hidden="true"><use href="#icon-orders"></use></svg><span class="m-nav-label">Pedidos</span>
         <span class="m-nav-badge hidden" id="active-orders-badge">0</span>
       </button>
       <button class="m-nav-btn" id="nav-relatorios" type="button" title="Relatórios" data-capability="viewReports" onclick="setView('relatorios')">
-        <span aria-hidden="true">📈</span><span class="m-nav-label">Relatórios</span>
+        <svg class="manager-icon" aria-hidden="true"><use href="#icon-reports"></use></svg><span class="m-nav-label">Relatórios</span>
       </button>
       <button class="m-nav-btn" id="nav-estoque-lanches" type="button" title="Estoque de Lanches" data-capability="manageStock" onclick="setView('estoque-lanches')">
-        <span aria-hidden="true">📦</span><span class="m-nav-label">Estoque de Lanches</span>
+        <svg class="manager-icon" aria-hidden="true"><use href="#icon-stock"></use></svg><span class="m-nav-label">Estoque de Lanches</span>
       </button>
       <a class="m-nav-btn m-nav-link" href="cardapio-gestor.html" title="Editar Cardápio" data-capability="manageMenu">
-        <span aria-hidden="true">🍔</span><span class="m-nav-label">Editar Cardápio</span>
+        <svg class="manager-icon" aria-hidden="true"><use href="#icon-menu"></use></svg><span class="m-nav-label">Editar Cardápio</span>
       </a>
       <button class="m-nav-btn" id="nav-popup" type="button" title="Pop-up Inicial" data-capability="managePopup" onclick="setView('popup')">
-        <span aria-hidden="true">📣</span><span class="m-nav-label">Pop-up Inicial</span>
+        <svg class="manager-icon" aria-hidden="true"><use href="#icon-megaphone"></use></svg><span class="m-nav-label">Pop-up Inicial</span>
       </button>
       <button class="m-nav-btn" id="nav-configuracoes" type="button" title="Configurações da Loja" data-capability="manageSettings" onclick="setView('configuracoes')">
-        <span aria-hidden="true">⚙️</span><span class="m-nav-label">Configurações da Loja</span>
+        <svg class="manager-icon" aria-hidden="true"><use href="#icon-settings"></use></svg><span class="m-nav-label">Configurações da Loja</span>
       </button>
     </nav>
     <div class="m-sidebar-footer">
-      <a href="index.html" title="Ver Cardápio"><span aria-hidden="true">←</span><span class="m-sidebar-footer-label">Ver Cardápio</span></a>
-      <button type="button" title="Sair da conta" onclick="signOutManager()"><span aria-hidden="true">↪</span><span class="m-sidebar-footer-label">Sair da conta</span></button>
+      <a href="index.html" title="Ver Cardápio"><svg class="manager-icon" aria-hidden="true"><use href="#icon-store"></use></svg><span class="m-sidebar-footer-label">Ver Cardápio</span></a>
+      <button type="button" title="Sair da conta" onclick="signOutManager()"><svg class="manager-icon" aria-hidden="true"><use href="#icon-logout"></use></svg><span class="m-sidebar-footer-label">Sair da conta</span></button>
     </div>
   </aside>
 
   <div class="m-main">
     <header class="m-topbar">
-      <h1 class="m-topbar-title" id="view-title">Dashboard</h1>
+      <div class="m-topbar-heading"><h1 class="m-topbar-title" id="view-title">Dashboard</h1><p id="view-description">Visão geral da operação em tempo real</p></div>
       <div class="topbar-actions">
-        <a href="cardapio-gestor.html" class="topbar-menu-link" data-capability="manageMenu">Editar Cardápio</a>
-        <div class="m-online">
+        <a href="cardapio-gestor.html" class="topbar-menu-link" data-capability="manageMenu"><svg class="manager-icon" aria-hidden="true"><use href="#icon-menu"></use></svg><span>Editar Cardápio</span></a>
+        <div class="m-online" role="status" aria-label="Sistema online">
           <div class="m-online-dot"></div>
           <span class="m-online-label">Online</span>
+        </div>
+        <div class="m-mobile-actions">
+          <a href="index.html" aria-label="Ver cardápio"><svg class="manager-icon" aria-hidden="true"><use href="#icon-store"></use></svg></a>
+          <button type="button" aria-label="Sair da conta" onclick="signOutManager()"><svg class="manager-icon" aria-hidden="true"><use href="#icon-logout"></use></svg></button>
         </div>
       </div>
     </header>
