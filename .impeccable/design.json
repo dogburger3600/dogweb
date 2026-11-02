@@ -1,0 +1,145 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-02T12:56:54Z",
+  "title": "Design System: Dog Burger",
+  "extensions": {
+    "colorMeta": {
+      "orange-signature": { "role": "primary", "displayName": "Laranja de Brasa", "canonical": "#F97316", "tonalRamp": ["#431407", "#7C2D12", "#C2410C", "#EA580C", "#F97316", "#FB923C", "#FDBA74", "#FFF7ED"] },
+      "orange-deep": { "role": "primary", "displayName": "Laranja Tostado", "canonical": "#EA580C", "tonalRamp": ["#431407", "#7C2D12", "#9A3412", "#C2410C", "#EA580C", "#F97316", "#FDBA74", "#FFF7ED"] },
+      "night-charcoal": { "role": "neutral", "displayName": "Carvão da Noite", "canonical": "#1C1917", "tonalRamp": ["#0C0A09", "#1C1917", "#292524", "#44403C", "#78716C", "#A8A29E", "#D6D3D1", "#F5F5F4"] },
+      "night-raised": { "role": "neutral", "displayName": "Carvão Elevado", "canonical": "#292524", "tonalRamp": ["#0C0A09", "#1C1917", "#292524", "#44403C", "#57534E", "#A8A29E", "#D6D3D1", "#FAFAF9"] },
+      "stone-text": { "role": "neutral", "displayName": "Pedra de Leitura", "canonical": "#78716C", "tonalRamp": ["#1C1917", "#292524", "#44403C", "#57534E", "#78716C", "#A8A29E", "#D6D3D1", "#F5F5F4"] },
+      "stone-muted": { "role": "neutral", "displayName": "Pedra Silenciosa", "canonical": "#A8A29E", "tonalRamp": ["#292524", "#44403C", "#57534E", "#78716C", "#A8A29E", "#D6D3D1", "#E7E5E4", "#FAFAF9"] },
+      "line-soft": { "role": "neutral", "displayName": "Linha Suave", "canonical": "#E7E5E4", "tonalRamp": ["#44403C", "#57534E", "#78716C", "#A8A29E", "#D6D3D1", "#E7E5E4", "#F5F5F4", "#FFFFFF"] },
+      "surface-soft": { "role": "neutral", "displayName": "Superfície Suave", "canonical": "#F5F5F4", "tonalRamp": ["#57534E", "#78716C", "#A8A29E", "#D6D3D1", "#E7E5E4", "#F5F5F4", "#FAFAF9", "#FFFFFF"] },
+      "canvas-warm": { "role": "neutral", "displayName": "Tela Quente", "canonical": "#FAFAF9", "tonalRamp": ["#57534E", "#78716C", "#A8A29E", "#D6D3D1", "#E7E5E4", "#F5F5F4", "#FAFAF9", "#FFFFFF"] },
+      "white": { "role": "neutral", "displayName": "Branco de Serviço", "canonical": "#FFFFFF", "tonalRamp": ["#57534E", "#78716C", "#A8A29E", "#D6D3D1", "#E7E5E4", "#F5F5F4", "#FAFAF9", "#FFFFFF"] },
+      "success": { "role": "semantic", "displayName": "Verde de Operação", "canonical": "#16A34A", "tonalRamp": ["#052E16", "#14532D", "#166534", "#15803D", "#16A34A", "#4ADE80", "#BBF7D0", "#F0FDF4"] },
+      "information": { "role": "semantic", "displayName": "Azul de Informação", "canonical": "#2563EB", "tonalRamp": ["#172554", "#1E3A8A", "#1E40AF", "#1D4ED8", "#2563EB", "#60A5FA", "#BFDBFE", "#EFF6FF"] },
+      "warning": { "role": "semantic", "displayName": "Âmbar de Atenção", "canonical": "#D97706", "tonalRamp": ["#451A03", "#78350F", "#92400E", "#B45309", "#D97706", "#F59E0B", "#FDE68A", "#FFFBEB"] },
+      "danger": { "role": "semantic", "displayName": "Vermelho de Interrupção", "canonical": "#DC2626", "tonalRamp": ["#450A0A", "#7F1D1D", "#991B1B", "#B91C1C", "#DC2626", "#F87171", "#FECACA", "#FEF2F2"] },
+      "auxiliary-violet": { "role": "auxiliary", "displayName": "Violeta Auxiliar", "canonical": "#7C3AED", "tonalRamp": ["#2E1065", "#4C1D95", "#5B21B6", "#6D28D9", "#7C3AED", "#A78BFA", "#DDD6FE", "#F5F3FF"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Títulos de hero e raros momentos de marca." },
+      "headline": { "displayName": "Headline", "purpose": "Títulos de página, modal e agrupamentos principais." },
+      "title": { "displayName": "Title", "purpose": "Produtos, cartões, botões e seções." },
+      "body": { "displayName": "Body", "purpose": "Descrições, instruções e leitura contínua." },
+      "label": { "displayName": "Label", "purpose": "Campos, estados e metadados curtos." },
+      "numeric": { "displayName": "Numeric", "purpose": "Valores, horários, códigos e dados tabulares." }
+    },
+    "shadows": [
+      { "name": "interaction-soft", "value": "0 12px 40px rgba(0,0,0,0.10)", "purpose": "Elevação breve de cartão interativo." },
+      { "name": "navigation-separation", "value": "8px 0 28px rgba(28,25,23,0.08)", "purpose": "Separação discreta da navegação lateral." },
+      { "name": "drawer", "value": "-8px 0 40px rgba(0,0,0,0.15)", "purpose": "Painel temporário acima do conteúdo." },
+      { "name": "dialog", "value": "0 24px 80px rgba(0,0,0,0.20)", "purpose": "Diálogo que exige foco imediato." }
+    ],
+    "motion": [
+      { "name": "state-fast", "value": "150ms ease", "purpose": "Hover, seleção e mudança simples de cor." },
+      { "name": "feedback-enter", "value": "300ms ease", "purpose": "Entrada breve de toast ou confirmação." }
+    ],
+    "breakpoints": [
+      { "name": "mobile", "value": "640px" },
+      { "name": "compact", "value": "900px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação principal contida com assinatura laranja.",
+      "html": "<button class=\"ds-btn-primary\">Finalizar pedido</button>",
+      "css": ".ds-btn-primary { border: 0; border-radius: 12px; padding: 13px 18px; background: #F97316; color: #fff; font: 700 .95rem Outfit, sans-serif; cursor: pointer; transition: background .15s ease; } .ds-btn-primary:hover { background: #EA580C; } .ds-btn-primary:focus-visible { outline: 3px solid #1C1917; outline-offset: 3px; } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Ação secundária neutra para cancelar, voltar ou editar.",
+      "html": "<button class=\"ds-btn-secondary\">Voltar</button>",
+      "css": ".ds-btn-secondary { border: 0; border-radius: 12px; padding: 13px 18px; background: #F5F5F4; color: #78716C; font: 700 .95rem Outfit, sans-serif; cursor: pointer; transition: background .15s ease, color .15s ease; } .ds-btn-secondary:hover { background: #E7E5E4; color: #1C1917; } .ds-btn-secondary:focus-visible { outline: 3px solid #F97316; outline-offset: 3px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Campo claro com borda discreta e foco laranja.",
+      "html": "<label class=\"ds-field\"><span>Nome completo</span><input placeholder=\"Digite seu nome\"></label>",
+      "css": ".ds-field { display: grid; gap: 6px; color: #1C1917; font: 700 .8rem Nunito, sans-serif; letter-spacing: .05em; text-transform: uppercase; } .ds-field input { width: 100%; box-sizing: border-box; border: 1.5px solid #E7E5E4; border-radius: 10px; padding: 10px 14px; background: #fff; color: #1C1917; font: 500 .95rem Nunito, sans-serif; text-transform: none; letter-spacing: 0; } .ds-field input:hover { border-color: #A8A29E; } .ds-field input:focus-visible { border-color: #F97316; outline: 3px solid rgba(249,115,22,.2); outline-offset: 1px; }"
+    },
+    {
+      "name": "Dark Navigation Item",
+      "kind": "nav",
+      "refersTo": "navigation-dark",
+      "description": "Item de navegação escura com seleção laranja.",
+      "html": "<a class=\"ds-nav-item is-active\" href=\"#\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6V11h-6v9Zm0-16v5h6V4h-6Z\"/></svg><span>Dashboard</span></a>",
+      "css": ".ds-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: #A8A29E; font: 600 .9rem Nunito, sans-serif; text-decoration: none; transition: background .15s ease, color .15s ease; } .ds-nav-item svg { width: 20px; height: 20px; fill: currentColor; } .ds-nav-item:hover { background: #292524; color: #fff; } .ds-nav-item.is-active { background: #292524; color: #F97316; font-weight: 700; } .ds-nav-item:focus-visible { outline: 3px solid #F97316; outline-offset: 2px; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Filtro compacto com estado selecionado explícito.",
+      "html": "<button class=\"ds-chip is-active\">Lanches</button>",
+      "css": ".ds-chip { border: 1.5px solid #E7E5E4; border-radius: 999px; padding: 7px 16px; background: #fff; color: #78716C; font: 700 .8rem Outfit, sans-serif; cursor: pointer; } .ds-chip:hover { border-color: #A8A29E; color: #1C1917; } .ds-chip.is-active { border-color: #EA580C; background: #EA580C; color: #fff; } .ds-chip:focus-visible { outline: 3px solid rgba(249,115,22,.3); outline-offset: 2px; }"
+    },
+    {
+      "name": "Product Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Produto real com fotografia, nome, preço e ação em hierarquia direta.",
+      "html": "<article class=\"ds-product\"><div class=\"ds-product-image\" aria-label=\"Fotografia real do produto\"></div><div class=\"ds-product-body\"><h3>X-Burger</h3><p>Pão, carne, queijo e molho da casa.</p><div><strong>R$ 24,90</strong><button>Adicionar</button></div></div></article>",
+      "css": ".ds-product { overflow: hidden; border: 1.5px solid #F5F5F4; border-radius: 16px; background: #fff; color: #1C1917; transition: transform .15s ease, box-shadow .15s ease; } .ds-product:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,.10); } .ds-product-image { aspect-ratio: 4/3; background: #F5F5F4; } .ds-product-body { padding: 16px; } .ds-product h3 { margin: 0 0 6px; font: 700 1rem/1.3 Outfit, sans-serif; } .ds-product p { margin: 0 0 14px; color: #78716C; font: 500 .8rem/1.5 Nunito, sans-serif; } .ds-product-body > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; } .ds-product strong { font: 800 1.1rem Outfit, sans-serif; } .ds-product button { border: 0; border-radius: 10px; padding: 8px 14px; background: #F97316; color: #fff; font: 700 .8rem Outfit, sans-serif; } .ds-product button:hover { background: #EA580C; } .ds-product button:focus-visible { outline: 3px solid #1C1917; outline-offset: 2px; }"
+    },
+    {
+      "name": "Operational KPI",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Indicador operacional claro e compacto.",
+      "html": "<article class=\"ds-kpi\"><span>Pedidos hoje</span><strong>24</strong><small>+12% desde ontem</small></article>",
+      "css": ".ds-kpi { border: 1.5px solid #F5F5F4; border-radius: 14px; padding: 18px 20px; background: #fff; color: #1C1917; } .ds-kpi span { display: block; margin-bottom: 12px; color: #78716C; font: 700 .75rem Nunito, sans-serif; letter-spacing: .08em; text-transform: uppercase; } .ds-kpi strong { display: block; font: 800 1.4rem/1 Outfit, sans-serif; letter-spacing: -.02em; } .ds-kpi small { display: block; margin-top: 4px; color: #78716C; font: 600 .75rem Nunito, sans-serif; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Balcão Noturno",
+    "overview": "Balcão Noturno traduz o Dog Burger como uma hamburgueria urbana vista no melhor momento da noite: carvão profundo, luz quente e serviço preciso. A identidade é moderna, minimalista, elegante e profissional. O logotipo oficial e a fotografia real dos produtos carregam personalidade; a interface cria enquadramento e ritmo sem competir com eles.\n\nA experiência do cliente é marcante e acolhedora, com contraste forte, composição direta e laranja como sinal de ação. O painel administrativo é predominantemente claro, com navegação escura e acentos laranja, favorecendo leitura prolongada, organização e eficiência operacional. Camadas são sutis, componentes são contidos e a hierarquia é precisa.",
+    "keyCharacteristics": [
+      "Preto carvão, laranja quente e branco como assinatura dominante.",
+      "Superfícies claras e calmas para leitura e operação.",
+      "Contraste alto, tipografia limpa e hierarquia inequívoca.",
+      "Profundidade ambiental discreta, reservada a elementos realmente elevados.",
+      "Ícones SVG consistentes no lugar de emojis de interface.",
+      "Movimento curto e funcional, sempre respeitando redução de movimento."
+    ],
+    "rules": [
+      { "name": "The Ember Signal Rule", "body": "O laranja indica ação, seleção ou informação prioritária; não funciona como preenchimento decorativo recorrente.", "section": "colors" },
+      { "name": "The Light Workbench Rule", "body": "O painel administrativo permanece predominantemente claro; superfícies escuras ficam concentradas na navegação e em momentos de marca.", "section": "colors" },
+      { "name": "The Contrast Before Character Rule", "body": "Nenhuma combinação de marca justifica texto com contraste insuficiente; tons mais escuros devem assumir o texto quando necessário.", "section": "colors" },
+      { "name": "The One Loud Voice Rule", "body": "Cada janela possui um único título dominante; peso 900 não se repete em rótulos, botões e cartões.", "section": "typography" },
+      { "name": "The Readable Counter Rule", "body": "Informações operacionais nunca dependem de texto excessivamente pequeno; legibilidade prevalece sobre densidade.", "section": "typography" },
+      { "name": "The Window Consistency Rule", "body": "Cada janela pode ajustar densidade ao trabalho realizado, mas compartilha os mesmos tokens, componentes, estados e comportamento responsivo.", "section": "layout" },
+      { "name": "The Product Leads Rule", "body": "No cardápio, fotografia real, nome, preço e ação formam a hierarquia principal; ornamento nunca disputa atenção com o produto.", "section": "layout" },
+      { "name": "The Flat Workbench Rule", "body": "Superfícies operacionais ficam planas em repouso; sombra aparece apenas quando comunica hierarquia, interação ou sobreposição.", "section": "elevation" },
+      { "name": "The Contained Curve Rule", "body": "Arredondamento transmite acabamento e acessibilidade sem transformar todos os elementos em cápsulas.", "section": "shapes" }
+    ],
+    "dos": [
+      "Do preserve o logotipo oficial e use fotografia autêntica dos produtos.",
+      "Do concentre o preto em navegação, hero e momentos de marca.",
+      "Do mantenha o painel predominantemente claro e confortável para uso prolongado.",
+      "Do use laranja para ação, seleção, preço e progresso.",
+      "Do use SVGs profissionais com tamanho e traço consistentes.",
+      "Do mantenha componentes contidos, hierarquia precisa e alvos de interação confortáveis.",
+      "Do ofereça redução de movimento e foco de teclado visível."
+    ],
+    "donts": [
+      "Don't use emojis como ícones de interface.",
+      "Don't fabrique fotografias ou substitua imagens reais por ilustrações genéricas.",
+      "Don't acumule gradientes, sombras ou superfícies decorativas.",
+      "Don't transforme o painel em uma interface predominantemente escura.",
+      "Don't use laranja como preenchimento amplo sem função.",
+      "Don't introduza novos padrões visuais por janela quando um componente compartilhado resolver o caso.",
+      "Don't comprometa contraste, leitura ou usabilidade em nome da atmosfera."
+    ]
+  }
+}
