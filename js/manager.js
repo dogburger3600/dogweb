@@ -122,8 +122,8 @@ function renderRealtimeReadiness(context) {
   const lastSync = REALTIME_UI_STATE.lastSyncAt ? `Última sincronização ${new Date(REALTIME_UI_STATE.lastSyncAt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}` : 'Aguardando primeira sincronização';
   const wrapperClass = context === 'dashboard' ? 'dashboard-readiness' : 'orders-readiness';
   const soundLabel = REALTIME_UI_STATE.soundEnabled ? 'Som habilitado' : (REALTIME_UI_STATE.soundDetail ? 'Áudio indisponível' : 'Habilitar som');
-  const statusVisual = context === 'dashboard' ? managerIcon('activity', 'manager-icon realtime-status-icon') : status.icon;
-  const soundVisual = context === 'dashboard' ? managerIcon(REALTIME_UI_STATE.soundEnabled ? 'volume' : 'volume-off') : `<span aria-hidden="true">${REALTIME_UI_STATE.soundEnabled ? '🔔' : '🔕'}</span>`;
+  const statusVisual = managerIcon('activity', 'manager-icon realtime-status-icon');
+  const soundVisual = managerIcon(REALTIME_UI_STATE.soundEnabled ? 'volume' : 'volume-off');
   return `<div class="${wrapperClass} realtime-readiness is-${REALTIME_UI_STATE.connection}" data-realtime-panel><div><span class="realtime-connection-dot" data-realtime-icon aria-hidden="true">${statusVisual}</span><div><strong data-realtime-label>${status.label}</strong><small data-realtime-detail>${escapeManagerHtml(REALTIME_UI_STATE.detail || status.detail)}</small></div></div><div class="realtime-controls"><button class="dashboard-sound-status${REALTIME_UI_STATE.soundEnabled ? ' is-enabled' : ''}" type="button" onclick="toggleRealtimeSound()" aria-pressed="${REALTIME_UI_STATE.soundEnabled}" data-realtime-sound title="${escapeManagerHtml(REALTIME_UI_STATE.soundDetail)}">${soundVisual}<span>${soundLabel}</span></button><span class="realtime-last-sync" data-realtime-sync>${lastSync}</span></div></div>`;
 }
 
@@ -135,9 +135,7 @@ function updateRealtimeUi(state) {
     panel.classList.remove('is-connecting', 'is-connected', 'is-reconnecting', 'is-error');
     panel.classList.add(`is-${REALTIME_UI_STATE.connection}`);
     const icon = panel.querySelector('[data-realtime-icon]');
-    icon.innerHTML = panel.classList.contains('dashboard-readiness')
-      ? managerIcon('activity', 'manager-icon realtime-status-icon')
-      : status.icon;
+    icon.innerHTML = managerIcon('activity', 'manager-icon realtime-status-icon');
     panel.querySelector('[data-realtime-label]').textContent = status.label;
     panel.querySelector('[data-realtime-detail]').textContent = REALTIME_UI_STATE.detail || status.detail;
     const button = panel.querySelector('[data-realtime-sound]');
@@ -145,9 +143,7 @@ function updateRealtimeUi(state) {
     button.setAttribute('aria-pressed', String(REALTIME_UI_STATE.soundEnabled));
     const soundLabel = REALTIME_UI_STATE.soundEnabled ? 'Som habilitado' : (REALTIME_UI_STATE.soundDetail ? 'Áudio indisponível' : 'Habilitar som');
     button.title = REALTIME_UI_STATE.soundDetail || '';
-    button.innerHTML = panel.classList.contains('dashboard-readiness')
-      ? `${managerIcon(REALTIME_UI_STATE.soundEnabled ? 'volume' : 'volume-off')}<span>${soundLabel}</span>`
-      : `<span aria-hidden="true">${REALTIME_UI_STATE.soundEnabled ? '🔔' : '🔕'}</span><span>${soundLabel}</span>`;
+    button.innerHTML = `${managerIcon(REALTIME_UI_STATE.soundEnabled ? 'volume' : 'volume-off')}<span>${soundLabel}</span>`;
     panel.querySelector('[data-realtime-sync]').textContent = lastSync;
   });
   const dot = document.querySelector('.m-online-dot');
@@ -200,6 +196,7 @@ async function setView(view) {
 
   const content = document.getElementById('m-content');
   if (view === 'dashboard') content.innerHTML = renderDashboardState('loading');
+  if (view === 'pedidos') content.innerHTML = renderOrdersState('loading');
   if (view === 'estoque-lanches') content.innerHTML = renderSnackStockState('loading');
 
   // Recarregar dados mais recentes da store
@@ -209,7 +206,9 @@ async function setView(view) {
   } catch (error) {
     content.innerHTML = view === 'dashboard'
       ? renderDashboardState('error', error.message)
-      : view === 'estoque-lanches'
+      : view === 'pedidos'
+        ? renderOrdersState('error', error.message)
+        : view === 'estoque-lanches'
         ? renderSnackStockState('error', error.message)
         : `<div class="card" style="color:var(--red)">Não foi possível carregar os dados. ${escapeManagerHtml(error.message || '')}</div>`;
     return;
@@ -467,7 +466,7 @@ function renderPedidos() {
         ? orders.filter(order => order.cancellation).length
         : orders.filter(o => o.status === s && !o.cancellation).length;
     const label = s === 'todos' ? 'Todos' : s === 'cancelado' ? 'Cancelados' : STATUS_META[s].label;
-    return `<button class="filter-tab${ordersFilter === s ? ' active' : ''}" onclick="setPedidosFilter('${s}')">${label} (${count})</button>`;
+    return `<button class="filter-tab${ordersFilter === s ? ' active' : ''}" type="button" aria-pressed="${ordersFilter === s}" onclick="setPedidosFilter('${s}')"><span>${label}</span><strong>${count}</strong></button>`;
   }).join('');
 
   const cards = filtered.length === 0
@@ -476,11 +475,16 @@ function renderPedidos() {
 
   return `<section class="orders-page" aria-label="Gestão de pedidos">
     ${renderRealtimeReadiness('orders')}
-    ${ORDERS_UI_STATE.feedback ? `<div class="orders-feedback" role="status">✅ ${escapeManagerHtml(ORDERS_UI_STATE.feedback)}</div>` : ''}
-    <div class="filter-tabs orders-filter-tabs">${tabs}</div>
+    ${ORDERS_UI_STATE.feedback ? `<div class="orders-feedback" role="status"><span aria-hidden="true">${managerIcon('check')}</span>${escapeManagerHtml(ORDERS_UI_STATE.feedback)}</div>` : ''}
+    <div class="orders-toolbar"><div><strong>Fila de atendimento</strong><span>${filtered.length} ${filtered.length === 1 ? 'pedido no filtro atual' : 'pedidos no filtro atual'}</span></div><div class="filter-tabs orders-filter-tabs" aria-label="Filtrar pedidos">${tabs}</div></div>
     <div class="orders-list">${cards}</div>
     ${renderCancellationModal()}
   </section>`;
+}
+
+function renderOrdersState(state, detail = '') {
+  if (state === 'loading') return `<section class="orders-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando pedidos...</strong><span>Sincronizando a fila operacional.</span></section>`;
+  return `<section class="orders-state is-error" role="alert"><span class="orders-state-icon" aria-hidden="true">${managerIcon('alert')}</span><strong>Não foi possível carregar os pedidos</strong><span>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</span><button type="button" onclick="setView('pedidos')">Tentar novamente</button></section>`;
 }
 
 function renderOrdersEmptyState() {
@@ -489,7 +493,7 @@ function renderOrdersEmptyState() {
     : ordersFilter === 'cancelado'
       ? 'pedidos cancelados'
       : `pedidos ${STATUS_META[ordersFilter]?.label.toLowerCase() || ''}`;
-  return `<div class="orders-empty-state"><span aria-hidden="true">📋</span><strong>Nenhum resultado</strong><p>Não há ${filterLabel} para exibir neste filtro.</p></div>`;
+  return `<div class="orders-empty-state"><span aria-hidden="true">${managerIcon('inbox')}</span><strong>Nenhum resultado</strong><p>Não há ${filterLabel} para exibir neste filtro.</p></div>`;
 }
 
 function setPedidosFilter(s) {
@@ -506,19 +510,19 @@ function orderCard(o) {
 
   return `<article class="order-card${cancellation ? ' is-demo-cancelled' : ''}" id="order-card-${o.id}">
     <div class="order-card-head" onclick="toggleOrder('${o.id}')" role="button" tabindex="0" aria-expanded="${expanded}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleOrder('${o.id}')} ">
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <div class="order-card-summary">
+        <div class="order-card-identity">
           <span class="order-id">${o.id}</span>
           <span class="status-badge" style="background:${sm.bg};color:${sm.color}">${sm.label}</span>
           ${cancellation ? '<span class="orders-demo-badge">registrado</span>' : ''}
         </div>
-        <p class="order-meta">${escapeManagerHtml(o.customerName)} · ${o.items.length} ${o.items.length===1?'item':'itens'} · <span style="font-family:var(--font-mono)">${timeSince(o.createdAt)}</span></p>
+        <p class="order-meta"><strong>${escapeManagerHtml(o.customerName)}</strong><span>${o.items.length} ${o.items.length===1?'item':'itens'}</span><time>${timeSince(o.createdAt)}</time></p>
       </div>
       <span class="order-total">R$ ${fmt(total)}</span>
-      <span class="chevron">${expanded ? '▲' : '▼'}</span>
+      <span class="chevron${expanded ? ' is-expanded' : ''}" aria-hidden="true">${managerIcon('chevron')}</span>
     </div>
     ${expanded ? `
-    <div class="order-body">
+    <div class="order-body" id="order-body-${o.id}">
       <div class="order-items-list">
         ${o.items.map(i => {
           const p = getProduct(i.pid);
@@ -530,14 +534,16 @@ function orderCard(o) {
         }).join('')}
       </div>
       ${renderOrderFinancialSummary(o)}
-      ${o.address ? `<div class="order-address">📍 ${formatOrderAddress(o.address)}</div>` : ''}
-      <div class="order-payment">💳 Pagamento na entrega: ${orderPaymentLabel(o)}</div>
-      ${o.note ? `<div class="order-note">📝 ${escapeManagerHtml(o.note)}</div>` : ''}
+      <div class="order-service-details">
+        ${o.address ? `<div class="order-detail order-address"><span aria-hidden="true">${managerIcon('pin')}</span><div><strong>Endereço</strong><p>${formatOrderAddress(o.address)}</p></div></div>` : ''}
+        <div class="order-detail order-payment"><span aria-hidden="true">${managerIcon('payment')}</span><div><strong>Pagamento na entrega</strong><p>${orderPaymentLabel(o)}</p></div></div>
+        ${o.note ? `<div class="order-detail order-note"><span aria-hidden="true">${managerIcon('note')}</span><div><strong>Observação</strong><p>${escapeManagerHtml(o.note)}</p></div></div>` : ''}
+      </div>
       ${renderOrderTimeline(o)}
       <div class="order-actions no-print">
-        ${next && !cancellation ? `<button class="btn-advance" data-capability="advanceOrders" data-capability-mode="disable" onclick="advanceOrder('${o.id}','${next}')">Avançar → ${STATUS_META[next].label}</button>` : ''}
-        <button class="order-action-button" type="button" onclick="printKitchenTicket('${o.id}')">🖨️ Imprimir comanda</button>
-        ${o.status !== 'entregue' && !cancellation ? `<button class="order-action-button is-danger" type="button" data-capability="cancelOrders" onclick="openOrderCancellation('${o.id}')">Cancelar pedido</button>` : ''}
+        ${next && !cancellation ? `<button class="btn-advance" data-capability="advanceOrders" data-capability-mode="disable" onclick="advanceOrder('${o.id}','${next}')"><span>Avançar para ${STATUS_META[next].label}</span>${managerIcon('arrow-right')}</button>` : ''}
+        <button class="order-action-button" type="button" onclick="printKitchenTicket('${o.id}')">${managerIcon('print')}<span>Imprimir comanda</span></button>
+        ${o.status !== 'entregue' && !cancellation ? `<button class="order-action-button is-danger" type="button" data-capability="cancelOrders" onclick="openOrderCancellation('${o.id}')">${managerIcon('close')}<span>Cancelar pedido</span></button>` : ''}
       </div>
       <div class="kitchen-ticket-footer"><strong>Comanda de cozinha · ${o.id}</strong><span>Emitida pelo navegador</span></div>
     </div>` : ''}
