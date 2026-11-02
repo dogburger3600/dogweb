@@ -4394,38 +4394,70 @@ body { min-height: 100vh; }
   .cart-drawer { transition: none; animation: none; }
 }
 
-/* ── VISUAL CORRECTIONS 08.1 · AUTH HEADER & PRODUCT MEDIA ── */
-.signup-page .signup-header {
-  height: 76px;
-  gap: 24px;
+/* ── VISUAL CORRECTIONS 08.1 · CUSTOMER HEADER SYSTEM & PRODUCT MEDIA ── */
+.customer-page-header,
+#page-consumer .customer-page-header,
+.signup-page .customer-page-header,
+.profile-page .customer-page-header {
+  height: 72px;
+  padding: 0 28px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  background: rgba(28,25,23,0.98);
 }
-.signup-page .signup-brand {
+.customer-header-brand,
+.signup-page .customer-header-brand,
+#page-consumer .customer-header-brand {
   min-width: 0;
   display: inline-flex;
   align-items: center;
-  gap: 11px;
+  gap: 10px;
   color: var(--white);
+  text-decoration: none;
 }
-.signup-page .auth-header-logo {
-  width: 96px;
-  height: 58px;
+.customer-header-logo,
+#page-consumer .customer-header-logo,
+.signup-page .customer-header-logo,
+.profile-page .customer-header-logo {
+  width: 64px;
+  height: 48px;
   display: block;
   flex: 0 0 auto;
   object-fit: contain;
   object-position: center;
+  filter: none;
 }
-.signup-page .signup-brand > div { display: grid; gap: 2px; }
-.signup-page .signup-brand .c-header-name {
+.customer-header-brand > div,
+.signup-page .customer-header-brand > div,
+#page-consumer .customer-header-brand > div {
+  display: grid;
+  gap: 2px;
+}
+.customer-header-brand .c-header-name,
+.signup-page .customer-header-brand .c-header-name,
+#page-consumer .customer-header-brand .c-header-name {
+  display: block;
   color: var(--white);
-  font-size: 0.92rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
   line-height: 1.05;
+  letter-spacing: -0.02em;
 }
-.signup-page .signup-brand .c-header-sub {
+.customer-header-brand .c-header-sub,
+.signup-page .customer-header-brand .c-header-sub,
+#page-consumer .customer-header-brand .c-header-sub {
+  display: block;
+  margin: 0;
   color: #D6D3D1;
-  font-size: 0.68rem;
-  line-height: 1.2;
-  letter-spacing: 0.06em;
+  font-family: var(--font-body);
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
+.customer-header-actions,
+.auth-header-actions,
 .signup-page .auth-header-actions {
   min-width: 0;
   display: flex;
@@ -4433,42 +4465,47 @@ body { min-height: 100vh; }
   justify-content: flex-end;
   gap: 8px;
 }
-.signup-page .signup-header .btn-ghost {
+.customer-header-button,
+.signup-page .signup-header .customer-header-button,
+.profile-page .customer-header-button,
+#page-consumer .customer-header-button {
   min-height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 7px;
   padding: 8px 12px;
-  border: 1px solid transparent;
+  border: 1px solid #44403C;
   border-radius: 10px;
-  color: #E7E5E4;
-  font-size: 0.76rem;
-  font-weight: 800;
-  text-decoration: none;
-}
-.signup-page .signup-header .btn-ghost:hover {
-  border-color: #57534E;
   background: #292524;
   color: var(--white);
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  text-transform: uppercase;
 }
-.signup-page .signup-header .auth-login-link {
-  border-color: #44403C;
-  background: #292524;
+.customer-header-button:hover,
+.signup-page .signup-header .customer-header-button:hover,
+.profile-page .customer-header-button:hover,
+#page-consumer .customer-header-button:hover {
+  border-color: #78716C;
+  background: #44403C;
+  color: var(--white);
 }
-.signup-page .signup-header .customer-back-link .customer-icon {
-  width: 17px;
-  height: 17px;
-  color: #FDBA74;
-}
-.signup-page .auth-back-label-short { display: none; }
-.signup-page .login-main { min-height: calc(100vh - 76px); }
+.customer-header-button .customer-icon { width: 17px; height: 17px; color: #FDBA74; }
+.auth-back-label-short { display: none; }
+.signup-page .login-main,
+.signup-page .signup-main { min-height: calc(100vh - 72px); }
 .signup-page .login-card { padding-top: 34px; }
-.signup-page .signup-main { min-height: calc(100vh - 76px); }
 
-/* Product photography fills the established 4:3 media frame without distortion. */
+/* Product photography fills card and compact-order media without distortion. */
 .menu-editor-shell .menu-edit-image img,
-#page-consumer .product-img-wrap img {
+#page-consumer .product-img-wrap img,
+.cart-item img,
+.tbl-img {
   width: 100%;
   height: 100%;
   padding: 0;
@@ -4477,31 +4514,78 @@ body { min-height: 100vh; }
 }
 .menu-editor-shell .menu-edit-image,
 #page-consumer .product-img-wrap { background: #E7E5E4; }
+.cart-item img { width: 64px; height: 64px; }
+.tbl-img { width: 36px; height: 36px; }
 
 @media (max-width: 640px) {
-  .signup-page .signup-header {
-    height: 70px;
+  .customer-page-header,
+  #page-consumer .customer-page-header,
+  .signup-page .customer-page-header,
+  .profile-page .customer-page-header {
+    height: 64px;
     gap: 8px;
     padding: 0 12px;
   }
-  .signup-page .auth-header-logo { width: 84px; height: 52px; }
-  .signup-page .signup-brand { gap: 0; }
-  .signup-page .signup-brand > div { display: none; }
-  .signup-page .auth-header-actions { gap: 4px; }
-  .signup-page .signup-header .btn-ghost {
-    min-height: 42px;
-    display: inline-flex;
-    padding: 7px 9px;
-    font-size: 0.71rem;
+  .customer-header-brand,
+  .signup-page .customer-header-brand,
+  #page-consumer .customer-header-brand { gap: 7px; }
+  .customer-header-logo,
+  #page-consumer .customer-header-logo,
+  .signup-page .customer-header-logo,
+  .profile-page .customer-header-logo {
+    width: 52px;
+    height: 40px;
   }
-  .signup-page .auth-back-label-long { display: none; }
-  .signup-page .auth-back-label-short { display: inline; }
+  .customer-header-brand > div,
+  .signup-page .customer-header-brand > div,
+  #page-consumer .customer-header-brand > div { display: grid; }
+  .customer-header-brand .c-header-name,
+  .signup-page .customer-header-brand .c-header-name,
+  #page-consumer .customer-header-brand .c-header-name { font-size: 0.78rem; }
+  .customer-header-brand .c-header-sub,
+  .signup-page .customer-header-brand .c-header-sub,
+  #page-consumer .customer-header-brand .c-header-sub {
+    font-size: 0.49rem;
+    letter-spacing: 0.07em;
+  }
+  .customer-header-actions,
+  .auth-header-actions,
+  .signup-page .auth-header-actions { gap: 4px; }
+  .customer-header-button,
+  .signup-page .signup-header .customer-header-button,
+  .profile-page .customer-header-button,
+  #page-consumer .customer-header-button {
+    min-height: 40px;
+    display: inline-flex;
+    padding: 7px 8px;
+    font-size: 0.66rem;
+  }
+  #page-consumer .header-auth { gap: 4px; }
+  #page-consumer .header-auth .customer-header-button:last-child { display: inline-flex; }
+  #page-consumer .c-header-actions,
+  #page-consumer .header-user { gap: 5px; }
+  #page-consumer .header-user-name { max-width: 52px; font-size: 0.68rem; }
+  #page-consumer .btn-manager-shortcut { padding: 6px; }
+  #page-consumer .btn-cart { min-width: 40px; min-height: 40px; padding: 8px; }
+  .auth-back-label-long { display: none; }
+  .auth-back-label-short,
+  .profile-page .customer-header-button .auth-back-label-short { display: inline; }
+  .profile-page .customer-header-button .auth-back-label-long { display: none; }
   .signup-page .signup-intro { display: none; }
   .signup-page .signup-main,
-  .signup-page .login-main { min-height: calc(100vh - 70px); }
+  .signup-page .login-main { min-height: calc(100vh - 64px); }
 }
 
 @media (max-width: 380px) {
-  .signup-page .auth-header-logo { width: 76px; }
-  .signup-page .signup-header .btn-ghost { padding-inline: 7px; }
+  .customer-header-logo,
+  #page-consumer .customer-header-logo,
+  .signup-page .customer-header-logo,
+  .profile-page .customer-header-logo { width: 48px; }
+  .customer-header-brand,
+  .signup-page .customer-header-brand,
+  #page-consumer .customer-header-brand { gap: 5px; }
+  .customer-header-button,
+  .signup-page .signup-header .customer-header-button,
+  .profile-page .customer-header-button,
+  #page-consumer .customer-header-button { padding-inline: 6px; }
 }

@@ -13,9 +13,9 @@
 
 <div id="page-consumer">
   <!-- Header -->
-  <header class="c-header">
-    <a class="c-header-logo customer-brand" href="index.html" aria-label="Dog Burger — início do cardápio">
-      <img src="dogburger.png" alt="" class="customer-brand-logo" />
+  <header class="c-header customer-page-header">
+    <a class="c-header-logo customer-brand customer-header-brand" href="index.html" aria-label="Dog Burger — início do cardápio">
+      <img src="dogburger.png" alt="" class="customer-brand-logo customer-header-logo" />
       <div>
         <span class="c-header-name">Dog Burger</span>
         <span class="c-header-sub">Cardápio digital</span>
@@ -23,14 +23,14 @@
     </a>
     <div class="c-header-actions">
       <div class="header-auth" id="guest-actions">
-        <a href="entrar.html" class="btn-ghost">Entrar</a>
-        <a href="cadastro.html" class="btn-ghost">Criar conta</a>
+        <a href="entrar.html" class="btn-ghost customer-header-button">Entrar</a>
+        <a href="cadastro.html" class="btn-ghost customer-header-button">Criar conta</a>
       </div>
       <div class="header-user hidden" id="user-actions">
         <span class="header-user-avatar" id="header-user-avatar">U</span>
         <a href="perfil.html" class="header-user-name" id="header-user-name" title="Ver meu perfil"></a>
         <a href="gestor.html" class="btn-manager-shortcut hidden" id="manager-shortcut">Painel do Gestor</a>
-        <button class="btn-ghost" id="header-logout" type="button">Sair</button>
+        <button class="btn-ghost customer-header-button" id="header-logout" type="button">Sair</button>
       </div>
       <button class="btn-cart" type="button" onclick="openCart()" aria-haspopup="dialog" aria-controls="cart-drawer">
         <svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L21 8H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg><span>Carrinho</span>
