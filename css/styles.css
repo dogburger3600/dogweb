@@ -2685,3 +2685,357 @@ body { min-height: 100vh; }
   .dashboard-shell .snack-stock-restock,
   .dashboard-shell .snack-stock-minimum input { transition: none; }
 }
+
+/* ── BALCÃO NOTURNO · RELATÓRIOS FINANCEIROS ── */
+.dashboard-shell .reports-page { min-width: 0; gap: 18px; }
+.dashboard-shell .report-readiness {
+  padding: 14px 16px;
+  border-color: var(--border);
+  border-radius: 14px;
+  background: var(--white);
+}
+.dashboard-shell .report-readiness > div { gap: 12px; }
+.dashboard-shell .report-readiness > div > span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: #FFF7ED;
+  color: #9A3412;
+  font-size: 1rem;
+}
+.dashboard-shell .report-readiness .manager-icon { width: 19px; height: 19px; }
+.dashboard-shell .report-readiness strong { color: var(--dark); font-size: 0.86rem; }
+.dashboard-shell .report-readiness p { color: #57534E; font-size: 0.75rem; line-height: 1.4; }
+.dashboard-shell .report-readiness > span {
+  padding: 6px 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--white);
+  color: #57534E;
+  font-family: var(--font-mono);
+  font-size: 0.61rem;
+  letter-spacing: 0.02em;
+}
+.dashboard-shell .report-filter-card {
+  gap: 15px;
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--white);
+  color: var(--dark);
+}
+.dashboard-shell .report-filter-head { gap: 20px; }
+.dashboard-shell .report-calendar-label { margin-bottom: 5px; color: #9A3412; font-size: 0.65rem; letter-spacing: 0.08em; }
+.dashboard-shell .report-filter-head h2 { color: var(--dark); font-size: 1.08rem; letter-spacing: -0.01em; }
+.dashboard-shell .report-period-tabs {
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.dashboard-shell .report-period-tabs button {
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 8px;
+  color: #57534E;
+  font-size: 0.75rem;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.dashboard-shell .report-period-tabs button:hover { background: var(--surface); color: var(--dark); }
+.dashboard-shell .report-period-tabs button.active,
+.dashboard-shell .report-period-tabs button.active:hover { background: var(--dark); color: var(--white); }
+.dashboard-shell .report-calendar-controls {
+  justify-content: flex-start;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--surface);
+}
+.dashboard-shell .report-calendar-controls button,
+.dashboard-shell .report-calendar-controls input {
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--white);
+  color: #44403C;
+}
+.dashboard-shell .report-calendar-controls button { min-width: 42px; display: inline-grid; place-items: center; padding: 0 12px; }
+.dashboard-shell .report-calendar-controls button:hover { border-color: #A8A29E; background: var(--surface); color: var(--dark); }
+.dashboard-shell .report-calendar-controls button .manager-icon { width: 17px; height: 17px; }
+.dashboard-shell .report-calendar-controls input { padding: 0 12px; color-scheme: light; font-family: var(--font-mono); font-size: 0.75rem; }
+.dashboard-shell .report-calendar-controls .report-today-button {
+  min-width: auto;
+  padding: 0 16px;
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--white);
+}
+.dashboard-shell .report-calendar-controls .report-today-button:hover { border-color: var(--brand-dark); background: var(--brand-dark); color: var(--white); }
+.dashboard-shell .report-custom-range {
+  grid-template-columns: minmax(150px, 1fr) 24px minmax(150px, 1fr) auto;
+  gap: 10px;
+  padding-top: 14px;
+  border-top-color: var(--surface);
+}
+.dashboard-shell .report-custom-range label { color: #57534E; font-size: 0.67rem; }
+.dashboard-shell .report-custom-range input {
+  min-height: 42px;
+  border-color: var(--border);
+  background: var(--white);
+  color: var(--dark);
+  color-scheme: light;
+}
+.dashboard-shell .report-custom-range > span { display: grid; place-items: center; color: #78716C; }
+.dashboard-shell .report-custom-range > span .manager-icon { width: 17px; height: 17px; }
+.dashboard-shell .report-custom-range button { min-height: 42px; font-family: var(--font-body); font-size: 0.78rem; }
+.dashboard-shell .report-filter-card > .form-error { margin: -7px 0 0; color: #B91C1C; }
+.dashboard-shell .report-backend-note {
+  gap: 11px;
+  padding: 13px 14px;
+  border-color: #BFDBFE;
+  border-radius: 11px;
+  background: #EFF6FF;
+}
+.dashboard-shell .report-backend-note > span {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  background: var(--white);
+  color: #1D4ED8;
+  font-size: 1rem;
+}
+.dashboard-shell .report-backend-note .manager-icon { width: 16px; height: 16px; }
+.dashboard-shell .report-backend-note strong { color: #1E3A8A; font-size: 0.78rem; }
+.dashboard-shell .report-backend-note p { color: #1E40AF; font-size: 0.72rem; }
+.dashboard-shell .report-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.dashboard-shell .report-metric-card {
+  position: relative;
+  min-width: 0;
+  min-height: 142px;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--white);
+}
+.dashboard-shell .report-metric-card.is-featured::before { position: absolute; inset: 0 auto 0 0; width: 3px; background: #16A34A; content: ''; }
+.dashboard-shell .report-metric-card.is-information::before { background: #2563EB; }
+.dashboard-shell .report-metric-card.is-danger.is-featured::before { background: #DC2626; }
+.dashboard-shell .report-metric-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.dashboard-shell .report-metric-head > span:first-child { color: #57534E; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; }
+.dashboard-shell .report-metric-head > span:last-child {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: var(--surface);
+  color: #57534E;
+}
+.dashboard-shell .report-metric-head .manager-icon { width: 18px; height: 18px; }
+.dashboard-shell .report-metric-card > strong {
+  display: block;
+  overflow: hidden;
+  color: var(--dark);
+  font-family: var(--font-display);
+  font-size: clamp(1.3rem, 2vw, 1.65rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard-shell .report-metric-card > p { margin-top: 7px; color: #57534E; font-size: 0.75rem; font-weight: 600; line-height: 1.35; }
+.dashboard-shell .report-metric-card.is-positive > strong { color: #15803D; }
+.dashboard-shell .report-metric-card.is-warning > strong { color: #B45309; }
+.dashboard-shell .report-metric-card.is-danger > strong { color: #B91C1C; }
+.dashboard-shell .report-metric-card.is-information > strong { color: #1D4ED8; }
+.dashboard-shell .report-orders-card { border: 1px solid var(--border); border-radius: 14px; background: var(--white); }
+.dashboard-shell .report-orders-header { padding: 19px 20px; }
+.dashboard-shell .report-orders-header .card-title { font-size: 1rem; }
+.dashboard-shell .report-orders-header p { color: #57534E; font-size: 0.74rem; }
+.dashboard-shell .report-table-wrap { border-top-color: var(--border); }
+.dashboard-shell .report-table { min-width: 980px; }
+.dashboard-shell .report-table th { padding: 11px 13px; background: var(--bg); color: #57534E; font-size: 0.65rem; }
+.dashboard-shell .report-table td { padding: 14px 13px; border-top-color: var(--surface); color: #57534E; font-size: 0.77rem; }
+.dashboard-shell .report-table tbody tr:hover { background: #FAFAF9; }
+.dashboard-shell .report-table td > small { color: #57534E; font-family: var(--font-mono); font-size: 0.66rem; }
+.dashboard-shell .report-order-id { color: var(--dark); font-size: 0.76rem; }
+.dashboard-shell .report-products-list { min-width: 160px; }
+.dashboard-shell .report-products-list span { color: #44403C; }
+.dashboard-shell .report-products-list small { color: #57534E; font-family: var(--font-mono); font-size: 0.66rem; }
+.dashboard-shell .report-payment { min-width: 100px; color: #1D4ED8; }
+.dashboard-shell .report-value { color: #15803D; font-size: 0.78rem; }
+.dashboard-shell .report-delivered-badge { background: #F0FDF4; color: #166534; }
+.dashboard-shell .report-empty {
+  min-height: 260px;
+  gap: 7px;
+  padding: 36px 20px;
+  color: #57534E;
+}
+.dashboard-shell .report-empty > span {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin: 0 0 4px;
+  border-radius: 11px;
+  background: var(--surface);
+  color: #57534E;
+}
+.dashboard-shell .report-empty .manager-icon { width: 21px; height: 21px; }
+.dashboard-shell .report-empty strong { font-size: 0.9rem; }
+.dashboard-shell .report-empty p { color: #57534E; font-size: 0.76rem; }
+.dashboard-shell .reports-state {
+  min-height: 360px;
+  margin: 0;
+  padding: 32px 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--white);
+  color: #57534E;
+}
+.dashboard-shell .reports-state.is-error { margin: 0; }
+.dashboard-shell .reports-state-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 3px;
+  border-radius: 11px;
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+.dashboard-shell .reports-state-icon .manager-icon { width: 22px; height: 22px; }
+.dashboard-shell .report-period-tabs button:focus-visible,
+.dashboard-shell .report-calendar-controls button:focus-visible,
+.dashboard-shell .report-calendar-controls input:focus-visible,
+.dashboard-shell .report-custom-range input:focus-visible,
+.dashboard-shell .report-custom-range button:focus-visible,
+.dashboard-shell .reports-state button:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-shell .report-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 900px) {
+  .dashboard-shell .report-filter-head { align-items: flex-start; flex-direction: column; }
+  .dashboard-shell .report-period-tabs { width: 100%; overflow-x: auto; }
+  .dashboard-shell .report-period-tabs button { flex: 1 0 auto; }
+  .dashboard-shell .report-custom-range { grid-template-columns: 1fr 1fr; }
+  .dashboard-shell .report-custom-range > span { display: none; }
+  .dashboard-shell .report-custom-range button { grid-column: 1 / -1; }
+  .dashboard-shell .report-table-wrap { padding: 0 12px 12px; overflow: visible; border-top: 1px solid var(--border); }
+  .dashboard-shell .report-table,
+  .dashboard-shell .report-table tbody { width: 100%; min-width: 0; display: grid; gap: 12px; }
+  .dashboard-shell .report-table thead { display: none; }
+  .dashboard-shell .report-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px 14px;
+    padding: 15px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--white);
+  }
+  .dashboard-shell .report-table td { min-width: 0; display: block; padding: 0; border: 0; color: #44403C; }
+  .dashboard-shell .report-table td::before {
+    display: block;
+    margin-bottom: 4px;
+    color: #57534E;
+    content: attr(data-label);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .dashboard-shell .report-table td[data-label="Itens"] { grid-column: 1 / -1; padding: 10px 0; border-width: 1px 0; border-style: solid; border-color: var(--surface); }
+  .dashboard-shell .report-table td[data-label="Valor"] { align-self: end; }
+  .dashboard-shell .report-table td[data-label="Status"] { align-self: end; text-align: right; }
+  .dashboard-shell .report-products-list,
+  .dashboard-shell .report-payment { min-width: 0; }
+}
+
+@media (max-width: 640px) {
+  .dashboard-shell .reports-page { gap: 14px; }
+  .dashboard-shell .report-readiness { align-items: flex-start; flex-direction: column; padding: 14px; }
+  .dashboard-shell .report-readiness > span { align-self: flex-start; }
+  .dashboard-shell .report-filter-card { gap: 14px; padding: 16px 14px; }
+  .dashboard-shell .report-filter-head { gap: 13px; }
+  .dashboard-shell .report-period-tabs {
+    width: calc(100% + 28px);
+    margin: 0 -14px;
+    padding: 4px 14px;
+    border-width: 1px 0;
+    border-radius: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .dashboard-shell .report-period-tabs::-webkit-scrollbar { display: none; }
+  .dashboard-shell .report-period-tabs button { min-height: 42px; }
+  .dashboard-shell .report-calendar-controls { display: grid; grid-template-columns: 42px minmax(0, 1fr) 42px; }
+  .dashboard-shell .report-calendar-controls input { width: 100%; min-width: 0; }
+  .dashboard-shell .report-calendar-controls .report-today-button { grid-column: 1 / -1; }
+  .dashboard-shell .report-custom-range { grid-template-columns: 1fr; }
+  .dashboard-shell .report-custom-range button { grid-column: auto; width: 100%; }
+  .dashboard-shell .report-kpis { grid-template-columns: 1fr; gap: 10px; }
+  .dashboard-shell .report-metric-card { min-height: 126px; padding: 16px; }
+  .dashboard-shell .report-metric-head { margin-bottom: 13px; }
+  .dashboard-shell .report-metric-card > strong { font-size: 1.45rem; }
+  .dashboard-shell .report-orders-header { padding: 17px 15px; }
+  .dashboard-shell .report-table-wrap { padding: 0 12px 12px; overflow: visible; border-top: 1px solid var(--border); }
+  .dashboard-shell .report-table,
+  .dashboard-shell .report-table tbody { width: 100%; min-width: 0; display: grid; gap: 12px; }
+  .dashboard-shell .report-table thead { display: none; }
+  .dashboard-shell .report-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px 14px;
+    padding: 15px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--white);
+  }
+  .dashboard-shell .report-table td {
+    min-width: 0;
+    display: block;
+    padding: 0;
+    border: 0;
+    color: #44403C;
+  }
+  .dashboard-shell .report-table td::before {
+    display: block;
+    margin-bottom: 4px;
+    color: #57534E;
+    content: attr(data-label);
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .dashboard-shell .report-table td[data-label="Itens"] { grid-column: 1 / -1; padding: 10px 0; border-width: 1px 0; border-style: solid; border-color: var(--surface); }
+  .dashboard-shell .report-table td[data-label="Valor"] { align-self: end; }
+  .dashboard-shell .report-table td[data-label="Status"] { align-self: end; text-align: right; }
+  .dashboard-shell .report-products-list { min-width: 0; }
+  .dashboard-shell .report-payment { min-width: 0; }
+  .dashboard-shell .report-empty { min-height: 240px; }
+  .dashboard-shell .reports-state { min-height: 280px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-shell .report-period-tabs button { transition: none; }
+}

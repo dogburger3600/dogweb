@@ -1028,7 +1028,14 @@ function reportPeriodRange() {
 
 function renderReportsState(state, detail = '') {
   if (state === 'loading') return `<section class="reports-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando relatórios...</strong><span>Consultando os indicadores financeiros consolidados.</span></section>`;
-  return `<section class="reports-state is-error" role="alert"><span aria-hidden="true">⚠️</span><strong>Não foi possível carregar os relatórios</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('relatorios')">Tentar novamente</button></section>`;
+  return `<section class="reports-state is-error" role="alert"><span class="reports-state-icon" aria-hidden="true">${managerIcon('alert')}</span><strong>Não foi possível carregar os relatórios</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('relatorios')">Tentar novamente</button></section>`;
+}
+
+function reportMetricCard(label, value, icon, detail, tone = 'neutral', featured = false) {
+  return `<article class="report-metric-card is-${tone}${featured ? ' is-featured' : ''}">
+    <div class="report-metric-head"><span>${label}</span><span aria-hidden="true">${managerIcon(icon)}</span></div>
+    <strong>${value}</strong><p>${detail}</p>
+  </article>`;
 }
 
 async function loadManagerReport() {
@@ -1058,41 +1065,41 @@ function renderRelatorios() {
   const rows = selectedOrders.map(order => {
     const items = order.items.map(item => `<span><strong>${item.quantity}×</strong> ${escapeManagerHtml(item.product_name || 'Produto')} <small>R$ ${fmt(item.line_total)}</small>${item.removed_ingredients ? `<em>Sem: ${escapeManagerHtml(item.removed_ingredients)}</em>` : ''}</span>`).join('');
     return `<tr>
-      <td><strong class="report-order-id">PED-${String(order.id).padStart(3, '0')}</strong><small>${escapeManagerHtml(order.recognized_at_label)}</small></td>
-      <td><strong>${escapeManagerHtml(order.customer_name)}</strong></td>
-      <td><div class="report-products-list">${items || '<span>Nenhum item</span>'}</div></td>
-      <td><span class="report-address">${order.fulfillment_method === 'pickup' ? 'Retirada' : order.fulfillment_method === 'delivery' ? 'Entrega' : 'Histórico'}</span></td>
-      <td><span class="report-payment">${escapeManagerHtml(PAYMENT_LABELS[order.payment_method] || 'Não informado')}</span></td>
-      <td><strong class="report-value">R$ ${fmt(order.revenue)}</strong></td>
-      <td><span class="status-badge" style="background:#F5F5F4;color:#78716C">Entregue</span></td>
+      <td data-label="Pedido"><strong class="report-order-id">PED-${String(order.id).padStart(3, '0')}</strong><small>${escapeManagerHtml(order.recognized_at_label)}</small></td>
+      <td data-label="Cliente"><strong>${escapeManagerHtml(order.customer_name)}</strong></td>
+      <td data-label="Itens"><div class="report-products-list">${items || '<span>Nenhum item</span>'}</div></td>
+      <td data-label="Atendimento"><span class="report-address">${order.fulfillment_method === 'pickup' ? 'Retirada' : order.fulfillment_method === 'delivery' ? 'Entrega' : 'Histórico'}</span></td>
+      <td data-label="Pagamento"><span class="report-payment">${escapeManagerHtml(PAYMENT_LABELS[order.payment_method] || 'Não informado')}</span></td>
+      <td data-label="Valor"><strong class="report-value">R$ ${fmt(order.revenue)}</strong></td>
+      <td data-label="Status"><span class="status-badge report-delivered-badge">Entregue</span></td>
     </tr>`;
   }).join('');
   const incomplete = Number(coverage.orders_without_complete_b05_snapshot) > 0 || Number(coverage.items_without_unit_cost) > 0 || Number(coverage.orders_using_created_at_fallback) > 0;
 
   return `<section class="reports-page">
-    <div class="report-readiness"><div><span aria-hidden="true">📊</span><div><strong>Indicadores financeiros consolidados</strong><p>Somente vendas entregues e não canceladas, reconhecidas no horário oficial de Fortaleza.</p></div></div><span>fonte server-side</span></div>
+    <div class="report-readiness"><div><span aria-hidden="true">${managerIcon('reports')}</span><div><strong>Indicadores financeiros consolidados</strong><p>Somente vendas entregues e não canceladas, reconhecidas no horário oficial de Fortaleza.</p></div></div><span>Fonte server-side</span></div>
     <div class="card report-filter-card">
       <div class="report-filter-head"><div><span class="report-calendar-label">Período do relatório</span><h2>${escapeManagerHtml(reportPeriodLabel(range))}</h2></div><div class="report-period-tabs">
-        <button type="button" class="${REPORTS_UI_STATE.period === 'day' ? 'active' : ''}" onclick="setReportPeriod('day')">Dia</button>
-        <button type="button" class="${REPORTS_UI_STATE.period === 'seven' ? 'active' : ''}" onclick="setReportPeriod('seven')">7 dias</button>
-        <button type="button" class="${REPORTS_UI_STATE.period === 'thirty' ? 'active' : ''}" onclick="setReportPeriod('thirty')">30 dias</button>
-        <button type="button" class="${REPORTS_UI_STATE.period === 'custom' ? 'active' : ''}" onclick="setReportPeriod('custom')">Personalizado</button>
+        <button type="button" class="${REPORTS_UI_STATE.period === 'day' ? 'active' : ''}" aria-pressed="${REPORTS_UI_STATE.period === 'day'}" onclick="setReportPeriod('day')">Dia</button>
+        <button type="button" class="${REPORTS_UI_STATE.period === 'seven' ? 'active' : ''}" aria-pressed="${REPORTS_UI_STATE.period === 'seven'}" onclick="setReportPeriod('seven')">7 dias</button>
+        <button type="button" class="${REPORTS_UI_STATE.period === 'thirty' ? 'active' : ''}" aria-pressed="${REPORTS_UI_STATE.period === 'thirty'}" onclick="setReportPeriod('thirty')">30 dias</button>
+        <button type="button" class="${REPORTS_UI_STATE.period === 'custom' ? 'active' : ''}" aria-pressed="${REPORTS_UI_STATE.period === 'custom'}" onclick="setReportPeriod('custom')">Personalizado</button>
       </div></div>
-      ${REPORTS_UI_STATE.period === 'day' ? `<div class="report-calendar-controls"><button type="button" title="Dia anterior" aria-label="Dia anterior" onclick="shiftReportDate(-1)">←</button><input id="report-date" type="date" value="${reportDate}" aria-label="Selecionar dia do relatório" onchange="setReportDate(this.value)" /><button type="button" title="Próximo dia" aria-label="Próximo dia" onclick="shiftReportDate(1)">→</button><button class="report-today-button" type="button" onclick="showTodayReport()">Hoje</button></div>` : ''}
-      ${REPORTS_UI_STATE.period === 'custom' ? `<div class="report-custom-range"><label>Data inicial<input id="report-custom-start" type="date" value="${REPORTS_UI_STATE.customStart}" /></label><span aria-hidden="true">→</span><label>Data final<input id="report-custom-end" type="date" value="${REPORTS_UI_STATE.customEnd}" /></label><button class="btn-primary" type="button" onclick="applyCustomReportRange()">Aplicar período</button></div><p class="form-error" id="report-range-error">${escapeManagerHtml(REPORTS_UI_STATE.error)}</p>` : ''}
+      ${REPORTS_UI_STATE.period === 'day' ? `<div class="report-calendar-controls"><button type="button" title="Dia anterior" aria-label="Dia anterior" onclick="shiftReportDate(-1)">${managerIcon('arrow-left')}</button><input id="report-date" type="date" value="${reportDate}" aria-label="Selecionar dia do relatório" onchange="setReportDate(this.value)" /><button type="button" title="Próximo dia" aria-label="Próximo dia" onclick="shiftReportDate(1)">${managerIcon('arrow-right-small')}</button><button class="report-today-button" type="button" onclick="showTodayReport()">Hoje</button></div>` : ''}
+      ${REPORTS_UI_STATE.period === 'custom' ? `<div class="report-custom-range"><label>Data inicial<input id="report-custom-start" type="date" value="${REPORTS_UI_STATE.customStart}" /></label><span aria-hidden="true">${managerIcon('arrow-right-small')}</span><label>Data final<input id="report-custom-end" type="date" value="${REPORTS_UI_STATE.customEnd}" /></label><button class="btn-primary" type="button" onclick="applyCustomReportRange()">Aplicar período</button></div><p class="form-error" id="report-range-error">${escapeManagerHtml(REPORTS_UI_STATE.error)}</p>` : ''}
     </div>
-    ${incomplete ? `<div class="report-backend-note"><span aria-hidden="true">ℹ️</span><div><strong>Cobertura histórica parcial</strong><p>${coverage.orders_using_item_total_fallback} venda(s) usam o valor comprovado dos itens; ${coverage.orders_using_created_at_fallback} usam a criação como data histórica; ${coverage.items_without_unit_cost} item(ns) não possuem custo registrado.</p></div></div>` : ''}
-    <div class="kpi-grid report-kpis">
-      ${kpiCard('Faturamento', `R$ ${fmt(summary.revenue)}`, '💵', '#16A34A', `${summary.sales_count} vendas realizadas`)}
-      ${kpiCard('Custos dos produtos', `R$ ${fmt(summary.product_cost)}`, '🧾', '#D97706', 'snapshots dos itens vendidos')}
-      ${kpiCard('Despesas no período', `R$ ${fmt(summary.expenses)}`, '📤', '#DC2626', `${summary.expense_count} registros`)}
-      ${kpiCard('Resultado', `R$ ${fmt(summary.result)}`, '📈', Number(summary.result) >= 0 ? '#2563EB' : '#DC2626', 'faturamento − custos − despesas')}
-      ${kpiCard('Pedidos atendidos', String(summary.sales_count), '✅', '#7C3AED', 'entregues e não cancelados')}
-      ${kpiCard('Ticket médio', `R$ ${fmt(summary.average_ticket)}`, '🧮', '#D97706', 'média das vendas realizadas')}
+    ${incomplete ? `<div class="report-backend-note"><span aria-hidden="true">${managerIcon('info')}</span><div><strong>Cobertura histórica parcial</strong><p>${coverage.orders_using_item_total_fallback} venda(s) usam o valor comprovado dos itens; ${coverage.orders_using_created_at_fallback} usam a criação como data histórica; ${coverage.items_without_unit_cost} item(ns) não possuem custo registrado.</p></div></div>` : ''}
+    <div class="report-kpis">
+      ${reportMetricCard('Faturamento', `R$ ${fmt(summary.revenue)}`, 'currency', `${summary.sales_count} vendas realizadas`, 'positive', true)}
+      ${reportMetricCard('Custos dos produtos', `R$ ${fmt(summary.product_cost)}`, 'receipt', 'snapshots dos itens vendidos', 'warning')}
+      ${reportMetricCard('Despesas no período', `R$ ${fmt(summary.expenses)}`, 'outgoing', `${summary.expense_count} registros`, 'danger')}
+      ${reportMetricCard('Resultado', `R$ ${fmt(summary.result)}`, 'trend', 'faturamento − custos − despesas', Number(summary.result) >= 0 ? 'information' : 'danger', true)}
+      ${reportMetricCard('Pedidos atendidos', String(summary.sales_count), 'check', 'entregues e não cancelados', 'neutral')}
+      ${reportMetricCard('Ticket médio', `R$ ${fmt(summary.average_ticket)}`, 'calculator', 'média das vendas realizadas', 'neutral')}
     </div>
     <div class="card report-orders-card"><div>
       <div class="card-header report-orders-header"><div><span class="card-title">Vendas realizadas no período</span><p>${selectedOrders.length} ${selectedOrders.length === 1 ? 'venda encontrada' : 'vendas encontradas'}</p></div></div>
-      ${selectedOrders.length ? `<div class="report-table-wrap"><table class="report-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Entrega</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="report-empty"><span>📅</span><strong>Nenhuma venda realizada neste período</strong><p>Escolha outro filtro ou período personalizado para consultar.</p></div>'}
+      ${selectedOrders.length ? `<div class="report-table-wrap"><table class="report-table"><thead><tr><th>Pedido</th><th>Cliente</th><th>Itens</th><th>Atendimento</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>` : `<div class="report-empty"><span aria-hidden="true">${managerIcon('calendar')}</span><strong>Nenhuma venda realizada neste período</strong><p>Escolha outro filtro ou período personalizado para consultar.</p></div>`}
     </div></div>
   </section>`;
 }
