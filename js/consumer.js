@@ -336,11 +336,28 @@ function showToast(msg) {
 }
 
 let currentPopupVersion = '';
+let homePopupPreviousFocus = null;
 
 function closeHomePopup() {
+  const popup = document.getElementById('home-popup');
+  if (popup.classList.contains('hidden')) return;
   document.getElementById('home-popup-overlay').classList.add('hidden');
-  document.getElementById('home-popup').classList.add('hidden');
+  popup.classList.add('hidden');
   if (currentPopupVersion) sessionStorage.setItem('dogburger_popup_seen', currentPopupVersion);
+  if (homePopupPreviousFocus?.isConnected) homePopupPreviousFocus.focus();
+  homePopupPreviousFocus = null;
+}
+
+function handleHomePopupKeydown(event) {
+  const popup = document.getElementById('home-popup');
+  if (popup.classList.contains('hidden')) return;
+  if (event.key === 'Escape') { event.preventDefault(); closeHomePopup(); return; }
+  if (event.key !== 'Tab') return;
+  const focusable = [...popup.querySelectorAll('button:not([disabled]), a[href]:not(.hidden)')];
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
 }
 
 function safePopupUrl(value) {
@@ -373,14 +390,17 @@ async function loadHomePopup() {
     document.getElementById('home-popup-message').textContent = popup.message;
 
     const image = document.getElementById('home-popup-image');
+    const media = document.getElementById('home-popup-media');
     const imageUrl = safePopupUrl(popup.image_url);
     if (imageUrl) {
       image.src = imageUrl;
       image.alt = popup.title;
       image.classList.remove('hidden');
+      media.classList.remove('hidden');
     } else {
       image.removeAttribute('src');
       image.classList.add('hidden');
+      media.classList.add('hidden');
     }
 
     const action = document.getElementById('home-popup-action');
@@ -391,6 +411,7 @@ async function loadHomePopup() {
       action.classList.remove('hidden');
     } else action.classList.add('hidden');
 
+    homePopupPreviousFocus = document.activeElement;
     document.getElementById('home-popup-overlay').classList.remove('hidden');
     document.getElementById('home-popup').classList.remove('hidden');
     document.getElementById('home-popup-close').focus();
@@ -401,6 +422,7 @@ async function loadHomePopup() {
 
 document.getElementById('home-popup-close').addEventListener('click', closeHomePopup);
 document.getElementById('home-popup-overlay').addEventListener('click', closeHomePopup);
+document.addEventListener('keydown', handleHomePopupKeydown);
 
 async function initConsumer() {
   renderCategoryTabs();
