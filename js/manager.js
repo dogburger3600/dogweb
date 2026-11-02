@@ -645,16 +645,16 @@ function normalizedStockNumber(value, fallback = 0) {
 function snackStockStatus(product) {
   const quantity = normalizedStockNumber(product.stock);
   const minimum = normalizedStockNumber(product.minStock);
-  if (quantity === 0) return { key:'zero', label:'Esgotado', icon:'⛔' };
-  if (quantity <= minimum) return { key:'baixo', label:'Baixo', icon:'⚠️' };
-  return { key:'normal', label:'Normal', icon:'✅' };
+  if (quantity === 0) return { key:'zero', label:'Esgotado', icon:'close' };
+  if (quantity <= minimum) return { key:'baixo', label:'Baixo', icon:'alert' };
+  return { key:'normal', label:'Normal', icon:'check' };
 }
 
 function renderSnackStockState(state, detail = '') {
   if (state === 'loading') {
     return `<section class="snack-stock-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando lanches...</strong><span>Consultando o estoque transacional.</span></section>`;
   }
-  return `<section class="snack-stock-state is-error" role="alert"><span aria-hidden="true">⚠️</span><strong>Não foi possível carregar os lanches</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('estoque-lanches')">Tentar novamente</button></section>`;
+  return `<section class="snack-stock-state is-error" role="alert"><span class="snack-stock-state-icon" aria-hidden="true">${managerIcon('alert')}</span><strong>Não foi possível carregar os lanches</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('estoque-lanches')">Tentar novamente</button></section>`;
 }
 
 function renderSnackStock() {
@@ -673,18 +673,18 @@ function renderSnackStock() {
 
   return `<section class="snack-stock-page" aria-label="Estoque transacional de lanches prontos">
     <div class="snack-stock-intro">
-      <div><span aria-hidden="true">📦</span><div><strong>Unidades de lanches prontos</strong><p>Estoque real, debitado na confirmação do pedido. Não inclui ingredientes nem possui reset diário.</p></div></div>
+      <div><span aria-hidden="true">${managerIcon('stock')}</span><div><strong>Unidades de lanches prontos</strong><p>Estoque real, debitado na confirmação do pedido. Não inclui ingredientes nem possui reset diário.</p></div></div>
       <span>Servidor · fonte de verdade</span>
     </div>
-    ${SNACK_STOCK_UI_STATE.feedback ? `<div class="snack-stock-feedback is-${SNACK_STOCK_UI_STATE.feedback.type}" role="status">${escapeManagerHtml(SNACK_STOCK_UI_STATE.feedback.message)}</div>` : ''}
+    ${SNACK_STOCK_UI_STATE.feedback ? `<div class="snack-stock-feedback is-${SNACK_STOCK_UI_STATE.feedback.type}" role="status"><span aria-hidden="true">${managerIcon(SNACK_STOCK_UI_STATE.feedback.type === 'success' ? 'check' : 'alert')}</span><strong>${escapeManagerHtml(SNACK_STOCK_UI_STATE.feedback.message)}</strong></div>` : ''}
     <div class="snack-stock-kpis">
-      ${kpiCard('Lanches cadastrados', String(snacks.length), '🍔', '#F97316', 'somente categoria lanches')}
-      ${kpiCard('Estoque normal', String(counts.normal), '✅', '#16A34A', 'acima do mínimo')}
-      ${kpiCard('Estoque baixo', String(counts.baixo), '⚠️', '#D97706', 'no mínimo ou abaixo')}
-      ${kpiCard('Esgotados', String(counts.zero), '⛔', '#DC2626', 'quantidade real igual a zero')}
+      ${kpiCard('Lanches cadastrados', String(snacks.length), managerIcon('menu'), '#EA580C', 'somente categoria lanches')}
+      ${kpiCard('Estoque normal', String(counts.normal), managerIcon('check'), '#15803D', 'acima do mínimo')}
+      ${kpiCard('Estoque baixo', String(counts.baixo), managerIcon('alert'), '#B45309', 'no mínimo ou abaixo')}
+      ${kpiCard('Esgotados', String(counts.zero), managerIcon('close'), '#B91C1C', 'quantidade real igual a zero')}
     </div>
-    <div class="filter-tabs snack-stock-filters">${filters.map(filter => `<button class="filter-tab${SNACK_STOCK_UI_STATE.filter === filter.key ? ' active' : ''}" type="button" onclick="setSnackStockFilter('${filter.key}')">${filter.label} (${filter.count})</button>`).join('')}</div>
-    ${filtered.length ? `<div class="snack-stock-grid">${filtered.map(renderSnackStockCard).join('')}</div>` : `<div class="snack-stock-empty"><span aria-hidden="true">🍔</span><strong>Nenhum lanche neste estado</strong><p>Escolha outro filtro para continuar.</p></div>`}
+    <div class="snack-stock-toolbar"><div><strong>Disponibilidade</strong><span>${filtered.length} ${filtered.length === 1 ? 'lanche no filtro atual' : 'lanches no filtro atual'}</span></div><div class="filter-tabs snack-stock-filters" aria-label="Filtrar por disponibilidade">${filters.map(filter => `<button class="filter-tab${SNACK_STOCK_UI_STATE.filter === filter.key ? ' active' : ''}" type="button" aria-pressed="${SNACK_STOCK_UI_STATE.filter === filter.key}" onclick="setSnackStockFilter('${filter.key}')"><span>${filter.label}</span><strong>${filter.count}</strong></button>`).join('')}</div></div>
+    ${filtered.length ? `<div class="snack-stock-grid">${filtered.map(renderSnackStockCard).join('')}</div>` : `<div class="snack-stock-empty"><span aria-hidden="true">${managerIcon('inbox')}</span><strong>Nenhum lanche neste estado</strong><p>Escolha outro filtro para continuar.</p></div>`}
     ${renderSnackStockHistory()}
     ${renderSnackRestockModal()}
   </section>`;
@@ -695,10 +695,10 @@ function renderSnackStockCard(product) {
   const minimum = normalizedStockNumber(product.minStock);
   const status = snackStockStatus(product);
   return `<article class="snack-stock-card is-${status.key}">
-    <div class="snack-stock-card-head"><div class="snack-stock-product-icon" aria-hidden="true">🍔</div><div><h3>${escapeManagerHtml(product.name)}</h3><span class="snack-stock-status">${status.icon} ${status.label}</span></div></div>
-    <div class="snack-stock-quantity"><strong>${quantity}</strong><span>unidades prontas</span></div>
-    <label class="snack-stock-minimum">Estoque mínimo<input type="number" min="0" max="999" step="1" value="${minimum}" aria-label="Estoque mínimo de ${escapeManagerHtml(product.name)}" onchange="updateSnackStockMinimum(${JSON.stringify(product.id)}, this.value)" ${SNACK_STOCK_UI_STATE.savingMinimums.has(product.id) ? 'disabled' : ''} /></label>
-    <button class="btn-primary snack-stock-restock" type="button" data-capability="manageStock" data-capability-mode="disable" onclick="openSnackRestock(${JSON.stringify(product.id)})">+ Reposição manual</button>
+    <div class="snack-stock-card-head"><div class="snack-stock-product-icon" aria-hidden="true">${managerIcon('menu')}</div><div><h3>${escapeManagerHtml(product.name)}</h3><span class="snack-stock-status">${managerIcon(status.icon)}<span>${status.label}</span></span></div></div>
+    <div class="snack-stock-quantity"><span>Quantidade disponível</span><strong>${quantity}</strong><small>unidades prontas</small></div>
+    <label class="snack-stock-minimum"><span><strong>Estoque mínimo</strong><small>Alerta a partir deste valor</small></span><input type="number" min="0" max="999" step="1" value="${minimum}" aria-label="Estoque mínimo de ${escapeManagerHtml(product.name)}" aria-busy="${SNACK_STOCK_UI_STATE.savingMinimums.has(product.id)}" onchange="updateSnackStockMinimum(${JSON.stringify(product.id)}, this.value)" ${SNACK_STOCK_UI_STATE.savingMinimums.has(product.id) ? 'disabled' : ''} /></label>
+    <button class="btn-primary snack-stock-restock" type="button" data-capability="manageStock" data-capability-mode="disable" onclick="openSnackRestock(${JSON.stringify(product.id)})">${managerIcon('plus')}<span>Reposição manual</span></button>
   </article>`;
 }
 
@@ -733,13 +733,13 @@ function renderSnackRestockModal() {
   if (!product) return '';
   return `<div class="modal-overlay snack-restock-overlay" onclick="closeSnackRestock()"></div>
     <section class="modal snack-restock-modal" role="dialog" aria-modal="true" aria-labelledby="snack-restock-title">
-      <span class="orders-demo-badge">reposição auditada</span>
+      <span class="orders-demo-badge">${managerIcon('history')}<span>Reposição auditada</span></span>
       <h2 class="modal-title" id="snack-restock-title">Repor ${escapeManagerHtml(product.name)}</h2>
       <p class="modal-sub">A quantidade será somada de forma transacional e registrada no histórico.</p>
       <form onsubmit="submitSnackRestock(event)">
         <div class="form-group"><label class="form-label" for="snack-restock-amount">Quantidade a adicionar *</label><input class="form-input" id="snack-restock-amount" type="number" min="1" max="999" step="1" inputmode="numeric" required /></div>
         <p class="form-error" id="snack-restock-error"></p>
-        <div class="modal-actions"><button class="btn-secondary" type="button" onclick="closeSnackRestock()">Cancelar</button><button class="btn-primary" type="submit">Adicionar unidades</button></div>
+        <div class="modal-actions"><button class="btn-secondary" type="button" onclick="closeSnackRestock()">Cancelar</button><button class="btn-primary" type="submit">${managerIcon('plus')}<span>Adicionar unidades</span></button></div>
       </form>
     </section>`;
 }
@@ -772,6 +772,7 @@ async function submitSnackRestock(event) {
   }
   const button = event.submitter || event.currentTarget.querySelector('button[type="submit"]');
   button.disabled = true;
+  button.innerHTML = `${managerIcon('activity')}<span>Adicionando...</span>`;
   try {
     await Store.restockSnackProduct(productId, amount, crypto.randomUUID());
     [products, SNACK_STOCK_UI_STATE.movements] = await Promise.all([loadProductsForCurrentRole(), Store.getStockMovements()]);
@@ -780,6 +781,7 @@ async function submitSnackRestock(event) {
   } catch (error) {
     errorElement.textContent = `Não foi possível repor o estoque. ${error.message}`;
     button.disabled = false;
+    button.innerHTML = `${managerIcon('plus')}<span>Adicionar unidades</span>`;
     return;
   }
   document.getElementById('m-content').innerHTML = renderSnackStock();
@@ -787,7 +789,7 @@ async function submitSnackRestock(event) {
 
 function renderSnackStockHistory() {
   const entries = SNACK_STOCK_UI_STATE.movements.slice(0, 10);
-  return `<section class="card snack-stock-history"><div class="card-header"><div><span class="card-title">Histórico de movimentações</span><p>Auditoria persistida pelo backend.</p></div></div>${entries.length ? entries.map(entry => { const product = getProduct(entry.product_id); const delta = Number(entry.quantity_delta); return `<div class="snack-stock-history-row"><span>${delta > 0 ? '+' : ''}${delta}</span><div><strong>${escapeManagerHtml(product?.name || `Produto ${entry.product_id}`)}</strong><small>${escapeManagerHtml(stockMovementLabel(entry.reason))} · saldo ${entry.resulting_stock} · ${new Date(entry.created_at).toLocaleString('pt-BR')}</small></div></div>`; }).join('') : '<div class="snack-stock-history-empty">Nenhuma movimentação registrada.</div>'}</section>`;
+  return `<section class="card snack-stock-history"><div class="card-header"><div><span class="card-title">Histórico de movimentações</span><p>Últimos registros persistidos pelo backend</p></div><span class="snack-stock-history-count">${entries.length}</span></div>${entries.length ? `<div class="snack-stock-history-list">${entries.map(entry => { const product = getProduct(entry.product_id); const delta = Number(entry.quantity_delta); const movementClass = delta > 0 ? 'is-positive' : 'is-negative'; return `<div class="snack-stock-history-row ${movementClass}"><span class="snack-stock-history-icon" aria-hidden="true">${managerIcon(delta > 0 ? 'plus' : 'minus')}</span><div class="snack-stock-history-main"><strong>${escapeManagerHtml(product?.name || `Produto ${entry.product_id}`)}</strong><small>${escapeManagerHtml(stockMovementLabel(entry.reason))}</small></div><span class="snack-stock-history-delta">${delta > 0 ? '+' : ''}${delta}</span><div class="snack-stock-history-meta"><strong>Saldo ${entry.resulting_stock}</strong><time>${new Date(entry.created_at).toLocaleString('pt-BR')}</time></div></div>`; }).join('')}</div>` : `<div class="snack-stock-history-empty"><span aria-hidden="true">${managerIcon('history')}</span><strong>Nenhuma movimentação registrada</strong><p>As próximas alterações de estoque aparecerão aqui.</p></div>`}</section>`;
 }
 
 function stockMovementLabel(reason) {
