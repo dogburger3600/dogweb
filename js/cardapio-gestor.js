@@ -2,6 +2,10 @@
 
 let menuProducts = [];
 
+function menuIcon(name, className = 'manager-icon') {
+  return `<svg class="${className}" aria-hidden="true"><use href="#menu-icon-${name}"></use></svg>`;
+}
+
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[char]);
 }
@@ -16,7 +20,7 @@ function validImageUrl(value) {
 
 function showMenuToast(message) {
   const toast = document.getElementById('toast');
-  toast.textContent = message;
+  toast.innerHTML = `<span aria-hidden="true">${menuIcon('check')}</span><strong>${escapeHtml(message)}</strong>`;
   toast.classList.remove('hidden');
   setTimeout(() => toast.classList.add('hidden'), 3500);
 }
@@ -86,27 +90,27 @@ function renderMenuProducts() {
   document.getElementById('menu-editor-summary').innerHTML = `<span><strong>${menuProducts.length}</strong> produtos</span><span><strong>${activeCount}</strong> ativos</span><span><strong>${snackCount}</strong> lanches</span>`;
 
   if (!filtered.length) {
-    grid.innerHTML = `<div class="menu-empty"><span>🍽️</span><h2>Nenhum produto encontrado</h2><p>Use “Novo produto” para começar a montar seu cardápio.</p></div>`;
+    grid.innerHTML = `<div class="menu-empty"><span aria-hidden="true">${menuIcon('products')}</span><h2>Nenhum produto encontrado</h2><p>Use “Novo produto” para começar a montar seu cardápio.</p></div>`;
     return;
   }
 
   grid.innerHTML = filtered.map(product => {
     const image = validImageUrl(product.img);
-    const categoryMeta = CAT_MAP[product.category] || { emoji:'🍽️', label:product.category };
+    const categoryMeta = CAT_MAP[product.category] || { label:product.category };
     return `<article class="menu-edit-card${product.active ? '' : ' archived'}">
       <div class="menu-edit-image">
-        ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.style.display='none'" />` : '<span class="menu-placeholder-icon" aria-hidden="true">🍔</span>'}
-        <span class="product-cat-badge">${categoryMeta.emoji} ${escapeHtml(categoryMeta.label)}</span>
+        ${image ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.style.display='none'" />` : `<span class="menu-placeholder-icon" aria-hidden="true">${menuIcon('image')}</span>`}
+        <span class="product-cat-badge">${menuIcon('tag')}<span>${escapeHtml(categoryMeta.label)}</span></span>
         ${product.active ? '' : '<span class="menu-archived-badge">Desativado</span>'}
       </div>
       <div class="menu-edit-body">
         <div class="menu-edit-title"><h2>${escapeHtml(product.name)}</h2><strong>R$ ${fmt(product.price)}</strong></div>
         <p>${escapeHtml(product.desc)}</p>
         ${product.category === 'lanches' && product.ingredients.length ? `<p class="menu-edit-ingredients"><strong>Ingredientes:</strong> ${product.ingredients.map(escapeHtml).join(', ')}</p>` : ''}
-        <div class="menu-edit-meta"><span>${product.active ? '● Disponível' : '○ Desativado'}</span>${product.category === 'lanches' ? `<span>Estoque: <b>${Number(product.stock) || 0}</b></span>` : '<span>Sem estoque de lanche</span>'}</div>
+        <div class="menu-edit-meta"><span class="menu-availability${product.active ? ' is-active' : ''}"><i aria-hidden="true"></i>${product.active ? 'Disponível' : 'Desativado'}</span>${product.category === 'lanches' ? `<span>Estoque: <b>${Number(product.stock) || 0}</b></span>` : '<span>Sem controle de estoque</span>'}</div>
         <div class="menu-edit-actions">
-          <button class="btn-edit-product" data-action="edit" data-id="${product.id}" data-capability="manageMenu" data-capability-mode="disable">Editar</button>
-          <button class="${product.active ? 'btn-delete-product' : 'btn-restore-product'}" data-action="toggle" data-id="${product.id}" data-capability="manageMenu" data-capability-mode="disable">${product.active ? 'Excluir' : 'Restaurar'}</button>
+          <button class="btn-edit-product" data-action="edit" data-id="${product.id}" data-capability="manageMenu" data-capability-mode="disable">${menuIcon('edit')}<span>Editar</span></button>
+          <button class="${product.active ? 'btn-delete-product' : 'btn-restore-product'}" data-action="toggle" data-id="${product.id}" data-capability="manageMenu" data-capability-mode="disable">${menuIcon(product.active ? 'archive' : 'restore')}<span>${product.active ? 'Desativar' : 'Restaurar'}</span></button>
         </div>
       </div>
     </article>`;
@@ -115,12 +119,12 @@ function renderMenuProducts() {
 
 async function loadMenuProducts() {
   const grid = document.getElementById('menu-manager-grid');
-  grid.innerHTML = '<p class="menu-grid-loading">Carregando produtos...</p>';
+  grid.innerHTML = `<div class="menu-grid-loading" aria-live="polite" aria-busy="true"><span aria-hidden="true"></span><strong>Carregando produtos...</strong><small>Buscando as informações mais recentes do cardápio.</small></div>`;
   try {
     menuProducts = await Store.getAllProducts();
     renderMenuProducts();
   } catch (error) {
-    grid.innerHTML = `<div class="menu-empty"><h2>Não foi possível carregar</h2><p>${escapeHtml(error.message)}</p></div>`;
+    grid.innerHTML = `<div class="menu-empty is-error" role="alert"><span aria-hidden="true">${menuIcon('alert')}</span><h2>Não foi possível carregar</h2><p>${escapeHtml(error.message)}</p></div>`;
   }
 }
 
@@ -190,19 +194,19 @@ document.getElementById('product-form').addEventListener('submit', async event =
   };
   const button = document.getElementById('save-product');
   button.disabled = true;
-  button.textContent = 'Salvando...';
+  button.innerHTML = '<span>Salvando...</span>';
   try {
     if (imageFile) product.img = await Store.uploadProductImage(imageFile);
     if (id) await Store.updateProduct(Number(id), product);
     else await Store.addProduct(product);
     closeProductModal();
     await loadMenuProducts();
-    showMenuToast(id ? '✅ Produto atualizado.' : '✅ Produto criado.');
+    showMenuToast(id ? 'Produto atualizado.' : 'Produto criado.');
   } catch (error) {
     errorElement.textContent = `Não foi possível salvar. ${error.message}`;
   } finally {
     button.disabled = false;
-    button.textContent = 'Salvar produto';
+    button.innerHTML = `${menuIcon('check')}<span>Salvar produto</span>`;
   }
 });
 
@@ -240,7 +244,9 @@ document.getElementById('product-overlay').addEventListener('click', closeProduc
 document.getElementById('menu-search').addEventListener('input', renderMenuProducts);
 document.getElementById('menu-category-filter').addEventListener('change', renderMenuProducts);
 document.getElementById('show-archived').addEventListener('change', renderMenuProducts);
-document.getElementById('menu-manager-logout').addEventListener('click', async () => { await DB.auth.signOut(); window.location.replace('index.html'); });
+async function signOutMenuManager() { await DB.auth.signOut(); window.location.replace('index.html'); }
+document.getElementById('menu-manager-logout').addEventListener('click', signOutMenuManager);
+document.getElementById('menu-mobile-logout').addEventListener('click', signOutMenuManager);
 
 (async () => {
   const role = await verifyMenuManager();

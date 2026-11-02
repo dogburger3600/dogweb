@@ -9,10 +9,34 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
+<body class="menu-editor-page">
   <div class="menu-manager-loading" id="menu-manager-loading">Verificando acesso...</div>
 
-  <div id="page-menu-manager" class="hidden">
+  <div id="page-menu-manager" class="menu-editor-shell hidden">
+    <svg class="manager-icon-sprite" aria-hidden="true">
+      <symbol id="menu-icon-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+      <symbol id="menu-icon-orders" viewBox="0 0 24 24"><path d="M9 5h6M9 9h6M9 13h4"/><path d="M7 3h10a2 2 0 0 1 2 2v16l-3-2-4 2-4-2-3 2V5a2 2 0 0 1 2-2Z"/></symbol>
+      <symbol id="menu-icon-reports" viewBox="0 0 24 24"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></symbol>
+      <symbol id="menu-icon-stock" viewBox="0 0 24 24"><path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Z"/><path d="m4 7.5 8 4.5 8-4.5M4 12.5 12 17l8-4.5M4 17.5 12 22l8-4.5"/></symbol>
+      <symbol id="menu-icon-menu" viewBox="0 0 24 24"><path d="M5 11a7 7 0 0 1 14 0M3 11h18M4 11v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3M7 16v2a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3v-2"/></symbol>
+      <symbol id="menu-icon-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 13v-2ZM11.6 15.4 13 21H7l-1.5-7"/></symbol>
+      <symbol id="menu-icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6 1.7 1.7 0 0 0 10 3v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+      <symbol id="menu-icon-store" viewBox="0 0 24 24"><path d="M3 9h18l-2-5H5L3 9ZM5 9v11h14V9M9 20v-6h6v6"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></symbol>
+      <symbol id="menu-icon-logout" viewBox="0 0 24 24"><path d="M10 5H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h5M15 16l4-4-4-4M19 12H9"/></symbol>
+      <symbol id="menu-icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+      <symbol id="menu-icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+      <symbol id="menu-icon-products" viewBox="0 0 24 24"><path d="M4 7h16M6 7l1-4h10l1 4M5 7v14h14V7M9 11h6"/></symbol>
+      <symbol id="menu-icon-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></symbol>
+      <symbol id="menu-icon-tag" viewBox="0 0 24 24"><path d="M20 13 13 20l-9-9V4h7Z"/><circle cx="8.5" cy="8.5" r="1.5"/></symbol>
+      <symbol id="menu-icon-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m21 15-5-5L5 20"/></symbol>
+      <symbol id="menu-icon-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+      <symbol id="menu-icon-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></symbol>
+      <symbol id="menu-icon-archive" viewBox="0 0 24 24"><path d="M4 7h16v14H4ZM3 3h18v4H3ZM9 11h6"/></symbol>
+      <symbol id="menu-icon-restore" viewBox="0 0 24 24"><path d="M4 7v5h5M5.5 16a8 8 0 1 0 .5-9l-2 2"/></symbol>
+      <symbol id="menu-icon-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></symbol>
+      <symbol id="menu-icon-alert" viewBox="0 0 24 24"><path d="M10.3 4.1 2.5 18a2 2 0 0 0 1.7 3h15.6a2 2 0 0 0 1.7-3L13.7 4.1a2 2 0 0 0-3.4 0ZM12 9v4M12 17h.01"/></symbol>
+      <symbol id="menu-icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    </svg>
     <aside class="m-sidebar">
       <div class="m-sidebar-header">
         <div class="m-sidebar-logo">
@@ -21,32 +45,32 @@
         </div>
       </div>
       <nav class="m-nav">
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=dashboard" title="Dashboard" data-capability="viewDashboard"><span aria-hidden="true">📊</span><span class="m-nav-label">Dashboard</span></a>
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=pedidos" title="Pedidos" data-capability="viewOrders"><span aria-hidden="true">📋</span><span class="m-nav-label">Pedidos</span></a>
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=relatorios" title="Relatórios" data-capability="viewReports"><span aria-hidden="true">📈</span><span class="m-nav-label">Relatórios</span></a>
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=estoque-lanches" title="Estoque de Lanches" data-capability="manageStock"><span aria-hidden="true">📦</span><span class="m-nav-label">Estoque de Lanches</span></a>
-        <a class="m-nav-btn m-nav-link active" href="cardapio-gestor.html" title="Editar Cardápio" data-capability="manageMenu"><span aria-hidden="true">🍔</span><span class="m-nav-label">Editar Cardápio</span></a>
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=popup" title="Pop-up Inicial" data-capability="managePopup"><span aria-hidden="true">📣</span><span class="m-nav-label">Pop-up Inicial</span></a>
-        <a class="m-nav-btn m-nav-link" href="gestor.html?view=configuracoes" title="Configurações da Loja" data-capability="manageSettings"><span aria-hidden="true">⚙️</span><span class="m-nav-label">Configurações da Loja</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=dashboard" title="Dashboard" data-capability="viewDashboard"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-dashboard"></use></svg><span class="m-nav-label">Dashboard</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=pedidos" title="Pedidos" data-capability="viewOrders"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-orders"></use></svg><span class="m-nav-label">Pedidos</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=relatorios" title="Relatórios" data-capability="viewReports"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-reports"></use></svg><span class="m-nav-label">Relatórios</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=estoque-lanches" title="Estoque de Lanches" data-capability="manageStock"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-stock"></use></svg><span class="m-nav-label">Estoque de Lanches</span></a>
+        <a class="m-nav-btn m-nav-link active" href="cardapio-gestor.html" title="Editar Cardápio" data-capability="manageMenu" aria-current="page"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-menu"></use></svg><span class="m-nav-label">Editar Cardápio</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=popup" title="Pop-up Inicial" data-capability="managePopup"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-megaphone"></use></svg><span class="m-nav-label">Pop-up Inicial</span></a>
+        <a class="m-nav-btn m-nav-link" href="gestor.html?view=configuracoes" title="Configurações da Loja" data-capability="manageSettings"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-settings"></use></svg><span class="m-nav-label">Configurações da Loja</span></a>
       </nav>
       <div class="m-sidebar-footer">
-        <a href="index.html" title="Ver Cardápio"><span aria-hidden="true">←</span><span class="m-sidebar-footer-label">Ver Cardápio</span></a>
-        <button id="menu-manager-logout" type="button" title="Sair da conta"><span aria-hidden="true">↪</span><span class="m-sidebar-footer-label">Sair da conta</span></button>
+        <a href="index.html" title="Ver Cardápio"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-store"></use></svg><span class="m-sidebar-footer-label">Ver Cardápio</span></a>
+        <button id="menu-manager-logout" type="button" title="Sair da conta"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-logout"></use></svg><span class="m-sidebar-footer-label">Sair da conta</span></button>
       </div>
     </aside>
 
     <div class="m-main">
       <header class="m-topbar">
-        <div><h1 class="m-topbar-title">Editor de Cardápio</h1><p class="menu-topbar-sub">Crie e organize seus produtos</p></div>
-        <button class="btn-new-expense menu-add-button" id="new-product-button" data-capability="manageMenu" data-capability-mode="disable">+ Novo produto</button>
+        <div><h1 class="m-topbar-title">Editar Cardápio</h1><p class="menu-topbar-sub">Organize produtos, preços e disponibilidade</p></div>
+        <div class="menu-topbar-actions"><button class="menu-add-button" id="new-product-button" data-capability="manageMenu" data-capability-mode="disable"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-plus"></use></svg><span>Novo produto</span></button><div class="m-mobile-actions"><a href="index.html" aria-label="Ver cardápio"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-store"></use></svg></a><button id="menu-mobile-logout" type="button" aria-label="Sair da conta"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-logout"></use></svg></button></div></div>
       </header>
       <main class="m-content">
         <section class="menu-editor-intro">
-          <div><span aria-hidden="true">🍽️</span><div><strong>Produtos do cardápio</strong><p>Cadastre, edite e organize a apresentação dos itens disponíveis aos clientes.</p></div></div>
+          <div><span aria-hidden="true"><svg class="manager-icon"><use href="#menu-icon-products"></use></svg></span><div><strong>Produtos do cardápio</strong><p>Cadastre, edite e organize a apresentação dos itens disponíveis aos clientes.</p></div></div>
           <div class="menu-editor-summary" id="menu-editor-summary" aria-live="polite"></div>
         </section>
         <div class="menu-toolbar">
-          <div class="menu-search-wrap"><span>🔍</span><input id="menu-search" type="search" placeholder="Buscar produto" /></div>
+          <label class="menu-search-wrap" for="menu-search"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-search"></use></svg><input id="menu-search" type="search" placeholder="Buscar por nome ou descrição" /></label>
           <select class="form-select menu-filter" id="menu-category-filter">
             <option value="todos">Todas as categorias</option>
             <option value="lanches">Lanches</option><option value="combos">Combos</option><option value="sucos">Sucos</option>
@@ -60,17 +84,17 @@
   </div>
 
   <div id="product-overlay" class="modal-overlay hidden"></div>
-  <div id="product-modal" class="modal product-modal hidden">
-    <div class="product-modal-head"><div><span class="product-modal-eyebrow">Editor de produto</span><h2 class="modal-title" id="product-modal-title">Novo produto</h2><p class="modal-sub">A integração atual de cadastro e edição será preservada.</p></div><button class="btn-close" id="close-product-modal" type="button" aria-label="Fechar editor">✕</button></div>
+  <div id="product-modal" class="modal product-modal hidden" role="dialog" aria-modal="true" aria-labelledby="product-modal-title">
+    <div class="product-modal-head"><div><span class="product-modal-eyebrow">Editor de produto</span><h2 class="modal-title" id="product-modal-title">Novo produto</h2><p class="modal-sub">Preencha as informações apresentadas no cardápio.</p></div><button class="btn-close" id="close-product-modal" type="button" aria-label="Fechar editor"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-close"></use></svg></button></div>
     <form id="product-form">
       <input type="hidden" id="product-id" />
       <section class="product-form-section">
-        <div class="product-form-section-head"><span aria-hidden="true">✏️</span><div><strong>Identificação</strong><small>Informações exibidas no cardápio</small></div></div>
+        <div class="product-form-section-head"><span aria-hidden="true"><svg class="manager-icon"><use href="#menu-icon-edit"></use></svg></span><div><strong>Identificação</strong><small>Informações exibidas no cardápio</small></div></div>
         <div class="form-group"><label class="form-label" for="product-name">Nome *</label><input class="form-input" id="product-name" maxlength="80" required /><small class="form-error" id="product-name-error"></small></div>
         <div class="form-group"><label class="form-label" for="product-description">Descrição *</label><textarea class="form-textarea" id="product-description" rows="3" maxlength="240" required></textarea><small class="product-character-count" id="product-description-count">0/240</small><small class="form-error" id="product-description-error"></small></div>
       </section>
       <section class="product-form-section">
-        <div class="product-form-section-head"><span aria-hidden="true">🏷️</span><div><strong>Classificação e preço</strong><small>Categoria e valor comercial</small></div></div>
+        <div class="product-form-section-head"><span aria-hidden="true"><svg class="manager-icon"><use href="#menu-icon-tag"></use></svg></span><div><strong>Classificação e preço</strong><small>Categoria e valor comercial</small></div></div>
         <div class="signup-grid">
           <div class="form-group"><label class="form-label" for="product-category">Categoria *</label><select class="form-select" id="product-category" required><option value="lanches">Lanches</option><option value="combos">Combos</option><option value="sucos">Sucos</option><option value="refrigerantes">Refrigerantes</option><option value="sobremesas">Sobremesas</option></select><small class="form-error" id="product-category-error"></small></div>
           <div class="form-group"><label class="form-label" for="product-price">Preço (R$) *</label><input class="form-input" id="product-price" type="number" min="0" step="0.01" inputmode="decimal" required /><small class="form-error" id="product-price-error"></small></div>
@@ -83,31 +107,31 @@
         </div>
       </section>
       <section class="product-form-section">
-        <div class="product-form-section-head"><span aria-hidden="true">📷</span><div><strong>Imagem do produto</strong><small>Prévia da foto publicada</small></div></div>
+        <div class="product-form-section-head"><span aria-hidden="true"><svg class="manager-icon"><use href="#menu-icon-image"></use></svg></span><div><strong>Imagem do produto</strong><small>Prévia da foto publicada</small></div></div>
         <div class="product-upload-group">
           <label class="form-label">Foto do produto *</label>
           <input class="hidden" id="product-image" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
           <input id="product-current-image" type="hidden" />
           <div class="product-upload-box" id="product-upload-box">
             <img class="hidden" id="product-image-preview" alt="Prévia do produto" />
-            <div id="product-upload-prompt"><span>📷</span><strong>Importar foto</strong><small>JPG, PNG, WEBP ou GIF · até 5 MB</small></div>
-            <button class="btn-upload-image" id="choose-product-image" type="button">Escolher imagem</button>
+            <div id="product-upload-prompt"><span><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-upload"></use></svg></span><strong>Importar foto real do produto</strong><small>JPG, PNG, WEBP ou GIF · até 5 MB</small></div>
+            <button class="btn-upload-image" id="choose-product-image" type="button"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-image"></use></svg><span>Escolher imagem</span></button>
           </div>
         </div>
       </section>
       <section class="product-form-section product-availability-section">
-        <div class="product-form-section-head"><span aria-hidden="true">👁️</span><div><strong>Disponibilidade e estoque</strong><small>Estado atual sem alteração do contrato</small></div></div>
+        <div class="product-form-section-head"><span aria-hidden="true"><svg class="manager-icon"><use href="#menu-icon-eye"></use></svg></span><div><strong>Disponibilidade e estoque</strong><small>Estado atual sem alteração do contrato</small></div></div>
         <div class="product-availability-grid">
           <div class="product-readonly-field"><span>Disponibilidade</span><strong id="product-availability-status">Novo produto · ativo ao salvar</strong><small>Ative ou desative pelo cartão do produto.</small></div>
           <div class="product-readonly-field" id="product-ready-stock-group"><span>Quantidade de lanches prontos</span><strong id="product-ready-stock">0 unidades</strong><small>Visualização preparatória. Ajustes continuam no módulo Estoque de Lanches.</small></div>
         </div>
       </section>
       <p class="form-error" id="product-form-error"></p>
-      <div class="modal-actions"><button class="btn-secondary" id="cancel-product" type="button">Cancelar</button><button class="btn-primary" id="save-product" type="submit" data-capability="manageMenu" data-capability-mode="disable">Salvar produto</button></div>
+      <div class="modal-actions"><button class="btn-secondary" id="cancel-product" type="button">Cancelar</button><button class="btn-primary" id="save-product" type="submit" data-capability="manageMenu" data-capability-mode="disable"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-check"></use></svg><span>Salvar produto</span></button></div>
     </form>
   </div>
 
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/store.js"></script>
