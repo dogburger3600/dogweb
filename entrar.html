@@ -12,17 +12,19 @@
 <body class="signup-page">
   <header class="c-header signup-header">
     <a href="index.html" class="c-header-logo signup-brand" aria-label="Voltar ao cardápio">
+      <img src="dogburger.png" alt="" class="auth-header-logo" />
       <div>
         <span class="c-header-name">Dog Burger</span>
         <span class="c-header-sub">Acesso à conta</span>
       </div>
     </a>
-    <a href="index.html" class="btn-ghost customer-back-link"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span>Voltar ao cardápio</span></a>
+    <nav class="auth-header-actions" aria-label="Navegação de acesso">
+      <a href="index.html" class="btn-ghost customer-back-link" aria-label="Voltar ao cardápio"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span class="auth-back-label auth-back-label-long">Voltar ao cardápio</span><span class="auth-back-label auth-back-label-short">Cardápio</span></a>
+    </nav>
   </header>
 
   <main class="login-main">
     <section class="signup-card login-card">
-      <img src="dogburger.png" alt="Dog Burger" class="auth-page-logo" />
       <h1>Que bom ter você de volta!</h1>
       <p class="signup-card-sub">Entre para acessar sua conta.</p>
       <form id="login-form">
