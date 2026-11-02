@@ -14,12 +14,13 @@
 <div id="page-consumer">
   <!-- Header -->
   <header class="c-header">
-    <div class="c-header-logo">
+    <a class="c-header-logo customer-brand" href="index.html" aria-label="Dog Burger — início do cardápio">
+      <img src="dogburger.png" alt="" class="customer-brand-logo" />
       <div>
         <span class="c-header-name">Dog Burger</span>
-        <span class="c-header-sub">Peça o seu</span>
+        <span class="c-header-sub">Cardápio digital</span>
       </div>
-    </div>
+    </a>
     <div class="c-header-actions">
       <div class="header-auth" id="guest-actions">
         <a href="entrar.html" class="btn-ghost">Entrar</a>
@@ -31,38 +32,46 @@
         <a href="gestor.html" class="btn-manager-shortcut hidden" id="manager-shortcut">Painel do Gestor</a>
         <button class="btn-ghost" id="header-logout" type="button">Sair</button>
       </div>
-      <button class="btn-cart" onclick="openCart()">
-        🛒 Carrinho
+      <button class="btn-cart" type="button" onclick="openCart()" aria-haspopup="dialog" aria-controls="cart-drawer">
+        <svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L21 8H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg><span>Carrinho</span>
         <span class="cart-badge" id="cart-badge" style="display:none">0</span>
       </button>
     </div>
   </header>
 
   <!-- Hero -->
-  <div class="c-hero">
-    <div class="c-hero-logo-wrap">
-      <img src="dogburger.png" alt="Dog Burger" class="c-hero-logo" />
+  <section class="c-hero">
+    <div class="c-hero-inner">
+      <div class="c-hero-logo-wrap">
+        <img src="dogburger.png" alt="Dog Burger" class="c-hero-logo" />
+      </div>
+      <div class="c-hero-copy">
+        <p class="c-hero-label">Cardápio Digital</p>
+        <h1 class="c-hero-title">Seu pedido começa <span>aqui.</span></h1>
+        <p class="c-hero-sub">Escolha seus favoritos e faça seu pedido com rapidez.</p>
+        <div class="c-hero-meta"><span><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v10H3z"/><path d="M14 10h4l3 3v4h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>Delivery</span><span><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18l-2-5H5L3 9Z"/><path d="M5 9v11h14V9"/><path d="M9 20v-6h6v6"/></svg>Retirada no local</span></div>
+      </div>
     </div>
-    <p class="c-hero-label">Cardápio Digital</p>
-    <h1 class="c-hero-title">O que vai ser<br><span>hoje?</span></h1>
-    <p class="c-hero-sub">Escolha seus favoritos e faça seu pedido em segundos</p>
-  </div>
+  </section>
 
   <!-- Category Tabs -->
-  <div class="c-tabs" id="category-tabs"></div>
+  <section class="catalog-toolbar" aria-labelledby="catalog-title">
+    <div class="catalog-heading"><div><p>Feito para o seu momento</p><h2 id="catalog-title">Escolha seu pedido</h2></div><span>Produtos disponíveis hoje</span></div>
+    <div class="c-tabs" id="category-tabs" aria-label="Categorias do cardápio"></div>
+  </section>
 
   <!-- Products Grid -->
-  <main class="c-main">
+  <main class="c-main" id="cardapio">
     <div class="products-grid" id="products-grid"></div>
   </main>
 </div>
 
 <!-- Cart Drawer -->
 <div id="cart-overlay" class="overlay hidden" onclick="closeCart()"></div>
-<div id="cart-drawer" class="cart-drawer hidden">
+<aside id="cart-drawer" class="cart-drawer hidden" role="dialog" aria-modal="true" aria-labelledby="cart-title" tabindex="-1">
   <div class="cart-header">
-    <span class="cart-title">Seu Carrinho</span>
-    <button class="btn-close" onclick="closeCart()">✕</button>
+    <div><span class="cart-kicker">Seu pedido</span><span class="cart-title" id="cart-title">Carrinho</span></div>
+    <button class="btn-close" type="button" onclick="closeCart()" aria-label="Fechar carrinho"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button>
   </div>
   <div class="cart-items" id="cart-items-list"></div>
   <div class="cart-footer hidden" id="cart-footer">
@@ -70,25 +79,24 @@
       <span class="cart-total-label">Total</span>
       <span class="cart-total-value" id="cart-total-display">R$ 0,00</span>
     </div>
-    <button class="btn-checkout" onclick="openCheckout()">Finalizar Pedido →</button>
+    <button class="btn-checkout" type="button" onclick="openCheckout()"><span>Finalizar pedido</span><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
   </div>
-</div>
+</aside>
 
 <!-- Checkout Modal -->
 <div id="checkout-overlay" class="modal-overlay hidden" onclick="closeCheckout()"></div>
-<div id="checkout-modal" class="modal hidden">
-  <h2 class="modal-title">Confirmar Pedido</h2>
-  <p class="modal-sub" id="checkout-sub"></p>
+<section id="checkout-modal" class="modal checkout-modal hidden" role="dialog" aria-modal="true" aria-labelledby="checkout-title" aria-describedby="checkout-sub" tabindex="-1">
+  <header class="checkout-head"><div><span>Finalização</span><h2 class="modal-title" id="checkout-title">Confirmar pedido</h2><p class="modal-sub" id="checkout-sub"></p></div><button class="checkout-close" type="button" onclick="closeCheckout()" aria-label="Fechar checkout"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg></button></header>
   <section class="checkout-summary-box" aria-labelledby="checkout-summary-title">
     <h3 id="checkout-summary-title">Seu pedido</h3>
     <div id="checkout-order-summary"></div>
   </section>
   <div class="form-group">
-    <label class="form-label">Seu Nome *</label>
+    <label class="form-label" for="customer-name">Seu nome *</label>
     <input type="text" class="form-input" id="customer-name" placeholder="Digite seu nome" />
   </div>
   <div class="checkout-address hidden" id="checkout-address">
-    <div><span>📍</span><div><small>Entregar em</small><strong id="checkout-address-text"></strong></div></div>
+    <div><span class="checkout-address-icon"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div><small>Entregar em</small><strong id="checkout-address-text"></strong></div></div>
     <a href="perfil.html">Alterar</a>
   </div>
   <fieldset class="payment-fieldset" id="fulfillment-fieldset">
@@ -101,7 +109,7 @@
   </fieldset>
   <div class="checkout-summary-box" id="checkout-totals" aria-live="polite"></div>
   <div class="form-group">
-    <label class="form-label">Observações</label>
+    <label class="form-label" for="order-note">Observações</label>
     <textarea class="form-textarea" id="order-note" rows="3" placeholder="Informe suas preferências"></textarea>
   </div>
   <fieldset class="payment-fieldset">
@@ -122,13 +130,13 @@
     </div>
   </fieldset>
   <div class="modal-actions">
-    <button class="btn-secondary" onclick="closeCheckout()">Voltar</button>
-    <button class="btn-primary" id="btn-place-order" onclick="placeOrder()">✅ Fazer Pedido</button>
+    <button class="btn-secondary" type="button" onclick="closeCheckout()">Voltar</button>
+    <button class="btn-primary" id="btn-place-order" type="button" onclick="placeOrder()"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></svg><span>Fazer pedido</span></button>
   </div>
-</div>
+</section>
 
 <!-- Toast -->
-<div id="toast" class="toast hidden"></div>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
 <!-- Home Popup -->
 <div id="home-popup-overlay" class="modal-overlay hidden"></div>

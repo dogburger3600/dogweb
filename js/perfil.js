@@ -2,6 +2,17 @@
 
 let currentProfile = null;
 
+const PROFILE_ICON_PATHS = Object.freeze({
+  pin:'<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
+  payment:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/>',
+  note:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+  receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+});
+
+function profileIcon(name) {
+  return `<svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true">${PROFILE_ICON_PATHS[name] || PROFILE_ICON_PATHS.receipt}</svg>`;
+}
+
 function formatPhone(phone) {
   const digits = String(phone || '').replace(/\D/g, '');
   if (digits.length === 11) return digits.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
@@ -49,13 +60,13 @@ async function loadOrderHistory() {
   }
 
   if (error) {
-    list.innerHTML = '<p class="profile-orders-empty">Não foi possível carregar seu histórico.</p>';
+    list.innerHTML = `<div class="profile-orders-empty">${profileIcon('receipt')}<strong>Não foi possível carregar seu histórico</strong><p>Tente novamente em alguns instantes.</p></div>`;
     return;
   }
 
   document.getElementById('profile-orders-count').textContent = `${orders.length} ${orders.length === 1 ? 'pedido' : 'pedidos'}`;
   if (!orders.length) {
-    list.innerHTML = '<p class="profile-orders-empty">Você ainda não fez nenhum pedido.</p>';
+    list.innerHTML = `<div class="profile-orders-empty">${profileIcon('receipt')}<strong>Você ainda não fez nenhum pedido</strong><p>Seus próximos pedidos aparecerão aqui.</p></div>`;
     return;
   }
 
@@ -100,9 +111,9 @@ async function loadOrderHistory() {
         <strong class="history-order-total">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
       </div>
       <div class="history-order-body">${items}${financialSummary}<div class="history-order-details">
-        <div class="history-detail"><span>📍</span><span>${escapeProfileHtml(address)}</span></div>
-        ${order.payment_method ? `<div class="history-detail"><span>💳</span><span>Pagamento na entrega: ${paymentLabels[order.payment_method] || order.payment_method}${order.payment_method === 'dinheiro' && order.change_for !== null ? ` · troco para R$ ${Number(order.change_for).toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</span></div>` : ''}
-        ${order.note ? `<div class="history-detail"><span>📝</span><span>${escapeProfileHtml(order.note)}</span></div>` : ''}
+        <div class="history-detail"><span>${profileIcon('pin')}</span><span>${escapeProfileHtml(address)}</span></div>
+        ${order.payment_method ? `<div class="history-detail"><span>${profileIcon('payment')}</span><span>Pagamento na entrega: ${paymentLabels[order.payment_method] || order.payment_method}${order.payment_method === 'dinheiro' && order.change_for !== null ? ` · troco para R$ ${Number(order.change_for).toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</span></div>` : ''}
+        ${order.note ? `<div class="history-detail"><span>${profileIcon('note')}</span><span>${escapeProfileHtml(order.note)}</span></div>` : ''}
       </div></div>
     </article>`;
   }).join('');
@@ -244,7 +255,7 @@ document.getElementById('profile-edit-form').addEventListener('submit', async ev
     document.getElementById('profile-address').textContent = formatAddress(currentProfile);
     document.getElementById('profile-avatar').textContent = name.charAt(0).toUpperCase();
     closeProfileEdit();
-    showProfileToast('✅ Perfil atualizado com sucesso.');
+    showProfileToast('Perfil atualizado com sucesso.');
   } catch (error) {
     errorElement.textContent = error.code === '23505' ? 'Este celular já está sendo usado por outra conta.' : `Não foi possível salvar. ${error.message}`;
   } finally {

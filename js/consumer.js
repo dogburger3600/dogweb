@@ -4,6 +4,26 @@ let products = [];
 let cart = [];
 let checkoutSettings = null;
 let activeCategory = 'todos';
+let cartPreviousFocus = null;
+let checkoutPreviousFocus = null;
+
+const CUSTOMER_ICON_PATHS = Object.freeze({
+  todos:'<rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/>',
+  lanches:'<path d="M5 11a7 7 0 0 1 14 0M3 11h18M4 11v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3M7 16v2h10v-2"/>',
+  combos:'<path d="M6 9h12l-1 11H7L6 9ZM8 9l1-5M12 9V4M16 9l-1-5"/>',
+  sucos:'<path d="M7 7h10l-1 14H8L7 7ZM9 3h7l-3 4M8 12h8"/>',
+  refrigerantes:'<path d="M8 4h8l1 17H7L8 4ZM9 8h6M10 4V2h4v2"/>',
+  sobremesas:'<path d="M6 10h12l-2 10H8L6 10ZM8 10a4 4 0 0 1 8 0M12 6V3"/>',
+  search:'<circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/>',
+  bag:'<path d="M5 8h14l-1 13H6L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
+  arrow:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+  check:'<circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/>',
+});
+
+function customerIcon(name, className = 'customer-icon') {
+  return `<svg class="${className}" viewBox="0 0 24 24" aria-hidden="true">${CUSTOMER_ICON_PATHS[name] || CUSTOMER_ICON_PATHS.todos}</svg>`;
+}
 
 function getProduct(pid) {
   return products.find(p => p.id === pid);
@@ -46,8 +66,8 @@ function restoreCart() {
 function renderCategoryTabs() {
   const el = document.getElementById('category-tabs');
   el.innerHTML = CATEGORIES.map(c =>
-    `<button class="c-tab${activeCategory === c.key ? ' active' : ''}" onclick="setCategory('${c.key}')">
-      <span>${c.emoji}</span> ${c.label}
+    `<button class="c-tab${activeCategory === c.key ? ' active' : ''}" type="button" aria-pressed="${activeCategory === c.key}" onclick="setCategory('${c.key}')">
+      <span>${customerIcon(c.key)}</span><span>${escapeCartHtml(c.label)}</span>
     </button>`
   ).join('');
 }
@@ -63,22 +83,19 @@ function renderProducts() {
   const list = activeCategory === 'todos' ? products : products.filter(p => p.category === activeCategory);
 
   if (list.length === 0) {
-    el.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:4rem 2rem;color:var(--stone-light)">
-      <div style="font-size:3rem;margin-bottom:12px">🔍</div>
-      <p style="font-weight:600">Nenhum item nesta categoria.</p>
-    </div>`;
+    el.innerHTML = `<div class="catalog-empty">${customerIcon('search')}<strong>Nenhum item nesta categoria</strong><p>Escolha outra categoria para continuar.</p></div>`;
     return;
   }
 
   el.innerHTML = list.map(p => {
     const out = p.category === 'lanches' && Number(p.stock) <= 0;
-    const cat = CAT_MAP[p.category] || { emoji:'🍽️', label:'Produto' };
+    const cat = CAT_MAP[p.category] || { label:'Produto' };
     const imageUrl = safeProductImageUrl(p.img) || 'dogburger.png';
     return `
-      <div class="product-card${out ? ' out-of-stock' : ''}">
+      <article class="product-card${out ? ' out-of-stock' : ''}">
         <div class="product-img-wrap">
           <img src="${imageUrl}" alt="${escapeCartHtml(p.name)}" loading="lazy" />
-          <span class="product-cat-badge">${cat.emoji} ${escapeCartHtml(cat.label)}</span>
+          <span class="product-cat-badge">${customerIcon(p.category)}<span>${escapeCartHtml(cat.label)}</span></span>
           ${out ? `<div class="out-label"><span>Esgotado</span></div>` : ''}
         </div>
         <div class="product-body">
@@ -86,10 +103,10 @@ function renderProducts() {
           <p class="product-desc">${escapeCartHtml(p.desc)}</p>
           <div class="product-footer">
             <span class="product-price">R$ ${fmt(p.price)}</span>
-            <button class="btn-add" ${out ? 'disabled' : ''} onclick="addToCart(${p.id})">+ Adicionar</button>
+            <button class="btn-add" type="button" ${out ? 'disabled' : ''} onclick="addToCart(${p.id})">${customerIcon('plus')}<span>Adicionar</span></button>
           </div>
         </div>
-      </div>`;
+      </article>`;
   }).join('');
 }
 
@@ -98,19 +115,23 @@ function updateCartBadge() {
   const count = cartCount();
   badge.textContent = count;
   badge.style.display = count > 0 ? 'inline-block' : 'none';
+  document.querySelector('.btn-cart')?.setAttribute(
+    'aria-label',
+    count > 0 ? `Carrinho com ${count} ${count === 1 ? 'item' : 'itens'}` : 'Carrinho vazio'
+  );
 }
 
 function addToCart(pid) {
   const product = getProduct(pid);
   if (!product) return;
   if (product.category === 'lanches' && Number(product.stock) <= 0) {
-    showToast('⛔ Este lanche está esgotado.');
+    showToast('Este lanche está esgotado.');
     return;
   }
   const existing = cart.find(i => i.product.id === pid);
   if (existing) {
     if (product.category === 'lanches' && existing.qty >= Number(product.stock)) {
-      showToast('⚠️ Quantidade disponível atingida.');
+      showToast('Quantidade disponível atingida.');
       return;
     }
     existing.qty++;
@@ -125,10 +146,10 @@ function addToCart(pid) {
 function updateQty(pid, delta) {
   const idx = cart.findIndex(i => i.product.id === pid);
   if (idx === -1) return;
-  
+
   const nextQuantity = cart[idx].qty + delta;
   if (delta > 0 && cart[idx].product.category === 'lanches' && nextQuantity > Number(cart[idx].product.stock)) {
-    showToast('⚠️ Quantidade disponível atingida.');
+    showToast('Quantidade disponível atingida.');
     return;
   }
   cart[idx].qty = nextQuantity;
@@ -157,9 +178,9 @@ function renderCartItems() {
 
   if (cart.length === 0) {
     el.innerHTML = `<div class="cart-empty">
-      <div class="emoji">🛒</div>
-      <p>Seu carrinho está vazio</p>
-      <small>Adicione itens do cardápio</small>
+      <span class="cart-empty-icon">${customerIcon('bag')}</span>
+      <strong>Seu carrinho está vazio</strong>
+      <p>Adicione itens do cardápio para começar.</p>
     </div>`;
     footer.classList.add('hidden');
     return;
@@ -186,9 +207,9 @@ function renderCartItems() {
           <p class="cart-item-price">R$ ${fmt(i.product.price * i.qty)}</p>
         </div>
         <div class="qty-ctrl">
-          <button class="qty-btn" onclick="updateQty(${i.product.id}, -1)">−</button>
+          <button class="qty-btn" type="button" aria-label="Remover uma unidade de ${escapeCartHtml(i.product.name)}" onclick="updateQty(${i.product.id}, -1)">${customerIcon('minus')}</button>
           <span class="qty-val">${i.qty}</span>
-          <button class="qty-btn plus" onclick="updateQty(${i.product.id}, 1)">+</button>
+          <button class="qty-btn plus" type="button" aria-label="Adicionar uma unidade de ${escapeCartHtml(i.product.name)}" onclick="updateQty(${i.product.id}, 1)">${customerIcon('plus')}</button>
         </div>
       </div>
       ${ingredientsEditor}
@@ -201,13 +222,18 @@ function renderCartItems() {
 
 function openCart() {
   renderCartItems();
+  cartPreviousFocus = document.activeElement;
   document.getElementById('cart-overlay').classList.remove('hidden');
   document.getElementById('cart-drawer').classList.remove('hidden');
+  document.querySelector('#cart-drawer .btn-close').focus();
 }
 
 function closeCart() {
+  if (document.getElementById('cart-drawer').classList.contains('hidden')) return;
   document.getElementById('cart-overlay').classList.add('hidden');
   document.getElementById('cart-drawer').classList.add('hidden');
+  if (cartPreviousFocus?.isConnected) cartPreviousFocus.focus();
+  cartPreviousFocus = null;
 }
 
 function renderCheckoutSummary() {
@@ -264,6 +290,7 @@ async function openCheckout() {
   document.querySelector(`input[name="payment-method"]:not(:disabled)`).checked = true;
   updatePaymentOptions();
   closeCart();
+  checkoutPreviousFocus = document.activeElement;
   document.getElementById('checkout-overlay').classList.remove('hidden');
   document.getElementById('checkout-modal').classList.remove('hidden');
   document.getElementById('customer-name').focus();
@@ -279,8 +306,11 @@ async function openCheckout() {
 }
 
 function closeCheckout() {
+  if (document.getElementById('checkout-modal').classList.contains('hidden')) return;
   document.getElementById('checkout-overlay').classList.add('hidden');
   document.getElementById('checkout-modal').classList.add('hidden');
+  if (checkoutPreviousFocus?.isConnected) checkoutPreviousFocus.focus();
+  checkoutPreviousFocus = null;
 }
 
 async function placeOrder() {
@@ -306,7 +336,7 @@ async function placeOrder() {
 
   const button = document.getElementById('btn-place-order');
   button.disabled = true;
-  button.textContent = 'Enviando pedido...';
+  button.innerHTML = `<span>Enviando pedido...</span>`;
   try {
     const order = await Store.placeOrder(name, note, cart, paymentMethod, changeFor, fulfillmentMethod);
     products = await Store.getProducts();
@@ -315,14 +345,35 @@ async function placeOrder() {
     updateCartBadge();
     renderProducts();
     closeCheckout();
-    showToast(`✅ ${order.order_code} confirmado · ${order.fulfillment_method === 'delivery' ? 'Entrega' : 'Retirada'} · Subtotal R$ ${fmt(order.subtotal)} · Taxa ${order.delivery_fee ? `R$ ${fmt(order.delivery_fee)}` : 'Grátis'} · Total R$ ${fmt(order.total)} · ${order.eta_min}–${order.eta_max} min`);
+    showToast(`${order.order_code} confirmado · ${order.fulfillment_method === 'delivery' ? 'Entrega' : 'Retirada'} · Subtotal R$ ${fmt(order.subtotal)} · Taxa ${order.delivery_fee ? `R$ ${fmt(order.delivery_fee)}` : 'Grátis'} · Total R$ ${fmt(order.total)} · ${order.eta_min}–${order.eta_max} min`);
   } catch (error) {
     alert(`Não foi possível realizar o pedido. ${error.message || 'Tente novamente.'}`);
   } finally {
     button.disabled = false;
-    button.textContent = '✅ Fazer Pedido';
+    button.innerHTML = `${customerIcon('check')}<span>Fazer pedido</span>`;
   }
 }
+
+function trapCustomerDialogFocus(event, element) {
+  if (event.key !== 'Tab') return;
+  const focusable = [...element.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')].filter(node => !node.classList.contains('hidden'));
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+}
+
+document.addEventListener('keydown', event => {
+  const checkout = document.getElementById('checkout-modal');
+  const drawer = document.getElementById('cart-drawer');
+  if (!checkout.classList.contains('hidden')) {
+    if (event.key === 'Escape') { event.preventDefault(); closeCheckout(); }
+    else trapCustomerDialogFocus(event, checkout);
+  } else if (!drawer.classList.contains('hidden')) {
+    if (event.key === 'Escape') { event.preventDefault(); closeCart(); }
+    else trapCustomerDialogFocus(event, drawer);
+  }
+});
 
 document.querySelectorAll('input[name="payment-method"]').forEach(input => input.addEventListener('change', updatePaymentOptions));
 document.querySelectorAll('input[name="fulfillment-method"]').forEach(input => input.addEventListener('change', renderCheckoutSettings));
@@ -427,7 +478,7 @@ document.addEventListener('keydown', handleHomePopupKeydown);
 async function initConsumer() {
   renderCategoryTabs();
   updateCartBadge();
-  document.getElementById('products-grid').innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--stone)">Carregando cardápio...</p>';
+  document.getElementById('products-grid').innerHTML = `<div class="catalog-loading" role="status"><span></span><strong>Carregando cardápio</strong><p>Buscando os produtos disponíveis.</p></div>`;
   try {
     products = await Store.getProducts();
     restoreCart();
@@ -443,7 +494,7 @@ async function initConsumer() {
     const grid = document.getElementById('products-grid');
     grid.replaceChildren();
     const message = document.createElement('p');
-    message.style.cssText = 'grid-column:1/-1;text-align:center;color:var(--red)';
+    message.className = 'catalog-error';
     message.textContent = `Não foi possível carregar o cardápio. ${error.message || ''}`;
     grid.appendChild(message);
   }

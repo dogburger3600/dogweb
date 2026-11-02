@@ -18,11 +18,11 @@
         <span class="c-header-sub">Minha conta</span>
       </div>
     </a>
-    <a href="index.html" class="btn-ghost">← Voltar ao cardápio</a>
+    <a href="index.html" class="btn-ghost customer-back-link"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span>Voltar ao cardápio</span></a>
   </header>
 
   <main class="profile-main">
-    <div class="profile-loading" id="profile-loading">Carregando seu perfil...</div>
+    <div class="profile-loading" id="profile-loading" role="status"><span class="customer-spinner" aria-hidden="true"></span><strong>Carregando seu perfil</strong><p>Buscando seus dados e pedidos.</p></div>
 
     <section class="profile-shell hidden" id="profile-content">
       <div class="profile-hero">
@@ -37,7 +37,7 @@
 
       <div class="profile-grid">
         <article class="points-card">
-          <div class="points-icon">★</div>
+          <div class="points-icon"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3Z"/></svg></div>
           <div>
             <span class="points-label">Seus pontos</span>
             <strong><span id="profile-points">0</span> pontos</strong>
@@ -56,23 +56,23 @@
 
           <div class="profile-info-list" id="profile-info-view">
             <div class="profile-info-row">
-              <span class="profile-info-icon">👤</span>
+              <span class="profile-info-icon"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
               <div><small>Nome completo</small><strong id="profile-full-name"></strong></div>
             </div>
             <div class="profile-info-row">
-              <span class="profile-info-icon">✉️</span>
+              <span class="profile-info-icon"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span>
               <div><small>E-mail</small><strong id="profile-email"></strong></div>
             </div>
             <div class="profile-info-row">
-              <span class="profile-info-icon">📱</span>
+              <span class="profile-info-icon"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
               <div><small>Celular</small><strong id="profile-phone"></strong></div>
             </div>
             <div class="profile-info-row">
-              <span class="profile-info-icon">📍</span>
+              <span class="profile-info-icon"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
               <div><small>Endereço de entrega</small><strong id="profile-address"></strong></div>
             </div>
             <div class="profile-info-row">
-              <span class="profile-info-icon">🔑</span>
+              <span class="profile-info-icon"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M15 8l3 3M17 6l2 2"/></svg></span>
               <div><small>Senha</small><strong>Protegida pelo Supabase</strong></div>
             </div>
           </div>
@@ -91,7 +91,7 @@
               <label class="form-label" for="profile-edit-phone">Celular *</label>
               <input class="form-input" id="profile-edit-phone" type="tel" autocomplete="tel" inputmode="numeric" maxlength="15" required />
             </div>
-            <div class="signup-section-title"><span>📍</span><div><strong>Endereço de entrega</strong><small>Será usado nos próximos pedidos</small></div></div>
+            <div class="signup-section-title"><span><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div><strong>Endereço de entrega</strong><small>Será usado nos próximos pedidos</small></div></div>
             <div class="signup-address-grid">
               <div class="form-group address-street"><label class="form-label" for="profile-edit-street">Rua *</label><input class="form-input" id="profile-edit-street" maxlength="120" required /></div>
               <div class="form-group address-number"><label class="form-label" for="profile-edit-address-number">Número *</label><input class="form-input" id="profile-edit-address-number" maxlength="12" required /></div>
@@ -129,7 +129,7 @@
     </div>
   </main>
 
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>

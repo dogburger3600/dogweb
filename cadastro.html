@@ -6,7 +6,7 @@
   <title>Cadastro de Cliente - Dog Burger</title>
   <link rel="icon" type="image/png" href="dogburger.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body class="signup-page">
@@ -19,7 +19,7 @@
     </a>
     <div class="header-auth">
       <a href="entrar.html" class="btn-ghost">Já tenho conta</a>
-      <a href="index.html" class="btn-ghost">← Cardápio</a>
+      <a href="index.html" class="btn-ghost customer-back-link"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span>Cardápio</span></a>
     </div>
   </header>
 
@@ -30,9 +30,9 @@
       <h1>Crie sua conta</h1>
       <p>Cadastre-se para deixar seus próximos pedidos mais rápidos e acompanhar suas compras.</p>
       <ul class="signup-benefits">
-        <li><span>✓</span> Dados salvos para os próximos pedidos</li>
-        <li><span>✓</span> Histórico de compras em um só lugar</li>
-        <li><span>✓</span> Atendimento mais rápido</li>
+        <li><span><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 12 3 3 7-7"/></svg></span> Dados salvos para os próximos pedidos</li>
+        <li><span><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 12 3 3 7-7"/></svg></span> Histórico de compras em um só lugar</li>
+        <li><span><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 12 3 3 7-7"/></svg></span> Atendimento mais rápido</li>
       </ul>
     </section>
 
@@ -74,7 +74,7 @@
             </div>
           </div>
 
-          <div class="signup-section-title"><span>📍</span><div><strong>Endereço de entrega</strong><small>Será utilizado nos seus pedidos</small></div></div>
+          <div class="signup-section-title"><span><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div><strong>Endereço de entrega</strong><small>Será utilizado nos seus pedidos</small></div></div>
           <div class="signup-address-grid">
             <div class="form-group address-street"><label class="form-label" for="signup-street">Rua *</label><input class="form-input" id="signup-street" maxlength="120" required /></div>
             <div class="form-group address-number"><label class="form-label" for="signup-address-number">Número *</label><input class="form-input" id="signup-address-number" maxlength="12" required /></div>
@@ -95,12 +95,12 @@
           </div>
 
           <button class="btn-primary signup-submit" id="signup-submit" type="submit">Criar minha conta</button>
-          <p class="signup-security">🔒 Seus dados ficam armazenados neste dispositivo.</p>
+          <p class="signup-security"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Seus dados ficam armazenados neste dispositivo.</span></p>
         </form>
       </div>
 
       <div class="signup-success hidden" id="signup-success" role="status">
-        <div class="signup-success-icon">✓</div>
+        <div class="signup-success-icon"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 12 3 3 7-7"/></svg></div>
         <h2>Cadastro concluído!</h2>
         <p>Sua conta foi criada. Agora você já pode voltar ao cardápio.</p>
         <a href="index.html" class="btn-primary signup-success-link">Ver cardápio</a>
