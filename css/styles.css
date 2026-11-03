@@ -5111,6 +5111,8 @@ body.app-pattern-background {
   background-size: auto, var(--app-pattern-size);
 }
 body.app-pattern-background #page-consumer,
+body.app-pattern-background .dashboard-shell,
+body.app-pattern-background .menu-editor-shell,
 body.app-pattern-background .m-main,
 body.app-pattern-background .m-content {
   background-color: transparent;
