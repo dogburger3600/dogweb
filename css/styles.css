@@ -5099,3 +5099,28 @@ input[type="radio"] { accent-color: var(--brand-dark); }
   color: inherit;
   stroke: currentColor;
 }
+
+/* Shared structural texture; component surfaces remain opaque. */
+body.app-pattern-background {
+  --app-pattern-image: url('../assets/gastronomic-pattern.jpg');
+  --app-pattern-size: 960px auto;
+  --app-pattern-veil: rgba(255, 255, 255, 0.8);
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--app-pattern-veil), var(--app-pattern-veil)), var(--app-pattern-image);
+  background-repeat: repeat;
+  background-size: auto, var(--app-pattern-size);
+}
+body.app-pattern-background #page-consumer,
+body.app-pattern-background .m-main,
+body.app-pattern-background .m-content {
+  background-color: transparent;
+  background-image: none;
+}
+
+@media (max-width: 640px) {
+  .app-pattern-background { --app-pattern-size: 720px auto; }
+}
+
+@media print {
+  body.app-pattern-background { background-image: none !important; }
+}
