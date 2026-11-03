@@ -39,6 +39,11 @@ body { min-height: 100vh; }
   --focus: #EA580C;
   --surface-dark: #292524;
   --surface-light: #FFFFFF;
+  --button-primary-bg: #F97316;
+  --button-primary-bg-hover: #EA580C;
+  --button-primary-fg: #FFFFFF;
+  --button-primary-disabled-bg: #D6D3D1;
+  --button-primary-disabled-fg: #78716C;
   --radius: 12px;
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Nunito', sans-serif;
@@ -4607,28 +4612,6 @@ body { background: var(--bg); color: var(--text-primary); }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); }
 
 /* Core interaction hierarchy */
-.btn-primary,
-.btn-add,
-.btn-checkout,
-.menu-add-button,
-.dashboard-state-error button,
-.popup-save-button,
-.signup-submit {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: var(--dark);
-}
-.btn-primary:hover:not(:disabled),
-.btn-add:hover:not(:disabled),
-.btn-checkout:hover:not(:disabled),
-.menu-add-button:hover:not(:disabled),
-.dashboard-state-error button:hover:not(:disabled),
-.popup-save-button:hover:not(:disabled),
-.signup-submit:hover:not(:disabled) {
-  border-color: var(--brand-dark);
-  background: var(--brand-dark);
-  color: var(--dark);
-}
 .btn-secondary,
 .btn-edit,
 .order-action-button,
@@ -4863,12 +4846,6 @@ input[type="radio"] { accent-color: var(--brand-dark); }
 .visual-role-switcher select { border-color: var(--brand-border); background: var(--white); }
 
 /* Customer purchase surfaces */
-#page-consumer .btn-cart {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: var(--dark);
-}
-#page-consumer .btn-cart:hover { border-color: var(--brand-dark); background: var(--brand-dark); }
 #page-consumer .cart-badge { background: var(--dark); color: var(--white); }
 #checkout-totals .checkout-summary-item:last-child {
   background: var(--brand-soft);
@@ -4886,20 +4863,170 @@ input[type="radio"] { accent-color: var(--brand-dark); }
   .form-textarea { border-width: 2px; }
 }
 
-/* Scoped primary controls inherit the same accessible Ember Signal contract. */
+/* ── PRIMARY ACTION FAMILY · SHARED CONTRACT ── */
+.btn-primary,
+.btn-add,
+.btn-checkout,
+.btn-cart,
+.btn-manager-shortcut,
+.btn-advance,
+.btn-new-expense,
+.menu-add-button,
+.popup-save-button,
+.signup-submit,
+.signup-success-link,
+.campaign-popup-action,
+.popup-preview-button,
+.report-today-button,
+.dashboard-state-error button,
+.orders-state button,
+.reports-state.is-error button,
+.snack-stock-state.is-error button,
 .dashboard-shell .btn-primary,
 .dashboard-shell .popup-save-button,
+.dashboard-shell .snack-stock-restock,
+.dashboard-shell .topbar-menu-link,
+.dashboard-shell .dashboard-sound-status,
 .menu-editor-shell .menu-add-button,
-.menu-editor-page .btn-primary {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: var(--dark);
+.menu-editor-page .btn-primary,
+.profile-page .btn-profile-edit,
+#page-consumer .btn-cart {
+  border-color: var(--button-primary-bg);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
 }
+
+.btn-primary:hover:not(:disabled),
+.btn-add:hover:not(:disabled),
+.btn-checkout:hover:not(:disabled),
+.btn-cart:hover:not(:disabled),
+.btn-manager-shortcut:hover,
+.btn-advance:hover:not(:disabled),
+.btn-new-expense:hover:not(:disabled),
+.menu-add-button:hover:not(:disabled),
+.popup-save-button:hover:not(:disabled),
+.signup-submit:hover:not(:disabled),
+.signup-success-link:hover,
+.campaign-popup-action:hover,
+.popup-preview-button:hover,
+.report-today-button:hover:not(:disabled),
+.dashboard-state-error button:hover:not(:disabled),
+.orders-state button:hover:not(:disabled),
+.reports-state.is-error button:hover:not(:disabled),
+.snack-stock-state.is-error button:hover:not(:disabled),
 .dashboard-shell .btn-primary:hover:not(:disabled),
 .dashboard-shell .popup-save-button:hover:not(:disabled),
+.dashboard-shell .snack-stock-restock:hover:not(:disabled),
+.dashboard-shell .topbar-menu-link:hover,
+.dashboard-shell .dashboard-sound-status:hover:not(:disabled),
+.dashboard-shell .dashboard-sound-status.is-enabled,
+.dashboard-shell .dashboard-sound-status.is-enabled:hover:not(:disabled),
 .menu-editor-shell .menu-add-button:hover:not(:disabled),
-.menu-editor-page .btn-primary:hover:not(:disabled) {
-  border-color: var(--brand-dark);
-  background: var(--brand-dark);
+.menu-editor-page .btn-primary:hover:not(:disabled),
+.profile-page .btn-profile-edit:hover:not(:disabled),
+#page-consumer .btn-cart:hover:not(:disabled) {
+  border-color: var(--button-primary-bg-hover);
+  background: var(--button-primary-bg-hover);
+  color: var(--button-primary-fg);
+}
+
+.btn-primary:active:not(:disabled),
+.btn-add:active:not(:disabled),
+.btn-checkout:active:not(:disabled),
+.btn-cart:active:not(:disabled),
+.btn-manager-shortcut:active,
+.btn-advance:active:not(:disabled),
+.menu-add-button:active:not(:disabled),
+.popup-save-button:active:not(:disabled),
+.signup-submit:active:not(:disabled),
+.dashboard-shell .btn-primary:active:not(:disabled),
+.dashboard-shell .topbar-menu-link:active,
+.dashboard-shell .dashboard-sound-status:active:not(:disabled),
+.profile-page .btn-profile-edit:active:not(:disabled) {
+  border-color: var(--button-primary-bg-hover);
+  background: var(--button-primary-bg-hover);
+  color: var(--button-primary-fg);
+  transform: translateY(1px);
+}
+
+.btn-primary:focus-visible,
+.btn-add:focus-visible,
+.btn-checkout:focus-visible,
+.btn-cart:focus-visible,
+.btn-manager-shortcut:focus-visible,
+.btn-advance:focus-visible,
+.btn-new-expense:focus-visible,
+.menu-add-button:focus-visible,
+.popup-save-button:focus-visible,
+.signup-submit:focus-visible,
+.campaign-popup-action:focus-visible,
+.signup-page .signup-submit:focus-visible,
+#page-consumer .btn-add:focus-visible,
+#page-consumer .btn-cart:focus-visible,
+#page-consumer .btn-checkout:focus-visible,
+.dashboard-shell .btn-primary:focus-visible,
+.dashboard-shell .popup-save-button:focus-visible,
+.dashboard-shell .snack-stock-restock:focus-visible,
+.dashboard-shell .topbar-menu-link:focus-visible,
+.dashboard-shell .dashboard-sound-status:focus-visible,
+.menu-editor-shell .menu-add-button:focus-visible,
+.menu-editor-page .btn-primary:focus-visible,
+.profile-page .btn-profile-edit:focus-visible {
+  outline: 3px solid var(--white);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--dark);
+}
+
+.btn-primary:disabled,
+.btn-add:disabled,
+.btn-checkout:disabled,
+.btn-cart:disabled,
+.btn-advance:disabled,
+.btn-new-expense:disabled,
+.menu-add-button:disabled,
+.popup-save-button:disabled,
+.signup-submit:disabled,
+.dashboard-shell .btn-primary:disabled,
+.dashboard-shell .popup-save-button:disabled,
+.dashboard-shell .snack-stock-restock:disabled,
+.dashboard-shell .dashboard-sound-status:disabled,
+.menu-editor-shell .menu-add-button:disabled,
+.menu-editor-page .btn-primary:disabled,
+.profile-page .btn-profile-edit:disabled {
+  border-color: var(--button-primary-disabled-bg);
+  background: var(--button-primary-disabled-bg);
+  color: var(--button-primary-disabled-fg);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.btn-primary :is(.customer-icon, .manager-icon),
+.btn-add .customer-icon,
+.btn-checkout .customer-icon,
+.btn-cart .customer-icon,
+.btn-advance .manager-icon,
+.menu-add-button .manager-icon,
+.popup-save-button .manager-icon,
+.dashboard-shell .snack-stock-restock .manager-icon,
+.dashboard-shell .topbar-menu-link .manager-icon,
+.dashboard-shell .dashboard-sound-status .manager-icon,
+.profile-page .btn-profile-edit .customer-icon {
+  color: inherit;
+  stroke: currentColor;
+}
+
+/* Account components keep information and action roles visually distinct. */
+.profile-page .points-card {
+  border-color: var(--brand);
+  background: var(--surface-light);
   color: var(--dark);
 }
+.profile-page .points-icon {
+  border-color: var(--brand);
+  background: var(--surface-light);
+  color: var(--brand);
+}
+.profile-page .points-label { color: var(--dark2); }
+.profile-page .points-card strong { color: var(--dark); }
+.profile-page .points-card p { color: var(--dark2); }
