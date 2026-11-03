@@ -1,5 +1,5 @@
 ﻿*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-family: 'Nunito', sans-serif; background: #FAFAF9; color: #1C1917; -webkit-font-smoothing: antialiased; }
+html { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--dark); -webkit-font-smoothing: antialiased; }
 body { min-height: 100vh; }
 .capability-hidden { display: none !important; }
 [data-capability-mode="disable"]:disabled { opacity: 0.55; cursor: not-allowed; }
@@ -28,6 +28,17 @@ body { min-height: 100vh; }
   --amber: #D97706;
   --red: #DC2626;
   --purple: #7C3AED;
+  --brand-soft: #FFF7ED;
+  --brand-border: #FED7AA;
+  --brand-light: #FDBA74;
+  --brand-ink: #7C2D12;
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-muted: #78716C;
+  --border-strong: #D6D3D1;
+  --focus: #EA580C;
+  --surface-dark: #292524;
+  --surface-light: #FFFFFF;
   --radius: 12px;
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Nunito', sans-serif;
@@ -4588,4 +4599,307 @@ body { min-height: 100vh; }
   .signup-page .signup-header .customer-header-button,
   .profile-page .customer-header-button,
   #page-consumer .customer-header-button { padding-inline: 6px; }
+}
+
+/* ── REFINAMENTO VISUAL 09 · GLOBAL COLOR SYSTEM ── */
+body { background: var(--bg); color: var(--text-primary); }
+::selection { background: var(--brand-light); color: var(--dark); }
+::-webkit-scrollbar-thumb { background: var(--border-strong); }
+
+/* Core interaction hierarchy */
+.btn-primary,
+.btn-add,
+.btn-checkout,
+.menu-add-button,
+.dashboard-state-error button,
+.popup-save-button,
+.signup-submit {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--dark);
+}
+.btn-primary:hover:not(:disabled),
+.btn-add:hover:not(:disabled),
+.btn-checkout:hover:not(:disabled),
+.menu-add-button:hover:not(:disabled),
+.dashboard-state-error button:hover:not(:disabled),
+.popup-save-button:hover:not(:disabled),
+.signup-submit:hover:not(:disabled) {
+  border-color: var(--brand-dark);
+  background: var(--brand-dark);
+  color: var(--dark);
+}
+.btn-secondary,
+.btn-edit,
+.order-action-button,
+.btn-edit-product {
+  border-color: var(--border);
+  background: var(--white);
+  color: var(--text-primary);
+}
+.btn-secondary:hover:not(:disabled),
+.btn-edit:hover:not(:disabled),
+.order-action-button:hover:not(:disabled),
+.btn-edit-product:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--dark);
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Fields use neutral rest states and brand interaction states. */
+.form-input,
+.form-select,
+.form-textarea,
+.menu-search-wrap,
+.payment-options span {
+  border-color: var(--border-strong);
+  background: var(--white);
+  color: var(--text-primary);
+}
+.form-input::placeholder,
+.form-textarea::placeholder,
+.menu-search-wrap input::placeholder { color: var(--text-muted); opacity: 1; }
+.form-input:hover:not(:disabled),
+.form-select:hover:not(:disabled),
+.form-textarea:hover:not(:disabled) { border-color: var(--stone-light); }
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus,
+.menu-search-wrap:focus-within {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px rgba(234,88,12,0.16);
+}
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+input[type="checkbox"],
+input[type="radio"] { accent-color: var(--brand-dark); }
+
+/* Official dark surface system */
+.c-header,
+.customer-page-header,
+#page-consumer .customer-page-header,
+.signup-page .customer-page-header,
+.profile-page .customer-page-header,
+.m-sidebar,
+.dashboard-shell .m-sidebar,
+.menu-editor-shell .m-sidebar { background: var(--dark); }
+.c-hero,
+.signup-page,
+.manager-login,
+.report-filter-card,
+.report-calendar-card {
+  background: linear-gradient(135deg, var(--dark) 0%, var(--surface-dark) 100%);
+}
+.customer-header-button,
+.signup-page .signup-header .customer-header-button,
+.profile-page .customer-header-button,
+#page-consumer .customer-header-button {
+  border-color: #44403C;
+  background: var(--surface-dark);
+  color: var(--white);
+}
+.customer-header-button:hover,
+.signup-page .signup-header .customer-header-button:hover,
+.profile-page .customer-header-button:hover,
+#page-consumer .customer-header-button:hover {
+  border-color: var(--stone);
+  background: #44403C;
+}
+.customer-header-button .customer-icon,
+.c-hero-meta .customer-icon { color: var(--brand-light); }
+.m-nav-btn:hover,
+.dashboard-shell .m-nav-btn:hover,
+.menu-editor-shell .m-nav-btn:hover { background: var(--surface-dark); color: var(--white); }
+.m-nav-btn.active,
+.dashboard-shell .m-nav-btn.active,
+.menu-editor-shell .m-nav-btn.active {
+  background: var(--surface-dark);
+  color: var(--white);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.m-nav-btn.active .manager-icon,
+.dashboard-shell .m-nav-btn.active .manager-icon,
+.menu-editor-shell .m-nav-btn.active .manager-icon { color: var(--brand-light); }
+
+/* Light Workbench: warm canvas, white operational surfaces. */
+.m-main,
+.m-content,
+.dashboard-shell .m-main,
+.dashboard-shell .m-content,
+.menu-editor-shell .m-main,
+.menu-editor-shell .m-content,
+.profile-page,
+#page-consumer,
+.menu-editor-page { background: var(--bg); }
+.card,
+.kpi-card,
+.order-card,
+.snack-stock-card,
+.store-settings-section,
+.report-table-card,
+.menu-edit-card,
+.profile-card,
+.profile-orders-section,
+.signup-card,
+.modal,
+.cart-drawer,
+.cart-item {
+  border-color: var(--border);
+  background: var(--surface-light);
+}
+.m-topbar,
+.dashboard-shell .m-topbar,
+.menu-editor-shell .m-topbar {
+  border-bottom-color: var(--border);
+  background: rgba(255,255,255,0.98);
+}
+
+/* Brand signal: selected, active and high-priority content. */
+.c-tab.active,
+.filter-tab.active,
+.report-period-tabs button.active,
+.payment-options input:checked + span {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+.product-price,
+.menu-edit-title strong,
+.cart-item-price,
+.history-order-number,
+.points-label,
+.profile-kicker { color: var(--brand-ink); }
+.product-cat-badge .customer-icon,
+.product-cat-badge .manager-icon,
+.menu-editor-summary strong { color: var(--brand-light); }
+.catalog-heading p,
+.c-hero-label,
+.signup-eyebrow,
+.product-modal-eyebrow,
+.popup-editor-eyebrow { color: var(--brand-dark); }
+.btn-profile-edit,
+.topbar-menu-link,
+.cart-empty-icon,
+.profile-info-icon,
+.points-icon,
+.signup-section-title > span,
+.product-form-section-head > span,
+.popup-form-section-head > span,
+.store-settings-section-head > div > span {
+  border-color: var(--brand-border);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+/* Softer structural distinction without decorative color. */
+.catalog-toolbar,
+.cart-items,
+.history-order-summary,
+.menu-edit-card.archived,
+.product-readonly-field,
+.dashboard-empty,
+.orders-state,
+.reports-state,
+.snack-stock-state { background: var(--bg); }
+.catalog-empty,
+.catalog-loading,
+.catalog-error,
+.profile-orders-empty,
+.menu-empty {
+  border-color: var(--border);
+  background: var(--white);
+}
+.product-card,
+.menu-edit-card,
+.order-card,
+.history-order { border-color: var(--border); }
+.product-card:hover,
+.menu-edit-card:hover,
+.order-card:hover { border-color: var(--border-strong); }
+
+/* Semantic colors remain functional and contained. */
+.status-badge,
+.menu-availability,
+.realtime-readiness,
+.orders-feedback,
+.store-settings-feedback,
+.snack-stock-feedback,
+.form-error { forced-color-adjust: none; }
+.btn-delete-product,
+.order-action-button.is-danger {
+  border-color: #FECACA;
+  background: var(--white);
+  color: #B91C1C;
+}
+.btn-delete-product:hover,
+.order-action-button.is-danger:hover { background: #FEF2F2; }
+.btn-restore-product { border-color: #BBF7D0; background: var(--white); color: #166534; }
+.btn-restore-product:hover { background: #F0FDF4; }
+
+/* Remove decorative violet from development and reporting surfaces. */
+.visual-role-switcher,
+.report-readiness {
+  border-color: var(--brand-border);
+  background: var(--brand-soft);
+  box-shadow: 0 16px 42px rgba(28,25,23,0.12);
+}
+.visual-role-switcher > strong,
+.visual-role-switcher summary,
+.report-readiness > span { color: var(--brand-ink); }
+.visual-role-switcher select { border-color: var(--brand-border); background: var(--white); }
+
+/* Customer purchase surfaces */
+#page-consumer .btn-cart {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--dark);
+}
+#page-consumer .btn-cart:hover { border-color: var(--brand-dark); background: var(--brand-dark); }
+#page-consumer .cart-badge { background: var(--dark); color: var(--white); }
+#checkout-totals .checkout-summary-item:last-child {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+#checkout-totals .checkout-summary-item:last-child strong { color: var(--brand-ink); }
+.cash-change-options { border-color: #FDE68A; background: #FFFBEB; }
+
+@media (prefers-contrast: more) {
+  :root { --border: #A8A29E; --border-strong: #78716C; }
+  .customer-header-button,
+  .btn-secondary,
+  .form-input,
+  .form-select,
+  .form-textarea { border-width: 2px; }
+}
+
+/* Scoped primary controls inherit the same accessible Ember Signal contract. */
+.dashboard-shell .btn-primary,
+.dashboard-shell .popup-save-button,
+.menu-editor-shell .menu-add-button,
+.menu-editor-page .btn-primary {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--dark);
+}
+.dashboard-shell .btn-primary:hover:not(:disabled),
+.dashboard-shell .popup-save-button:hover:not(:disabled),
+.menu-editor-shell .menu-add-button:hover:not(:disabled),
+.menu-editor-page .btn-primary:hover:not(:disabled) {
+  border-color: var(--brand-dark);
+  background: var(--brand-dark);
+  color: var(--dark);
 }
