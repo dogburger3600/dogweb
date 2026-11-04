@@ -24,6 +24,8 @@ const SNACK_STOCK_UI_STATE = {
   movements: [],
   filter: 'todos',
   restockProductId: null,
+  deleteProductId: null,
+  deletingProductId: null,
   feedback: null,
   savingMinimums: new Set(),
 };
@@ -640,7 +642,7 @@ function printKitchenTicket(id) {
 
 /* ── ESTOQUE DE LANCHES PRONTOS (FRONTEND) ── */
 function snackStockProducts() {
-  return products.filter(product => product.category === 'lanches');
+  return products.filter(product => product.category === 'lanches' && product.active !== false);
 }
 
 function normalizedStockNumber(value, fallback = 0) {
@@ -693,6 +695,7 @@ function renderSnackStock() {
     ${filtered.length ? `<div class="snack-stock-grid">${filtered.map(renderSnackStockCard).join('')}</div>` : `<div class="snack-stock-empty"><span aria-hidden="true">${managerIcon('inbox')}</span><strong>Nenhum lanche neste estado</strong><p>Escolha outro filtro para continuar.</p></div>`}
     ${renderSnackStockHistory()}
     ${renderSnackRestockModal()}
+    ${renderSnackProductDeleteModal()}
   </section>`;
 }
 
@@ -700,8 +703,9 @@ function renderSnackStockCard(product) {
   const quantity = normalizedStockNumber(product.stock);
   const minimum = normalizedStockNumber(product.minStock);
   const status = snackStockStatus(product);
+  const deleting = SNACK_STOCK_UI_STATE.deletingProductId !== null;
   return `<article class="snack-stock-card is-${status.key}">
-    <div class="snack-stock-card-head"><div class="snack-stock-product-icon" aria-hidden="true">${managerIcon('menu')}</div><div><h3>${escapeManagerHtml(product.name)}</h3><span class="snack-stock-status">${managerIcon(status.icon)}<span>${status.label}</span></span></div></div>
+    <div class="snack-stock-card-head"><div class="snack-stock-product-icon" aria-hidden="true">${managerIcon('menu')}</div><div class="snack-stock-product-summary"><h3>${escapeManagerHtml(product.name)}</h3><span class="snack-stock-status">${managerIcon(status.icon)}<span>${status.label}</span></span></div><button class="snack-stock-delete" type="button" data-capability="manageMenu" data-delete-product-id="${escapeManagerHtml(String(product.id))}" aria-label="Excluir ${escapeManagerHtml(product.name)}" title="Excluir produto" onclick="openSnackProductDelete(${JSON.stringify(product.id)})"${deleting ? ' disabled' : ''}>${managerIcon('trash')}<span class="sr-only">Excluir produto</span></button></div>
     <div class="snack-stock-quantity"><span>Quantidade disponível</span><strong>${quantity}</strong><small>unidades prontas</small></div>
     <label class="snack-stock-minimum"><span><strong>Estoque mínimo</strong><small>Alerta a partir deste valor</small></span><input type="number" min="0" max="999" step="1" value="${minimum}" aria-label="Estoque mínimo de ${escapeManagerHtml(product.name)}" aria-busy="${SNACK_STOCK_UI_STATE.savingMinimums.has(product.id)}" onchange="updateSnackStockMinimum(${JSON.stringify(product.id)}, this.value)" ${SNACK_STOCK_UI_STATE.savingMinimums.has(product.id) ? 'disabled' : ''} /></label>
     <button class="btn-primary snack-stock-restock" type="button" data-capability="manageStock" data-capability-mode="disable" onclick="openSnackRestock(${JSON.stringify(product.id)})">${managerIcon('plus')}<span>Reposição manual</span></button>
@@ -759,6 +763,91 @@ function openSnackRestock(productId) {
 function closeSnackRestock() {
   SNACK_STOCK_UI_STATE.restockProductId = null;
   document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
+function canDeleteSnackProducts() {
+  return window.UICapabilities?.can(currentManagerRole, 'manageMenu') === true;
+}
+
+function renderSnackProductDeleteModal() {
+  if (SNACK_STOCK_UI_STATE.deleteProductId === null) return '';
+  const product = snackStockProducts().find(item => item.id === SNACK_STOCK_UI_STATE.deleteProductId);
+  if (!product) return '';
+  const deleting = SNACK_STOCK_UI_STATE.deletingProductId === product.id;
+  return `<div class="modal-overlay snack-product-delete-overlay" onclick="closeSnackProductDelete()"></div>
+    <section class="modal snack-product-delete-modal" role="dialog" aria-modal="true" aria-labelledby="snack-product-delete-title" aria-describedby="snack-product-delete-description" aria-busy="${deleting}">
+      <span class="snack-product-delete-icon" aria-hidden="true">${managerIcon('trash')}</span>
+      <h2 class="modal-title" id="snack-product-delete-title">Excluir produto?</h2>
+      <p class="modal-sub" id="snack-product-delete-description">Tem certeza de que deseja excluir o produto <strong>${escapeManagerHtml(product.name)}</strong>? Esta ação poderá ser irreversível.</p>
+      <p class="snack-product-delete-note">O produto será desativado e deixará de aparecer no estoque operacional e no cardápio público. Pedidos e movimentações históricas serão preservados.</p>
+      <p class="form-error" id="snack-product-delete-error" role="alert"></p>
+      <form onsubmit="submitSnackProductDelete(event)">
+        <div class="modal-actions"><button class="btn-secondary" id="snack-product-delete-cancel" type="button" onclick="closeSnackProductDelete()"${deleting ? ' disabled' : ''}>Cancelar</button><button class="snack-product-delete-confirm${deleting ? ' is-loading' : ''}" type="submit" data-capability="manageMenu" data-capability-mode="disable"${deleting ? ' disabled' : ''}>${managerIcon(deleting ? 'activity' : 'trash')}<span>${deleting ? 'Excluindo…' : 'Excluir produto'}</span></button></div>
+      </form>
+    </section>`;
+}
+
+function openSnackProductDelete(productId) {
+  if (!canDeleteSnackProducts()) {
+    SNACK_STOCK_UI_STATE.feedback = { type:'error', message:'Seu perfil não tem permissão para excluir produtos do cardápio.' };
+    document.getElementById('m-content').innerHTML = renderSnackStock();
+    return;
+  }
+  const product = snackStockProducts().find(item => item.id === productId);
+  if (!product) return;
+  SNACK_STOCK_UI_STATE.deleteProductId = productId;
+  SNACK_STOCK_UI_STATE.feedback = null;
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+  setTimeout(() => document.getElementById('snack-product-delete-cancel')?.focus(), 0);
+}
+
+function closeSnackProductDelete() {
+  if (SNACK_STOCK_UI_STATE.deletingProductId !== null) return;
+  const productId = SNACK_STOCK_UI_STATE.deleteProductId;
+  SNACK_STOCK_UI_STATE.deleteProductId = null;
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+  setTimeout(() => document.querySelector(`[data-delete-product-id="${CSS.escape(String(productId))}"]`)?.focus(), 0);
+}
+
+async function submitSnackProductDelete(event) {
+  event.preventDefault();
+  if (SNACK_STOCK_UI_STATE.deletingProductId !== null) return;
+  const productId = SNACK_STOCK_UI_STATE.deleteProductId;
+  const product = snackStockProducts().find(item => item.id === productId);
+  const errorElement = document.getElementById('snack-product-delete-error');
+  if (!canDeleteSnackProducts()) {
+    errorElement.textContent = 'Seu perfil não tem permissão para excluir produtos do cardápio.';
+    return;
+  }
+  if (!product) {
+    errorElement.textContent = 'O produto não está mais disponível. Atualize a listagem e tente novamente.';
+    return;
+  }
+
+  SNACK_STOCK_UI_STATE.deletingProductId = productId;
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+  try {
+    await Store.setProductActive(productId, false);
+    const localProduct = products.find(item => item.id === productId);
+    if (localProduct) localProduct.active = false;
+    const [productsResult, movementsResult] = await Promise.allSettled([loadProductsForCurrentRole(), Store.getStockMovements()]);
+    if (productsResult.status === 'fulfilled') products = productsResult.value;
+    if (movementsResult.status === 'fulfilled') SNACK_STOCK_UI_STATE.movements = movementsResult.value;
+    const refreshIncomplete = productsResult.status === 'rejected' || movementsResult.status === 'rejected';
+    SNACK_STOCK_UI_STATE.deleteProductId = null;
+    SNACK_STOCK_UI_STATE.feedback = { type:'success', message:refreshIncomplete
+      ? `${product.name} foi excluído e o servidor confirmou a alteração. Recarregue a página para reconciliar todos os dados.`
+      : `${product.name} foi excluído do estoque e do cardápio público. O histórico foi preservado.` };
+  } catch (error) {
+    SNACK_STOCK_UI_STATE.feedback = null;
+    setTimeout(() => {
+      const currentError = document.getElementById('snack-product-delete-error');
+      if (currentError) currentError.textContent = `Não foi possível excluir o produto. ${error.message}`;
+    }, 0);
+  } finally {
+    SNACK_STOCK_UI_STATE.deletingProductId = null;
+    document.getElementById('m-content').innerHTML = renderSnackStock();
+  }
 }
 
 async function submitSnackRestock(event) {

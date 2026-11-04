@@ -20,8 +20,10 @@ const Store = {
     if (error) throw error;
   },
   async setProductActive(id, active) {
-    const { error } = await DB.from('products').update({ active }).eq('id', id);
+    const { data, error } = await DB.from('products').update({ active }).eq('id', id).select('id, active').single();
     if (error) throw error;
+    if (!data || data.active !== active) throw new Error('O servidor não confirmou a alteração do produto.');
+    return data;
   },
   async uploadProductImage(file) {
     const extension = file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
