@@ -5198,3 +5198,66 @@ body.app-pattern-background .m-content {
   color: inherit;
   stroke: currentColor;
 }
+
+@media (max-width: 640px) {
+  .dashboard-shell .orders-filter-tabs .filter-tab,
+  .dashboard-shell .snack-stock-filters .filter-tab {
+    border-color: var(--visual-accent-border);
+    background: var(--visual-accent-bg);
+    color: var(--visual-accent-fg);
+  }
+
+  .dashboard-shell .orders-filter-tabs .filter-tab:hover,
+  .dashboard-shell .snack-stock-filters .filter-tab:hover {
+    border-color: var(--brand-dark);
+    background: var(--brand-dark);
+    color: var(--visual-accent-fg);
+  }
+
+  .dashboard-shell .orders-filter-tabs .filter-tab.active,
+  .dashboard-shell .snack-stock-filters .filter-tab.active {
+    border-color: var(--brand-dark);
+    background: var(--brand-dark);
+    color: var(--visual-accent-fg);
+  }
+
+  .dashboard-shell .orders-filter-tabs .filter-tab strong,
+  .dashboard-shell .orders-filter-tabs .filter-tab.active strong,
+  .dashboard-shell .snack-stock-filters .filter-tab > strong,
+  .dashboard-shell .snack-stock-filters .filter-tab.active > strong {
+    min-width: 0;
+    padding: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .dashboard-shell .m-sidebar,
+  .menu-editor-shell .m-sidebar {
+    height: calc(142px + env(safe-area-inset-bottom));
+  }
+
+  .dashboard-shell .m-main,
+  .menu-editor-shell .m-main {
+    padding-bottom: calc(142px + env(safe-area-inset-bottom));
+  }
+
+  .dashboard-shell .m-nav,
+  .menu-editor-shell .m-nav {
+    height: calc(142px + env(safe-area-inset-bottom));
+    padding-bottom: calc(7px + env(safe-area-inset-bottom));
+  }
+
+  .dashboard-shell .m-nav-label,
+  .menu-editor-shell .m-nav-label {
+    min-height: 2.3em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    font-size: 0.68rem;
+    line-height: 1.15;
+    white-space: normal;
+    -webkit-line-clamp: unset;
+  }
+}
