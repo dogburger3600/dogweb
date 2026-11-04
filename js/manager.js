@@ -685,7 +685,7 @@ function renderSnackStock() {
     </div>
     ${SNACK_STOCK_UI_STATE.feedback ? `<div class="snack-stock-feedback is-${SNACK_STOCK_UI_STATE.feedback.type}" role="status"><span aria-hidden="true">${managerIcon(SNACK_STOCK_UI_STATE.feedback.type === 'success' ? 'check' : 'alert')}</span><strong>${escapeManagerHtml(SNACK_STOCK_UI_STATE.feedback.message)}</strong></div>` : ''}
     <div class="snack-stock-kpis">
-      ${kpiCard('Lanches cadastrados', String(snacks.length), managerIcon('menu'), '#EA580C', 'somente categoria lanches')}
+      ${kpiCard('Lanches cadastrados', String(snacks.length), managerIcon('menu'), '#EA580C', 'somente categoria lanches', 'is-brand')}
       ${kpiCard('Estoque normal', String(counts.normal), managerIcon('check'), '#15803D', 'acima do mínimo')}
       ${kpiCard('Estoque baixo', String(counts.baixo), managerIcon('alert'), '#B45309', 'no mínimo ou abaixo')}
       ${kpiCard('Esgotados', String(counts.zero), managerIcon('close'), '#B91C1C', 'quantidade real igual a zero')}
@@ -1055,8 +1055,9 @@ function renderReportsState(state, detail = '') {
 }
 
 function reportMetricCard(label, value, icon, detail, tone = 'neutral', featured = false) {
+  const iconClass = ['currency', 'outgoing'].includes(icon) ? ' is-brand' : '';
   return `<article class="report-metric-card is-${tone}${featured ? ' is-featured' : ''}">
-    <div class="report-metric-head"><span>${label}</span><span aria-hidden="true">${managerIcon(icon)}</span></div>
+    <div class="report-metric-head"><span>${label}</span><span class="${iconClass.trim()}" aria-hidden="true">${managerIcon(icon)}</span></div>
     <strong>${value}</strong><p>${detail}</p>
   </article>`;
 }
@@ -1281,11 +1282,11 @@ function renderFinanceiro() {
     </div>`;
 }
 
-function kpiCard(label, value, icon, color, sub) {
+function kpiCard(label, value, icon, color, sub, iconClass = '') {
   return `<div class="kpi-card">
     <div class="kpi-top">
       <span class="kpi-label">${label}</span>
-      <span class="kpi-icon">${icon}</span>
+      <span class="kpi-icon${iconClass ? ` ${iconClass}` : ''}">${icon}</span>
     </div>
     <p class="kpi-value" style="color:${color}">${value}</p>
     <p class="kpi-sub">${sub}</p>

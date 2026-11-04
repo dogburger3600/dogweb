@@ -44,6 +44,9 @@ body { min-height: 100vh; }
   --button-primary-fg: #FFFFFF;
   --button-primary-disabled-bg: #D6D3D1;
   --button-primary-disabled-fg: #78716C;
+  --visual-accent-bg: #F97316;
+  --visual-accent-fg: #FFFFFF;
+  --visual-accent-border: #F97316;
   --radius: 12px;
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Nunito', sans-serif;
@@ -5125,4 +5128,53 @@ body.app-pattern-background .m-content {
 
 @media print {
   body.app-pattern-background { background-image: none !important; }
+}
+
+/* ── BRAND ICON TILES · REFERENCED ADMINISTRATIVE SURFACES ── */
+.dashboard-shell .realtime-connection-dot,
+.dashboard-shell .realtime-readiness.is-connected .realtime-connection-dot,
+.dashboard-shell .realtime-readiness.is-reconnecting .realtime-connection-dot,
+.dashboard-shell .realtime-readiness.is-error .realtime-connection-dot,
+.dashboard-shell .kpi-icon.is-brand,
+.dashboard-shell .snack-stock-intro > div > span,
+.dashboard-shell .snack-stock-product-icon,
+.dashboard-shell .report-metric-head > span.is-brand,
+.dashboard-shell .popup-editor-context > div > span,
+.dashboard-shell .popup-active-note > span,
+.dashboard-shell .popup-active-note.is-active > span,
+.dashboard-shell .popup-form-section-head > span,
+.dashboard-shell .popup-help-heading > span,
+.dashboard-shell .store-settings-readiness > div > span,
+.dashboard-shell .store-settings-section-head > div > span,
+.dashboard-shell .store-settings-section.is-sensitive .store-settings-section-head > div > span {
+  border-color: var(--visual-accent-border);
+  background: var(--visual-accent-bg);
+  color: var(--visual-accent-fg);
+}
+
+.dashboard-shell .realtime-connection-dot .manager-icon,
+.dashboard-shell .kpi-icon.is-brand .manager-icon,
+.dashboard-shell .snack-stock-intro > div > span .manager-icon,
+.dashboard-shell .snack-stock-product-icon .manager-icon,
+.dashboard-shell .report-metric-head > span.is-brand .manager-icon,
+.dashboard-shell .popup-editor-context > div > span .manager-icon,
+.dashboard-shell .popup-active-note > span .manager-icon,
+.dashboard-shell .popup-form-section-head > span .manager-icon,
+.dashboard-shell .popup-help-heading > span .manager-icon,
+.dashboard-shell .store-settings-readiness > div > span .manager-icon,
+.dashboard-shell .store-settings-section-head > div > span .manager-icon {
+  color: inherit;
+  stroke: currentColor;
+}
+
+/* Commercial values remain dynamic; only the approved presentation changes. */
+.dashboard-shell .store-settings-rule-summary {
+  border-color: var(--visual-accent-border);
+  background: var(--visual-accent-bg);
+  color: var(--visual-accent-fg);
+}
+
+.dashboard-shell .store-settings-rule-summary .manager-icon {
+  color: inherit;
+  stroke: currentColor;
 }
