@@ -5136,8 +5136,10 @@ body.app-pattern-background .m-content {
 .dashboard-shell .realtime-readiness.is-reconnecting .realtime-connection-dot,
 .dashboard-shell .realtime-readiness.is-error .realtime-connection-dot,
 .dashboard-shell .kpi-icon.is-brand,
+.menu-editor-shell .menu-editor-intro > div:first-child > span,
 .dashboard-shell .snack-stock-intro > div > span,
 .dashboard-shell .snack-stock-product-icon,
+.dashboard-shell .report-readiness > div > span,
 .dashboard-shell .report-metric-head > span.is-brand,
 .dashboard-shell .popup-editor-context > div > span,
 .dashboard-shell .popup-active-note > span,
@@ -5154,8 +5156,10 @@ body.app-pattern-background .m-content {
 
 .dashboard-shell .realtime-connection-dot .manager-icon,
 .dashboard-shell .kpi-icon.is-brand .manager-icon,
+.menu-editor-shell .menu-editor-intro > div:first-child > span .manager-icon,
 .dashboard-shell .snack-stock-intro > div > span .manager-icon,
 .dashboard-shell .snack-stock-product-icon .manager-icon,
+.dashboard-shell .report-readiness > div > span .manager-icon,
 .dashboard-shell .report-metric-head > span.is-brand .manager-icon,
 .dashboard-shell .popup-editor-context > div > span .manager-icon,
 .dashboard-shell .popup-active-note > span .manager-icon,
@@ -5165,6 +5169,20 @@ body.app-pattern-background .m-content {
 .dashboard-shell .store-settings-section-head > div > span .manager-icon {
   color: inherit;
   stroke: currentColor;
+}
+
+.menu-editor-shell .menu-editor-summary span {
+  border-color: var(--visual-accent-border);
+  background: var(--visual-accent-bg);
+  color: var(--visual-accent-fg);
+}
+
+.menu-editor-shell .menu-editor-summary strong {
+  color: inherit;
+}
+
+.dashboard-shell .snack-stock-kpis .kpi-icon {
+  flex: 0 0 36px;
 }
 
 /* Commercial values remain dynamic; only the approved presentation changes. */
