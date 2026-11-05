@@ -4,6 +4,7 @@ const form = document.getElementById('signup-form');
 const phoneInput = document.getElementById('signup-phone');
 let signupCaptchaToken = '';
 let signupCaptchaWidgetId = null;
+let signupSubmitting = false;
 
 window.onSignupTurnstileLoad = () => {
   if (TURNSTILE_SITE_KEY.startsWith('COLE_AQUI')) {
@@ -18,16 +19,8 @@ window.onSignupTurnstileLoad = () => {
   });
 };
 
-function onlyDigits(value) {
-  return value.replace(/\D/g, '');
-}
-
 function isValidEmail(email) {
   return email.length <= 254 && !email.includes('..') && /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(email);
-}
-
-function isValidBrazilianMobile(phone) {
-  return /^[1-9]{2}9\d{8}$/.test(phone) && !/^(\d)\1+$/.test(phone);
 }
 
 document.querySelectorAll('.password-toggle').forEach(button => {
@@ -41,37 +34,38 @@ document.querySelectorAll('.password-toggle').forEach(button => {
   });
 });
 
-function formatPhone(value) {
-  const digits = onlyDigits(value).slice(0, 11);
-  if (digits.length <= 2) return digits.replace(/^(\d{0,2})/, '($1');
-  if (digits.length <= 6) return digits.replace(/^(\d{2})(\d+)/, '($1) $2');
-  if (digits.length <= 10) return digits.replace(/^(\d{2})(\d{4})(\d+)/, '($1) $2-$3');
-  return digits.replace(/^(\d{2})(\d{5})(\d+)/, '($1) $2-$3');
-}
-
 function setError(field, message) {
+  if (field === 'form') {
+    document.getElementById('signup-error').textContent = message;
+    return;
+  }
   const input = document.getElementById(`signup-${field}`);
   const error = document.getElementById(`${field}-error`);
-  if (input) input.classList.toggle('input-error', Boolean(message));
+  if (input) {
+    input.classList.toggle('input-error', Boolean(message));
+    input.setAttribute('aria-invalid', String(Boolean(message)));
+  }
   if (error) error.textContent = message;
 }
 
 function clearErrors() {
   ['name', 'phone', 'email', 'password', 'confirm', 'consent'].forEach(field => setError(field, ''));
+  setError('form', '');
   document.getElementById('address-error').textContent = '';
   document.getElementById('captcha-error').textContent = '';
 }
 
 phoneInput.addEventListener('input', () => {
-  phoneInput.value = formatPhone(phoneInput.value);
+  phoneInput.value = window.PhoneBR.formatMobileInput(phoneInput.value);
 });
 
 form.addEventListener('submit', async event => {
   event.preventDefault();
+  if (signupSubmitting) return;
   clearErrors();
 
   const name = document.getElementById('signup-name').value.trim().replace(/\s+/g, ' ');
-  const phone = onlyDigits(phoneInput.value);
+  const phone = window.PhoneBR.normalizeMobile(phoneInput.value);
   const email = document.getElementById('signup-email').value.trim().toLowerCase();
   const password = document.getElementById('signup-password').value;
   const confirmation = document.getElementById('signup-confirm').value;
@@ -88,8 +82,8 @@ form.addEventListener('submit', async event => {
     setError('name', 'Informe seu nome e sobrenome.');
     valid = false;
   }
-  if (!isValidBrazilianMobile(phone)) {
-    setError('phone', 'Informe um celular válido com DDD, incluindo o dígito 9.');
+  if (!phone) {
+    setError('phone', 'Informe um número de telefone válido com DDD.');
     valid = false;
   }
   if (!isValidEmail(email)) {
@@ -123,6 +117,7 @@ form.addEventListener('submit', async event => {
   }
 
   const submitButton = document.getElementById('signup-submit');
+  signupSubmitting = true;
   submitButton.disabled = true;
   submitButton.textContent = 'Criando conta...';
 
@@ -141,7 +136,9 @@ form.addEventListener('submit', async event => {
       successLink.textContent = 'Ver cardápio';
     }
   } catch (error) {
-    setError('email', window.AuthFeedback.signupMessage(error));
+    const errorField = window.AuthFeedback.signupField(error);
+    setError(errorField, window.AuthFeedback.signupMessage(error));
+    signupSubmitting = false;
     submitButton.disabled = false;
     submitButton.textContent = 'Criar minha conta';
     signupCaptchaToken = '';

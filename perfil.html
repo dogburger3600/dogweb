@@ -91,7 +91,7 @@
             </div>
             <div class="form-group">
               <label class="form-label" for="profile-edit-phone">Celular *</label>
-              <input class="form-input" id="profile-edit-phone" type="tel" autocomplete="tel" inputmode="numeric" maxlength="15" required />
+              <input class="form-input" id="profile-edit-phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="19" aria-describedby="profile-edit-error" required />
             </div>
             <div class="signup-section-title"><span><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><div><strong>Endereço de entrega</strong><small>Será usado nos próximos pedidos</small></div></div>
             <div class="signup-address-grid">
@@ -135,6 +135,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
+  <script src="js/phone.js"></script>
   <script src="js/perfil.js"></script>
 </body>
 </html>

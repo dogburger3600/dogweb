@@ -14,10 +14,7 @@ function profileIcon(name) {
 }
 
 function formatPhone(phone) {
-  const digits = String(phone || '').replace(/\D/g, '');
-  if (digits.length === 11) return digits.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
-  if (digits.length === 10) return digits.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
-  return phone || 'Não informado';
+  return window.PhoneBR.formatMobileDisplay(phone);
 }
 
 function formatAddress(profile) {
@@ -193,8 +190,7 @@ function closeProfileEdit() {
 }
 
 document.getElementById('profile-edit-phone').addEventListener('input', event => {
-  const digits = event.target.value.replace(/\D/g, '').slice(0, 11);
-  event.target.value = formatPhone(digits);
+  event.target.value = window.PhoneBR.formatMobileInput(event.target.value);
 });
 
 document.getElementById('profile-edit-button').addEventListener('click', openProfileEdit);
@@ -202,7 +198,7 @@ document.getElementById('profile-edit-cancel').addEventListener('click', closePr
 document.getElementById('profile-edit-form').addEventListener('submit', async event => {
   event.preventDefault();
   const name = document.getElementById('profile-edit-name').value.trim().replace(/\s+/g, ' ');
-  const phone = document.getElementById('profile-edit-phone').value.replace(/\D/g, '');
+  const phone = window.PhoneBR.normalizeMobile(document.getElementById('profile-edit-phone').value);
   const password = document.getElementById('profile-edit-password').value;
   const confirmation = document.getElementById('profile-edit-confirm').value;
   const address = {
@@ -212,15 +208,18 @@ document.getElementById('profile-edit-form').addEventListener('submit', async ev
     neighborhood:document.getElementById('profile-edit-neighborhood').value.trim(),
   };
   const errorElement = document.getElementById('profile-edit-error');
+  const phoneField = document.getElementById('profile-edit-phone');
   const button = document.getElementById('profile-edit-save');
   errorElement.textContent = '';
+  phoneField.setAttribute('aria-invalid', 'false');
 
   if (name.length < 3 || !name.includes(' ')) {
     errorElement.textContent = 'Informe seu nome e sobrenome.';
     return;
   }
-  if (phone.length < 10 || phone.length > 11) {
-    errorElement.textContent = 'Informe um celular válido com DDD.';
+  if (!phone) {
+    errorElement.textContent = 'Informe um número de telefone válido com DDD.';
+    phoneField.setAttribute('aria-invalid', 'true');
     return;
   }
   if (password && password.length < 6) {
@@ -257,7 +256,10 @@ document.getElementById('profile-edit-form').addEventListener('submit', async ev
     closeProfileEdit();
     showProfileToast('Perfil atualizado com sucesso.');
   } catch (error) {
-    errorElement.textContent = error.code === '23505' ? 'Este celular já está sendo usado por outra conta.' : `Não foi possível salvar. ${error.message}`;
+    if (error.code === '23505') phoneField.setAttribute('aria-invalid', 'true');
+    errorElement.textContent = error.code === '23505'
+      ? 'Não foi possível utilizar este telefone. Confira os dados ou procure o atendimento.'
+      : 'Não foi possível salvar as alterações. Tente novamente em alguns instantes.';
   } finally {
     button.disabled = false;
     button.textContent = 'Salvar alterações';

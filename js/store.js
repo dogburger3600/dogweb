@@ -144,7 +144,13 @@ const Store = {
     if (error) throw error;
   },
   async signUp({ name, phone, email, password, address, captchaToken }) {
-    const { data, error } = await DB.auth.signUp({ email, password, options:{ captchaToken, data:{ name, phone, consent:true, street:address.street, address_number:address.number, address_complement:address.complement, neighborhood:address.neighborhood } } });
+    const canonicalPhone = window.PhoneBR.normalizeMobile(phone);
+    if (!canonicalPhone) {
+      const phoneError = new Error('Telefone inválido.');
+      phoneError.code = 'invalid_phone';
+      throw phoneError;
+    }
+    const { data, error } = await DB.auth.signUp({ email, password, options:{ captchaToken, data:{ name, phone:canonicalPhone, consent:true, street:address.street, address_number:address.number, address_complement:address.complement, neighborhood:address.neighborhood } } });
     if (error) throw error;
     if (!data?.user) {
       const signupError = new Error('O servidor não confirmou a criação da conta.');

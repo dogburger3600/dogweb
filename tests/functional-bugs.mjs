@@ -16,6 +16,7 @@ function createStoreHarness() {
   let popupPayload;
   let popupOptions;
   let signupResponse = { data:{ user:{ identities:[{ id:'identity-1' }] }, session:null }, error:null };
+  let signupRequest;
   const popupBuilder = {
     upsert(payload, options) { popupPayload = payload; popupOptions = options; return this; },
     select() { return this; },
@@ -26,16 +27,17 @@ function createStoreHarness() {
       assert.equal(table, 'site_popup');
       return popupBuilder;
     },
-    auth: { async signUp() { return signupResponse; } },
+    auth: { async signUp(request) { signupRequest = request; return signupResponse; } },
   };
   const context = vm.createContext({ window:{}, DB, crypto:{ randomUUID:() => 'test-id' } });
-  vm.runInContext(`${read('js/store.js')}\nwindow.__Store = Store;`, context);
+  vm.runInContext(`${read('js/phone.js')}\n${read('js/store.js')}\nwindow.__Store = Store;`, context);
   return {
     Store:context.window.__Store,
     getPopupPayload:() => popupPayload,
     getPopupOptions:() => popupOptions,
     setPopupResponse:value => { popupResponse = value; },
     setSignupResponse:value => { signupResponse = value; },
+    getSignupRequest:() => signupRequest,
   };
 }
 
@@ -109,6 +111,10 @@ storeHarness.setSignupResponse({ data:{ user:{ identities:[] }, session:null }, 
 await assert.rejects(() => storeHarness.Store.signUp(signupInput), error => error.code === 'signup_unavailable');
 storeHarness.setSignupResponse({ data:{ user:{ identities:[{ id:'identity-1' }] }, session:null }, error:null });
 assert.ok((await storeHarness.Store.signUp(signupInput)).user);
+assert.equal(storeHarness.getSignupRequest().options.data.phone, '88999999999');
+assert.ok((await storeHarness.Store.signUp({ ...signupInput, phone:'+55 (88) 99999-9999' })).user);
+assert.equal(storeHarness.getSignupRequest().options.data.phone, '88999999999');
+await assert.rejects(() => storeHarness.Store.signUp({ ...signupInput, phone:'+54 11 99999-9999' }), error => error.code === 'invalid_phone');
 
 const realtime = createRealtimeHarness('true');
 realtime.start();

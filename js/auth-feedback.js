@@ -51,6 +51,12 @@
   }
 
   function signupMessage(error) {
+    if (matches(error, 'invalid_phone')) {
+      return 'Informe um número de telefone válido com DDD.';
+    }
+    if (matches(error, 'unexpected_failure') && /database error saving new user/.test(errorMessage(error))) {
+      return 'Não foi possível concluir o cadastro. Confira os dados ou procure o atendimento.';
+    }
     if (matches(error, 'signup_unavailable', 'user_already_exists')) {
       return 'Não foi possível concluir o cadastro. Se você já possui uma conta, tente entrar com seu e-mail.';
     }
@@ -72,5 +78,11 @@
     return 'Não foi possível concluir o cadastro agora. Tente novamente em alguns instantes.';
   }
 
-  global.AuthFeedback = Object.freeze({ loginMessage, signupMessage });
+  function signupField(error) {
+    if (matches(error, 'invalid_phone')) return 'phone';
+    if (matches(error, 'unexpected_failure') && /database error saving new user/.test(errorMessage(error))) return 'form';
+    return 'email';
+  }
+
+  global.AuthFeedback = Object.freeze({ loginMessage, signupMessage, signupField });
 })(window);

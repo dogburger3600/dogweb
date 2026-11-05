@@ -12,6 +12,7 @@ const signup = read('js/cadastro.js');
 const authFeedback = read('js/auth-feedback.js');
 const realtime = read('js/manager-realtime.js');
 const signupHtml = read('cadastro.html');
+const profileHtml = read('perfil.html');
 const loginHtml = read('entrar.html');
 const supabaseConfig = read('js/supabase-config.js');
 const cleanupProposal = read('supabase/audits/test-data-cleanup-proposal.sql');
@@ -68,6 +69,10 @@ assert.match(read('js/ui-capabilities.js'), /currentRole = ROLE_LABELS\[role\] \
 assert.match(login, /captchaToken:loginCaptchaToken/);
 assert.match(signup, /captchaToken:signupCaptchaToken/);
 assert.match(signupHtml, /js\/auth-feedback\.js/);
+assert.match(signupHtml, /js\/phone\.js/);
+assert.match(profileHtml, /js\/phone\.js/);
+assert.ok(signupHtml.indexOf('js/phone.js') < signupHtml.indexOf('js/store.js'));
+assert.ok(profileHtml.indexOf('js/phone.js') < profileHtml.indexOf('js/perfil.js'));
 assert.match(loginHtml, /js\/auth-feedback\.js/);
 assert.match(signupHtml, /js\/supabase-config\.js/);
 assert.match(loginHtml, /js\/supabase-config\.js/);
@@ -84,7 +89,7 @@ assert.match(realtime, /localStorage\?\.setItem/);
 assert.match(consumer, /let homePopupDismissed = false/);
 assert.doesNotMatch(consumer, /dogburger_popup_seen/);
 
-for (const source of [store, consumer, manager, login, signup, authFeedback, realtime]) {
+for (const source of [store, consumer, manager, login, signup, authFeedback, realtime, read('js/phone.js')]) {
   assert.doesNotMatch(source, /service_role|SUPABASE_SERVICE_ROLE/i);
 }
 

@@ -51,7 +51,7 @@
           <div class="signup-grid">
             <div class="form-group">
               <label class="form-label" for="signup-phone">Celular *</label>
-              <input class="form-input" id="signup-phone" name="phone" type="tel" autocomplete="tel" inputmode="numeric" maxlength="15" placeholder="(00) 00000-0000" required />
+              <input class="form-input" id="signup-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="19" placeholder="(00) 00000-0000" aria-describedby="phone-error" required />
               <small class="form-error" id="phone-error"></small>
             </div>
             <div class="form-group">
@@ -94,6 +94,7 @@
             <small class="form-error" id="captcha-error"></small>
           </div>
 
+          <p class="form-error" id="signup-error" role="alert" aria-live="polite"></p>
           <button class="btn-primary signup-submit" id="signup-submit" type="submit">Criar minha conta</button>
           <p class="signup-security"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Seus dados ficam armazenados neste dispositivo.</span></p>
         </form>
@@ -110,6 +111,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js"></script>
+  <script src="js/phone.js"></script>
   <script src="js/auth-feedback.js"></script>
   <script src="js/store.js"></script>
   <script src="js/cadastro.js"></script>
