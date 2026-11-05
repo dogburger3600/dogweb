@@ -79,7 +79,7 @@ function managerIcon(name, className = 'manager-icon') {
   return `<svg class="${className}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
 }
 
-const REALTIME_UI_STATE = { connection:'connecting', detail:'', soundEnabled:false, lastSyncAt:null };
+const REALTIME_UI_STATE = { connection:'connecting', detail:'', soundEnabled:false, soundReady:false, soundDetail:'', lastSyncAt:null };
 
 function getProduct(pid) {
   return products.find(p => p.id === pid);
@@ -119,11 +119,16 @@ function realtimeStatusMeta() {
   }[REALTIME_UI_STATE.connection] || { label:'Conectando', detail:'Iniciando atualização automática', icon:'🟡' };
 }
 
+function realtimeSoundLabel() {
+  if (!REALTIME_UI_STATE.soundEnabled) return 'Habilitar som';
+  return REALTIME_UI_STATE.soundReady ? 'Som habilitado' : 'Som aguardando interação';
+}
+
 function renderRealtimeReadiness(context) {
   const status = realtimeStatusMeta();
   const lastSync = REALTIME_UI_STATE.lastSyncAt ? `Última sincronização ${new Date(REALTIME_UI_STATE.lastSyncAt).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit', second:'2-digit' })}` : 'Aguardando primeira sincronização';
   const wrapperClass = context === 'dashboard' ? 'dashboard-readiness' : 'orders-readiness';
-  const soundLabel = REALTIME_UI_STATE.soundEnabled ? 'Som habilitado' : (REALTIME_UI_STATE.soundDetail ? 'Áudio indisponível' : 'Habilitar som');
+  const soundLabel = realtimeSoundLabel();
   const statusVisual = managerIcon('activity', 'manager-icon realtime-status-icon');
   const soundVisual = managerIcon(REALTIME_UI_STATE.soundEnabled ? 'volume' : 'volume-off');
   return `<div class="${wrapperClass} realtime-readiness is-${REALTIME_UI_STATE.connection}" data-realtime-panel><div><span class="realtime-connection-dot" data-realtime-icon aria-hidden="true">${statusVisual}</span><div><strong data-realtime-label>${status.label}</strong><small data-realtime-detail>${escapeManagerHtml(REALTIME_UI_STATE.detail || status.detail)}</small></div></div><div class="realtime-controls"><button class="dashboard-sound-status${REALTIME_UI_STATE.soundEnabled ? ' is-enabled' : ''}" type="button" onclick="toggleRealtimeSound()" aria-pressed="${REALTIME_UI_STATE.soundEnabled}" data-realtime-sound title="${escapeManagerHtml(REALTIME_UI_STATE.soundDetail)}">${soundVisual}<span>${soundLabel}</span></button><span class="realtime-last-sync" data-realtime-sync>${lastSync}</span></div></div>`;
@@ -143,7 +148,7 @@ function updateRealtimeUi(state) {
     const button = panel.querySelector('[data-realtime-sound]');
     button.classList.toggle('is-enabled', REALTIME_UI_STATE.soundEnabled);
     button.setAttribute('aria-pressed', String(REALTIME_UI_STATE.soundEnabled));
-    const soundLabel = REALTIME_UI_STATE.soundEnabled ? 'Som habilitado' : (REALTIME_UI_STATE.soundDetail ? 'Áudio indisponível' : 'Habilitar som');
+    const soundLabel = realtimeSoundLabel();
     button.title = REALTIME_UI_STATE.soundDetail || '';
     button.innerHTML = `${managerIcon(REALTIME_UI_STATE.soundEnabled ? 'volume' : 'volume-off')}<span>${soundLabel}</span>`;
     panel.querySelector('[data-realtime-sync]').textContent = lastSync;
@@ -245,7 +250,7 @@ function renderPopupEditor() {
         <section class="popup-form-section"><div class="popup-form-section-head"><span aria-hidden="true">${managerIcon('calendar')}</span><div><strong>Período de exibição</strong><small>Datas vazias mantêm a campanha em exibição contínua</small></div></div><div class="popup-field-grid"><div class="form-group"><label class="form-label" for="popup-starts-at">Início</label><input class="form-input popup-date-input" id="popup-starts-at" type="datetime-local" /></div><div class="form-group"><label class="form-label" for="popup-ends-at">Fim</label><input class="form-input popup-date-input" id="popup-ends-at" type="datetime-local" /></div></div><div class="popup-schedule-status" id="popup-schedule-status" role="status">${managerIcon('info')}<span>Exibição contínua, sem período definido.</span></div></section>
         <div class="popup-editor-actions"><p class="form-error" id="popup-editor-error" role="alert" aria-live="polite"></p><button class="btn-primary popup-save-button" id="popup-save-button" type="submit" data-capability="managePopup" data-capability-mode="disable">${managerIcon('check')}<span>Salvar pop-up</span></button></div>
       </form>
-      <aside class="popup-editor-side"><div class="popup-preview-panel"><div class="popup-preview-toolbar"><div><span aria-hidden="true">${managerIcon('eye')}</span><span>Pré-visualização do cliente</span></div><strong id="popup-preview-state">Desativado</strong></div><div class="popup-preview-stage"><div class="popup-preview-window campaign-popup-surface"><div class="popup-preview-image-wrap campaign-popup-media hidden" id="popup-live-image-wrap"><img id="popup-live-image" alt="" /></div><div class="popup-preview-content campaign-popup-content"><span>Dog Burger</span><h2 id="popup-live-title">Título do pop-up</h2><p id="popup-live-message">Sua mensagem aparecerá aqui.</p><span class="popup-preview-button campaign-popup-action hidden" id="popup-live-button">Ver cardápio</span></div></div></div></div><div class="card popup-help-card"><div class="popup-help-heading"><span aria-hidden="true">${managerIcon('info')}</span><div><h2>Como funciona</h2><p>Regras atuais de apresentação</p></div></div><ul><li>${managerIcon('check')}<span>Aparece uma vez por sessão quando estiver ativo e dentro do período escolhido.</span></li><li>${managerIcon('check')}<span>Datas vazias mantêm a exibição contínua.</span></li><li>${managerIcon('check')}<span>Uma nova edição volta a aparecer para os visitantes.</span></li></ul></div></aside>
+      <aside class="popup-editor-side"><div class="popup-preview-panel"><div class="popup-preview-toolbar"><div><span aria-hidden="true">${managerIcon('eye')}</span><span>Pré-visualização do cliente</span></div><strong id="popup-preview-state">Desativado</strong></div><div class="popup-preview-stage"><div class="popup-preview-window campaign-popup-surface"><div class="popup-preview-image-wrap campaign-popup-media hidden" id="popup-live-image-wrap"><img id="popup-live-image" alt="" /></div><div class="popup-preview-content campaign-popup-content"><span>Dog Burger</span><h2 id="popup-live-title">Título do pop-up</h2><p id="popup-live-message">Sua mensagem aparecerá aqui.</p><span class="popup-preview-button campaign-popup-action hidden" id="popup-live-button">Ver cardápio</span></div></div></div></div><div class="card popup-help-card"><div class="popup-help-heading"><span aria-hidden="true">${managerIcon('info')}</span><div><h2>Como funciona</h2><p>Regras atuais de apresentação</p></div></div><ul><li>${managerIcon('check')}<span>Aparece a cada novo carregamento da página quando estiver ativo e dentro do período escolhido.</span></li><li>${managerIcon('check')}<span>Ao fechar, permanece oculto durante a navegação atual.</span></li><li>${managerIcon('check')}<span>Datas vazias mantêm a exibição contínua.</span></li></ul></div></aside>
     </div>
   </section>`;
 }
@@ -314,7 +319,7 @@ async function initPopupEditor() {
       document.getElementById('popup-button-url').value = popup.button_url || '';
       document.getElementById('popup-starts-at').value = popupLocalDate(popup.starts_at);
       document.getElementById('popup-ends-at').value = popupLocalDate(popup.ends_at);
-      document.getElementById('popup-active').checked = popup.active;
+      document.getElementById('popup-active').checked = popup.active === true;
       updatePopupPreview(imageUrl);
     }
     updatePopupLivePreview();
@@ -347,8 +352,10 @@ async function savePopupEditor(event) {
   try {
     let imageUrl = document.getElementById('popup-image-url').value;
     if (file) imageUrl = await Store.uploadProductImage(file);
-    await Store.savePopup({ title:document.getElementById('popup-title').value.trim(), message:document.getElementById('popup-message').value.trim(), imageUrl, buttonText, buttonUrl, active:document.getElementById('popup-active').checked, startsAt:startsValue ? new Date(startsValue).toISOString() : null, endsAt:endsValue ? new Date(endsValue).toISOString() : null });
-    document.getElementById('popup-image-url').value = imageUrl;
+    const savedPopup = await Store.savePopup({ title:document.getElementById('popup-title').value.trim(), message:document.getElementById('popup-message').value.trim(), imageUrl, buttonText, buttonUrl, active:document.getElementById('popup-active').checked, startsAt:startsValue ? new Date(startsValue).toISOString() : null, endsAt:endsValue ? new Date(endsValue).toISOString() : null });
+    document.getElementById('popup-image-url').value = savedPopup.image_url || '';
+    document.getElementById('popup-active').checked = savedPopup.active === true;
+    updatePopupPreview(savedPopup.image_url || '');
     alert('Pop-up salvo com sucesso.');
   } catch (error) { errorElement.textContent = `Não foi possível salvar. ${error.message}`; }
   finally { button.disabled = false; button.innerHTML = `${managerIcon('check')}<span>Salvar pop-up</span>`; }

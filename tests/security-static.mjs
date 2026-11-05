@@ -9,6 +9,11 @@ const consumer = read('js/consumer.js');
 const manager = read('js/manager.js');
 const login = read('js/entrar.js');
 const signup = read('js/cadastro.js');
+const authFeedback = read('js/auth-feedback.js');
+const realtime = read('js/manager-realtime.js');
+const signupHtml = read('cadastro.html');
+const loginHtml = read('entrar.html');
+const supabaseConfig = read('js/supabase-config.js');
 const cleanupProposal = read('supabase/audits/test-data-cleanup-proposal.sql');
 
 assert.match(roles, /Somente owner pode alterar perfis de acesso/);
@@ -43,6 +48,9 @@ assert.match(store, /rpc\('get_operational_cancellation_flags'\)/);
 assert.match(store, /async setProductActive\(id, active\)[\s\S]*?update\(\{ active \}\)/);
 assert.match(store, /update\(\{ active \}\)[\s\S]*?select\('id, active'\)\.single\(\)/);
 assert.doesNotMatch(store, /from\('products'\)\.delete\(/);
+assert.match(store, /upsert\(payload, \{ onConflict:'id' \}\)\.select\('\*'\)\.single\(\)/);
+assert.match(store, /data\.active !== popup\.active/);
+assert.match(store, /data\.user\.identities\.length === 0/);
 
 assert.match(consumer, /safeProductImageUrl/);
 assert.match(consumer, /escapeCartHtml\(p\.name\)/);
@@ -59,8 +67,24 @@ assert.doesNotMatch(manager, /signInWithPassword/);
 assert.match(read('js/ui-capabilities.js'), /currentRole = ROLE_LABELS\[role\] \? role : 'customer'/);
 assert.match(login, /captchaToken:loginCaptchaToken/);
 assert.match(signup, /captchaToken:signupCaptchaToken/);
+assert.match(signupHtml, /js\/auth-feedback\.js/);
+assert.match(loginHtml, /js\/auth-feedback\.js/);
+assert.match(signupHtml, /js\/supabase-config\.js/);
+assert.match(loginHtml, /js\/supabase-config\.js/);
+assert.match(supabaseConfig, /persistSession:\s*true/);
+assert.match(supabaseConfig, /autoRefreshToken:\s*true/);
+assert.match(supabaseConfig, /detectSessionInUrl:\s*true/);
+assert.match(login, /AuthFeedback\.loginMessage/);
+assert.match(signup, /AuthFeedback\.signupMessage/);
+assert.match(authFeedback, /email_not_confirmed/);
+assert.match(authFeedback, /profile_not_found/);
+assert.match(realtime, /dogburger:manager:new-order-sound-enabled/);
+assert.match(realtime, /localStorage\?\.getItem/);
+assert.match(realtime, /localStorage\?\.setItem/);
+assert.match(consumer, /let homePopupDismissed = false/);
+assert.doesNotMatch(consumer, /dogburger_popup_seen/);
 
-for (const source of [store, consumer, manager, login, signup]) {
+for (const source of [store, consumer, manager, login, signup, authFeedback, realtime]) {
   assert.doesNotMatch(source, /service_role|SUPABASE_SERVICE_ROLE/i);
 }
 

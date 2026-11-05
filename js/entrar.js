@@ -29,9 +29,22 @@ window.onLoginTurnstileLoad = () => {
 };
 
 async function redirectAuthenticatedUser() {
-  const { data: { user } } = await DB.auth.getUser();
+  const { data: { user }, error:userError } = await DB.auth.getUser();
+  if (userError) throw userError;
   if (!user) return false;
-  const { data: profile } = await DB.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  const { data:profile, error:profileError } = await DB.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  if (profileError) {
+    const loadError = new Error(profileError.message || 'Não foi possível carregar o perfil.');
+    loadError.code = 'profile_load_failed';
+    loadError.cause = profileError;
+    throw loadError;
+  }
+  if (!profile) {
+    await DB.auth.signOut();
+    const missingProfileError = new Error('Perfil não encontrado.');
+    missingProfileError.code = 'profile_not_found';
+    throw missingProfileError;
+  }
   const params = new URLSearchParams(window.location.search);
   const customerDestination = params.get('returnTo') === 'index.html'
     ? `index.html${params.get('checkout') === '1' ? '?checkout=1' : ''}`
@@ -63,22 +76,34 @@ loginForm.addEventListener('submit', async event => {
     return;
   }
 
-  const { error } = await DB.auth.signInWithPassword({
-    email,
-    password: document.getElementById('login-password').value,
-    options: { captchaToken:loginCaptchaToken },
-  });
-
-  if (error) {
-    errorElement.textContent = 'E-mail ou senha inválidos.';
+  try {
+    const { error } = await DB.auth.signInWithPassword({
+      email,
+      password: document.getElementById('login-password').value,
+      options: { captchaToken:loginCaptchaToken },
+    });
+    if (error) throw error;
+    const redirected = await redirectAuthenticatedUser();
+    if (!redirected) {
+      const sessionError = new Error('A sessão não foi disponibilizada após o login.');
+      sessionError.code = 'session_missing';
+      throw sessionError;
+    }
+  } catch (error) {
+    errorElement.textContent = window.AuthFeedback.loginMessage(error);
     button.disabled = false;
     button.textContent = 'Entrar';
     loginCaptchaToken = '';
     if (loginCaptchaWidgetId !== null) turnstile.reset(loginCaptchaWidgetId);
-    return;
   }
-
-  await redirectAuthenticatedUser();
 });
 
-redirectAuthenticatedUser();
+async function initializeLogin() {
+  try {
+    await redirectAuthenticatedUser();
+  } catch (error) {
+    document.getElementById('login-error').textContent = window.AuthFeedback.loginMessage(error);
+  }
+}
+
+initializeLogin();

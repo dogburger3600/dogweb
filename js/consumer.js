@@ -386,15 +386,15 @@ function showToast(msg) {
   setTimeout(() => el.classList.add('hidden'), 4000);
 }
 
-let currentPopupVersion = '';
 let homePopupPreviousFocus = null;
+let homePopupDismissed = false;
 
 function closeHomePopup() {
   const popup = document.getElementById('home-popup');
   if (popup.classList.contains('hidden')) return;
   document.getElementById('home-popup-overlay').classList.add('hidden');
   popup.classList.add('hidden');
-  if (currentPopupVersion) sessionStorage.setItem('dogburger_popup_seen', currentPopupVersion);
+  homePopupDismissed = true;
   if (homePopupPreviousFocus?.isConnected) homePopupPreviousFocus.focus();
   homePopupPreviousFocus = null;
 }
@@ -420,6 +420,7 @@ function safePopupUrl(value) {
 }
 
 async function loadHomePopup() {
+  if (homePopupDismissed) return;
   try {
     const isTuesdayPromoTest = new URLSearchParams(window.location.search).get('popup-test') === 'terca';
     const popup = isTuesdayPromoTest
@@ -435,8 +436,6 @@ async function loadHomePopup() {
         }
       : await Store.getActivePopup();
     if (!popup || !popup.active || !popup.title || !popup.message) return;
-    currentPopupVersion = popup.updated_at || String(popup.id);
-    if (!isTuesdayPromoTest && sessionStorage.getItem('dogburger_popup_seen') === currentPopupVersion) return;
     document.getElementById('home-popup-title').textContent = popup.title;
     document.getElementById('home-popup-message').textContent = popup.message;
 

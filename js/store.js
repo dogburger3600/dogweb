@@ -44,8 +44,11 @@ const Store = {
     return data;
   },
   async savePopup(popup) {
-    const { error } = await DB.from('site_popup').upsert({ id:1, title:popup.title, message:popup.message, image_url:popup.imageUrl, button_text:popup.buttonText, button_url:popup.buttonUrl, active:popup.active, starts_at:popup.startsAt, ends_at:popup.endsAt, updated_at:new Date().toISOString() });
+    const payload = { id:1, title:popup.title, message:popup.message, image_url:popup.imageUrl, button_text:popup.buttonText, button_url:popup.buttonUrl, active:popup.active, starts_at:popup.startsAt, ends_at:popup.endsAt, updated_at:new Date().toISOString() };
+    const { data, error } = await DB.from('site_popup').upsert(payload, { onConflict:'id' }).select('*').single();
     if (error) throw error;
+    if (!data || data.active !== popup.active) throw new Error('O servidor não confirmou o estado de publicação do pop-up.');
+    return data;
   },
   async getOrders() {
     const { data, error } = await DB.from('orders').select('id, customer_id, customer_name, note, status, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, product_name, quantity, unit_price, removed_ingredients)').order('created_at', { ascending:false });
@@ -143,6 +146,16 @@ const Store = {
   async signUp({ name, phone, email, password, address, captchaToken }) {
     const { data, error } = await DB.auth.signUp({ email, password, options:{ captchaToken, data:{ name, phone, consent:true, street:address.street, address_number:address.number, address_complement:address.complement, neighborhood:address.neighborhood } } });
     if (error) throw error;
+    if (!data?.user) {
+      const signupError = new Error('O servidor não confirmou a criação da conta.');
+      signupError.code = 'signup_unavailable';
+      throw signupError;
+    }
+    if (Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      const signupError = new Error('A identidade informada não foi criada.');
+      signupError.code = 'signup_unavailable';
+      throw signupError;
+    }
     return data;
   },
 };

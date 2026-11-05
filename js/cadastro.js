@@ -131,11 +131,17 @@ form.addEventListener('submit', async event => {
     form.reset();
     document.getElementById('signup-form-wrap').classList.add('hidden');
     document.getElementById('signup-success').classList.remove('hidden');
+    const successLink = document.querySelector('.signup-success-link');
     if (!result.session) {
       document.querySelector('#signup-success p').textContent = 'Sua conta foi criada. Confirme o e-mail recebido antes de entrar.';
+      successLink.href = 'entrar.html';
+      successLink.textContent = 'Ir para o login';
+    } else {
+      successLink.href = 'index.html';
+      successLink.textContent = 'Ver cardápio';
     }
-  } catch {
-    setError('email', 'Não foi possível concluir. O e-mail ou celular pode já estar cadastrado.');
+  } catch (error) {
+    setError('email', window.AuthFeedback.signupMessage(error));
     submitButton.disabled = false;
     submitButton.textContent = 'Criar minha conta';
     signupCaptchaToken = '';
