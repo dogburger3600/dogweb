@@ -36,6 +36,13 @@ const Store = {
   async getActivePopup() {
     const { data, error } = await DB.from('site_popup').select('*').eq('id', 1).maybeSingle();
     if (error) throw error;
+    if (!data?.active) return null;
+    const now = Date.now();
+    const startsAt = data.starts_at ? Date.parse(data.starts_at) : null;
+    const endsAt = data.ends_at ? Date.parse(data.ends_at) : null;
+    if ((data.starts_at && !Number.isFinite(startsAt)) || (data.ends_at && !Number.isFinite(endsAt))) return null;
+    if (startsAt !== null && now < startsAt) return null;
+    if (endsAt !== null && now > endsAt) return null;
     return data;
   },
   async getPopupSettings() {
