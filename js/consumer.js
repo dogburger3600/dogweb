@@ -1,6 +1,7 @@
 'use strict';
 
 let products = [];
+let addons = [];
 let cart = [];
 let checkoutSettings = null;
 let activeCategory = 'todos';
@@ -30,7 +31,19 @@ function getProduct(pid) {
 }
 
 function cartTotal() {
-  return cart.reduce((s, i) => s + i.product.price * i.qty, 0);
+  return cart.reduce((sum, item) => sum + cartItemUnitPrice(item) * item.qty, 0);
+}
+
+function getAddon(addonId) {
+  return addons.find(addon => addon.id === Number(addonId));
+}
+
+function selectedCartAddons(item) {
+  return (item.selectedAddonIds || []).map(getAddon).filter(Boolean);
+}
+
+function cartItemUnitPrice(item) {
+  return Number(item.product.price) + selectedCartAddons(item).reduce((sum, addon) => sum + addon.price, 0);
 }
 
 function cartCount() {
@@ -49,14 +62,21 @@ function safeProductImageUrl(value) {
 }
 
 function saveCart() {
-  sessionStorage.setItem('dogburger_cart', JSON.stringify(cart.map(item => ({ pid:item.product.id, qty:item.qty, removedIngredients:item.removedIngredients || '' }))));
+  sessionStorage.setItem('dogburger_cart', JSON.stringify(cart.map(item => ({ pid:item.product.id, qty:item.qty, removedIngredients:item.removedIngredients || '', selectedAddonIds:item.selectedAddonIds || [] }))));
 }
 
 function restoreCart() {
   try {
     const saved = JSON.parse(sessionStorage.getItem('dogburger_cart') || '[]');
-    cart = saved.map(item => ({ product:getProduct(item.pid), qty:item.qty, removedIngredients:String(item.removedIngredients || '').slice(0,120) })).filter(item => item.product && item.qty > 0);
-    cart.forEach(item => { if (item.product.category !== 'lanches') item.removedIngredients = ''; });
+    cart = saved.map(item => ({ product:getProduct(item.pid), qty:item.qty, removedIngredients:String(item.removedIngredients || '').slice(0,120), selectedAddonIds:[...new Set(Array.isArray(item.selectedAddonIds) ? item.selectedAddonIds.map(Number).filter(Number.isInteger) : [])].slice(0,10) })).filter(item => item.product && item.qty > 0);
+    cart.forEach(item => {
+      if (item.product.category !== 'lanches') {
+        item.removedIngredients = '';
+        item.selectedAddonIds = [];
+      } else {
+        item.selectedAddonIds = item.selectedAddonIds.filter(addonId => Boolean(getAddon(addonId)));
+      }
+    });
   } catch {
     cart = [];
     sessionStorage.removeItem('dogburger_cart');
@@ -136,7 +156,7 @@ function addToCart(pid) {
     }
     existing.qty++;
   } else {
-    cart.push({ product, qty: 1, removedIngredients: '' });
+    cart.push({ product, qty: 1, removedIngredients: '', selectedAddonIds: [] });
   }
   updateCartBadge();
   renderCartItems();
@@ -171,6 +191,18 @@ function toggleIngredientRemoval(pid, ingredientIndex, checked) {
   saveCart();
 }
 
+function toggleCartAddon(pid, addonId, checked) {
+  const item = cart.find(cartItem => cartItem.product.id === pid);
+  const addon = getAddon(addonId);
+  if (!item || !addon || item.product.category !== 'lanches') return;
+  const selected = new Set(item.selectedAddonIds || []);
+  if (checked) selected.add(addon.id);
+  else selected.delete(addon.id);
+  item.selectedAddonIds = [...selected].slice(0,10);
+  saveCart();
+  renderCartItems();
+}
+
 function renderCartItems() {
   const el = document.getElementById('cart-items-list');
   const footer = document.getElementById('cart-footer');
@@ -190,6 +222,7 @@ function renderCartItems() {
     const isSnack = i.product.category === 'lanches';
     const ingredients = isSnack && Array.isArray(i.product.ingredients) ? i.product.ingredients : [];
     const removed = new Set(String(i.removedIngredients || '').split(',').map(value => value.trim()).filter(Boolean));
+    const selectedAddonIds = new Set(i.selectedAddonIds || []);
     const ingredientsEditor = !isSnack ? '' : ingredients.length ? `
       <div class="cart-ingredients">
         <p><strong>Ingredientes:</strong> ${ingredients.map(escapeCartHtml).join(', ')}</p>
@@ -198,13 +231,19 @@ function renderCartItems() {
           ${ingredients.map((ingredient, index) => `<label><input type="checkbox" ${removed.has(ingredient) ? 'checked' : ''} onchange="toggleIngredientRemoval(${i.product.id}, ${index}, this.checked)" /><span>${escapeCartHtml(ingredient)}</span></label>`).join('')}
         </div>
       </div>` : '<p class="cart-ingredients-empty">Ingredientes ainda não cadastrados para este lanche.</p>';
+    const addonsEditor = !isSnack || !addons.length ? '' : `<div class="cart-addons">
+      <div class="cart-addons-head"><div><strong>Quer incluir um adicional?</strong><span>O valor será aplicado a cada unidade do lanche.</span></div></div>
+      <div class="cart-addon-options">
+        ${addons.map(addon => `<label><input type="checkbox" ${selectedAddonIds.has(addon.id) ? 'checked' : ''} onchange="toggleCartAddon(${i.product.id}, ${addon.id}, this.checked)" /><span><b>${escapeCartHtml(addon.name)}</b><small>+ R$ ${fmt(addon.price)}</small></span></label>`).join('')}
+      </div>
+    </div>`;
     return `
     <div class="cart-item">
       <div class="cart-item-main">
         <img src="${safeProductImageUrl(i.product.img) || 'dogburger.png'}" alt="${escapeCartHtml(i.product.name)}" />
         <div class="cart-item-info">
           <p class="cart-item-name">${escapeCartHtml(i.product.name)}</p>
-          <p class="cart-item-price">R$ ${fmt(i.product.price * i.qty)}</p>
+          <p class="cart-item-price">R$ ${fmt(cartItemUnitPrice(i) * i.qty)}</p>
         </div>
         <div class="qty-ctrl">
           <button class="qty-btn" type="button" aria-label="Remover uma unidade de ${escapeCartHtml(i.product.name)}" onclick="updateQty(${i.product.id}, -1)">${customerIcon('minus')}</button>
@@ -213,6 +252,7 @@ function renderCartItems() {
         </div>
       </div>
       ${ingredientsEditor}
+      ${addonsEditor}
     </div>`;
   }).join('');
 
@@ -237,11 +277,14 @@ function closeCart() {
 }
 
 function renderCheckoutSummary() {
-  document.getElementById('checkout-order-summary').innerHTML = cart.map(item => `
+  document.getElementById('checkout-order-summary').innerHTML = cart.map(item => {
+    const itemAddons = selectedCartAddons(item);
+    return `
     <div class="checkout-summary-item">
-      <div><strong>${item.qty}× ${escapeCartHtml(item.product.name)}</strong>${item.removedIngredients ? `<small>Sem: ${escapeCartHtml(item.removedIngredients)}</small>` : ''}</div>
-      <span>R$ ${fmt(item.product.price * item.qty)}</span>
-    </div>`).join('');
+      <div><strong>${item.qty}× ${escapeCartHtml(item.product.name)}</strong>${item.removedIngredients ? `<small>Sem: ${escapeCartHtml(item.removedIngredients)}</small>` : ''}${itemAddons.length ? `<small>Adicionais: ${itemAddons.map(addon => `${escapeCartHtml(addon.name)} (+ R$ ${fmt(addon.price)})`).join(', ')}</small>` : ''}</div>
+      <span>R$ ${fmt(cartItemUnitPrice(item) * item.qty)}</span>
+    </div>`;
+  }).join('');
 }
 function selectedFulfillmentMethod() { return document.querySelector('input[name="fulfillment-method"]:checked')?.value; }
 function renderCheckoutSettings() {
@@ -270,8 +313,9 @@ function updateChangeOptions() {
 }
 
 async function refreshCartAvailability() {
-  const latestProducts = await Store.getProducts();
+  const [latestProducts, latestAddons] = await Promise.all([Store.getProducts(), Store.getAddons()]);
   const latestById = new Map(latestProducts.map(product => [product.id, product]));
+  const latestAddonIds = new Set(latestAddons.map(addon => addon.id));
   const problems = [];
 
   cart.forEach(item => {
@@ -281,19 +325,26 @@ async function refreshCartAvailability() {
       return;
     }
     item.product = latest;
+    const selectedAddonIds = item.selectedAddonIds || [];
+    const availableAddonIds = selectedAddonIds.filter(addonId => latestAddonIds.has(addonId));
+    if (availableAddonIds.length !== selectedAddonIds.length) {
+      item.selectedAddonIds = availableAddonIds;
+      problems.push(`${latest.name}: um adicional ficou indisponível e foi removido`);
+    }
     if (latest.category === 'lanches' && item.qty > Number(latest.stock)) {
       problems.push(`${latest.name}: disponível ${Number(latest.stock) || 0}, solicitado ${item.qty}`);
     }
   });
 
   products = latestProducts;
+  addons = latestAddons;
   saveCart();
   updateCartBadge();
   renderProducts();
   renderCartItems();
 
   if (problems.length) {
-    throw new Error(`O estoque mudou. ${problems.join('; ')}. Ajuste o carrinho para continuar.`);
+    throw new Error(`O cardápio ou o estoque mudou. ${problems.join('; ')}. Ajuste o carrinho para continuar.`);
   }
 }
 
@@ -376,7 +427,7 @@ async function placeOrder() {
       throw new Error('Informe um valor para troco igual ou maior que o total do pedido.');
     }
     const order = await Store.placeOrder(name, note, cart, paymentMethod, changeFor, fulfillmentMethod);
-    products = await Store.getProducts();
+    [products, addons] = await Promise.all([Store.getProducts(), Store.getAddons()]);
     cart = [];
     sessionStorage.removeItem('dogburger_cart');
     updateCartBadge();
@@ -535,7 +586,7 @@ async function initConsumer() {
   updateCartBadge();
   document.getElementById('products-grid').innerHTML = `<div class="catalog-loading" role="status"><span></span><strong>Carregando cardápio</strong><p>Buscando os produtos disponíveis.</p></div>`;
   try {
-    products = await Store.getProducts();
+    [products, addons] = await Promise.all([Store.getProducts(), Store.getAddons()]);
     restoreCart();
     renderProducts();
     updateCartBadge();

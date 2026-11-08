@@ -547,7 +547,7 @@ function orderCard(o) {
           const p = getProduct(i.pid);
           const productName = p?.name || i.productName || 'Produto indisponível';
           return `<div class="order-item-row">
-            <span class="order-item-name">${i.qty}× ${escapeManagerHtml(productName)}${i.removedIngredients ? `<small class="order-item-removal">Sem: ${escapeManagerHtml(i.removedIngredients)}</small>` : ''}</span>
+            <span class="order-item-name">${i.qty}× ${escapeManagerHtml(productName)}${i.removedIngredients ? `<small class="order-item-removal">Sem: ${escapeManagerHtml(i.removedIngredients)}</small>` : ''}${i.selectedAddons?.length ? `<small class="order-item-addons">Adicionais: ${i.selectedAddons.map(addon => `${escapeManagerHtml(addon.name)} (+ R$ ${fmt(addon.price)})`).join(', ')}</small>` : ''}</span>
             <span class="order-item-price">R$ ${fmt(i.unitPrice * i.qty)}</span>
           </div>`;
         }).join('')}

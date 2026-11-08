@@ -46,7 +46,7 @@ async function loadOrderHistory() {
   const creditsByOrder = new Map((pointCreditsError ? [] : pointCredits || []).map(credit => [credit.order_id, credit]));
   const cancellationsByOrder = new Map((cancellationsResult.error ? [] : cancellationsResult.data || []).map(cancellation => [Number(cancellation.order_id), cancellation]));
   let { data: orders, error } = await DB.from('orders')
-    .select('id, status, note, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, product_name, quantity, unit_price, removed_ingredients)')
+    .select('id, status, note, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, product_name, quantity, unit_price, removed_ingredients, selected_addons)')
     .order('created_at', { ascending:false });
 
   if (error?.code === '42703') {
@@ -110,7 +110,7 @@ async function loadOrderHistory() {
     const date = new Date(order.created_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' });
     const items = order.order_items.map(item => `<div class="history-item">
       <span class="history-item-qty">${item.quantity}×</span>
-      <div><span class="history-item-name">${escapeProfileHtml(item.product_name || `Produto #${item.product_id}`)}</span><small class="history-item-unit">R$ ${Number(item.unit_price).toLocaleString('pt-BR', {minimumFractionDigits:2})} cada</small>${item.removed_ingredients ? `<small class="history-item-removal">Sem: ${escapeProfileHtml(item.removed_ingredients)}</small>` : ''}</div>
+      <div><span class="history-item-name">${escapeProfileHtml(item.product_name || `Produto #${item.product_id}`)}</span><small class="history-item-unit">R$ ${Number(item.unit_price).toLocaleString('pt-BR', {minimumFractionDigits:2})} cada</small>${item.removed_ingredients ? `<small class="history-item-removal">Sem: ${escapeProfileHtml(item.removed_ingredients)}</small>` : ''}${Array.isArray(item.selected_addons) && item.selected_addons.length ? `<small class="history-item-addons">Adicionais: ${item.selected_addons.map(addon => `${escapeProfileHtml(addon.name)} (+ R$ ${Number(addon.price).toLocaleString('pt-BR', {minimumFractionDigits:2})})`).join(', ')}</small>` : ''}</div>
       <span class="history-item-price">R$ ${(Number(item.unit_price) * item.quantity).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
     </div>`).join('');
     const pointsSummary = pointCredit ? `<div class="history-order-points"><strong>+${Number(pointCredit.points_awarded) || 0} ${Number(pointCredit.points_awarded) === 1 ? 'ponto' : 'pontos'}</strong><span>Creditados após a entrega · regra de 1 ponto a cada R$ 10</span></div>` : '';
