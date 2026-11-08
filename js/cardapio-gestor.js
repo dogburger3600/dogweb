@@ -30,7 +30,8 @@ function parseIngredients(value) {
 }
 
 function updateIngredientsField() {
-  const isSnack = document.getElementById('product-category').value === 'lanches';
+  const category = document.getElementById('product-category').value;
+  const isSnack = category === 'lanches';
   document.getElementById('product-ingredients-group').classList.toggle('hidden', !isSnack);
   document.getElementById('product-ready-stock-group').classList.toggle('hidden', !isSnack);
 }

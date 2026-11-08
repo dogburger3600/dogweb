@@ -36,10 +36,15 @@ function formatOrderAddress(address) {
 
 async function loadOrderHistory() {
   const list = document.getElementById('profile-orders-list');
-  const { data: pointCredits, error:pointCreditsError } = await DB.from('loyalty_point_credits')
-    .select('order_id, eligible_amount, points_awarded, credited_at')
-    .order('credited_at', { ascending:false });
+  const [pointCreditsResult, cancellationsResult] = await Promise.all([
+    DB.from('loyalty_point_credits')
+      .select('order_id, eligible_amount, points_awarded, credited_at')
+      .order('credited_at', { ascending:false }),
+    DB.rpc('get_my_order_cancellations'),
+  ]);
+  const { data:pointCredits, error:pointCreditsError } = pointCreditsResult;
   const creditsByOrder = new Map((pointCreditsError ? [] : pointCredits || []).map(credit => [credit.order_id, credit]));
+  const cancellationsByOrder = new Map((cancellationsResult.error ? [] : cancellationsResult.data || []).map(cancellation => [Number(cancellation.order_id), cancellation]));
   let { data: orders, error } = await DB.from('orders')
     .select('id, status, note, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, product_name, quantity, unit_price, removed_ingredients)')
     .order('created_at', { ascending:false });
@@ -74,11 +79,13 @@ async function loadOrderHistory() {
   const statusMeta = {
     pendente:{ label:'Pendente', color:'#D97706', bg:'#FEF3C7' }, preparando:{ label:'Preparando', color:'#2563EB', bg:'#DBEAFE' },
     pronto:{ label:'Pronto', color:'#16A34A', bg:'#DCFCE7' }, entregue:{ label:'Entregue', color:'#78716C', bg:'#F5F5F4' },
+    cancelado:{ label:'Cancelado', color:'#B91C1C', bg:'#FEE2E2' },
   };
   const paymentLabels = { pix:'Pix', credito:'Crédito', debito:'Débito', dinheiro:'Dinheiro' };
 
   list.innerHTML = orders.map(order => {
     const pointCredit = creditsByOrder.get(order.id);
+    const cancellation = cancellationsByOrder.get(Number(order.id));
     const legacyTotal = order.order_items.reduce((sum, item) => sum + Number(item.unit_price) * item.quantity, 0);
     const subtotal = order.subtotal == null ? null : Number(order.subtotal);
     const deliveryFee = order.delivery_fee == null ? null : Number(order.delivery_fee);
@@ -99,7 +106,7 @@ async function loadOrderHistory() {
     const address = order.fulfillment_method === 'pickup'
       ? 'Retirada no local'
       : formatOrderAddress(order.delivery_address);
-    const status = statusMeta[order.status] || statusMeta.pendente;
+    const status = cancellation ? statusMeta.cancelado : (statusMeta[order.status] || statusMeta.pendente);
     const date = new Date(order.created_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' });
     const items = order.order_items.map(item => `<div class="history-item">
       <span class="history-item-qty">${item.quantity}×</span>
@@ -107,6 +114,7 @@ async function loadOrderHistory() {
       <span class="history-item-price">R$ ${(Number(item.unit_price) * item.quantity).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
     </div>`).join('');
     const pointsSummary = pointCredit ? `<div class="history-order-points"><strong>+${Number(pointCredit.points_awarded) || 0} ${Number(pointCredit.points_awarded) === 1 ? 'ponto' : 'pontos'}</strong><span>Creditados após a entrega · regra de 1 ponto a cada R$ 10</span></div>` : '';
+    const cancellationSummary = cancellation ? `<div class="history-detail"><span>${profileIcon('note')}</span><span><strong>Pedido cancelado</strong>${cancellation.reason ? ` · ${escapeProfileHtml(cancellation.reason)}` : ''}${cancellation.cancelled_at ? ` · ${new Date(cancellation.cancelled_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' })}` : ''}</span></div>` : '';
     return `<article class="history-order">
       <div class="history-order-summary">
         <div class="history-order-main"><span class="history-order-number">PED-${String(order.id).padStart(3,'0')}</span><time class="history-order-date">${date}</time></div>
@@ -116,6 +124,7 @@ async function loadOrderHistory() {
       <div class="history-order-body">${items}${financialSummary}${pointsSummary}<div class="history-order-details">
         <div class="history-detail"><span>${profileIcon('pin')}</span><span>${escapeProfileHtml(address)}</span></div>
         ${order.payment_method ? `<div class="history-detail"><span>${profileIcon('payment')}</span><span>Pagamento na entrega: ${paymentLabels[order.payment_method] || order.payment_method}${order.payment_method === 'dinheiro' && order.change_for !== null ? ` · troco para R$ ${Number(order.change_for).toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</span></div>` : ''}
+        ${cancellationSummary}
         ${order.note ? `<div class="history-detail"><span>${profileIcon('note')}</span><span>${escapeProfileHtml(order.note)}</span></div>` : ''}
       </div></div>
     </article>`;

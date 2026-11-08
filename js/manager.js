@@ -70,7 +70,7 @@ const VIEW_DESCRIPTIONS = {
   dashboard: 'Visão geral da operação em tempo real',
   pedidos: 'Acompanhe e atualize o fluxo de atendimento',
   relatorios: 'Consulte desempenho e resultados financeiros',
-  'estoque-lanches': 'Controle a disponibilidade dos produtos prontos',
+  'estoque-lanches': 'Controle a disponibilidade dos lanches prontos',
   popup: 'Gerencie a comunicação exibida aos clientes',
   configuracoes: 'Ajuste horários, entrega e dados da loja',
 };
@@ -429,7 +429,7 @@ function renderDashboard() {
           <span class="dashboard-count-badge ${soldOutSnacks.length ? 'is-alert' : 'is-ok'}">${soldOutSnacks.length}</span>
         </div>
         ${soldOutSnacks.length
-          ? `<div class="dashboard-stock-alert"><span aria-hidden="true">${managerIcon('alert')}</span><div><strong>${soldOutSnacks.length} ${soldOutSnacks.length === 1 ? 'lanche sinalizado' : 'lanches sinalizados'} como esgotado</strong><p>${soldOutSnacks.slice(0,3).map(product => escapeManagerHtml(product.name)).join(', ')}${soldOutSnacks.length > 3 ? ` e mais ${soldOutSnacks.length - 3}` : ''}</p></div></div><button class="dashboard-text-button" type="button" data-capability="manageStock" onclick="setView('estoque-lanches')">Abrir área preparada${managerIcon('chevron')}</button>`
+          ? `<div class="dashboard-stock-alert"><span aria-hidden="true">${managerIcon('alert')}</span><div><strong>${soldOutSnacks.length} ${soldOutSnacks.length === 1 ? 'produto sinalizado' : 'produtos sinalizados'} como esgotado</strong><p>${soldOutSnacks.slice(0,3).map(product => escapeManagerHtml(product.name)).join(', ')}${soldOutSnacks.length > 3 ? ` e mais ${soldOutSnacks.length - 3}` : ''}</p></div></div><button class="dashboard-text-button" type="button" data-capability="manageStock" onclick="setView('estoque-lanches')">Abrir área preparada${managerIcon('chevron')}</button>`
           : renderDashboardEmpty(managerIcon('menu'), 'Nenhum alerta visual', 'Não há lanches com quantidade zero nos dados atuais.')}
       </article>
     </div>
@@ -453,7 +453,9 @@ function renderDashboard() {
 }
 
 function dashOrderRow(o) {
-  const sm = STATUS_META[o.status];
+  const sm = o.cancellation
+    ? { label:'Cancelado', color:'#B91C1C', bg:'#FEE2E2' }
+    : STATUS_META[o.status];
   return `<div class="dash-order-row">
     <div>
       <span class="dash-order-id">${o.id}</span>
@@ -668,9 +670,9 @@ function snackStockStatus(product) {
 
 function renderSnackStockState(state, detail = '') {
   if (state === 'loading') {
-    return `<section class="snack-stock-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando lanches...</strong><span>Consultando o estoque transacional.</span></section>`;
+    return `<section class="snack-stock-state" aria-live="polite" aria-busy="true"><div class="dashboard-state-spinner" aria-hidden="true"></div><strong>Carregando produtos...</strong><span>Consultando o estoque transacional.</span></section>`;
   }
-  return `<section class="snack-stock-state is-error" role="alert"><span class="snack-stock-state-icon" aria-hidden="true">${managerIcon('alert')}</span><strong>Não foi possível carregar os lanches</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('estoque-lanches')">Tentar novamente</button></section>`;
+  return `<section class="snack-stock-state is-error" role="alert"><span class="snack-stock-state-icon" aria-hidden="true">${managerIcon('alert')}</span><strong>Não foi possível carregar os produtos</strong><p>${escapeManagerHtml(detail || 'Tente novamente em instantes.')}</p><button type="button" onclick="setView('estoque-lanches')">Tentar novamente</button></section>`;
 }
 
 function renderSnackStock() {
@@ -693,13 +695,13 @@ function renderSnackStock() {
     </div>
     ${SNACK_STOCK_UI_STATE.feedback ? `<div class="snack-stock-feedback is-${SNACK_STOCK_UI_STATE.feedback.type}" role="status"><span aria-hidden="true">${managerIcon(SNACK_STOCK_UI_STATE.feedback.type === 'success' ? 'check' : 'alert')}</span><strong>${escapeManagerHtml(SNACK_STOCK_UI_STATE.feedback.message)}</strong></div>` : ''}
     <div class="snack-stock-kpis">
-      ${kpiCard('Lanches cadastrados', String(snacks.length), managerIcon('menu'), '#EA580C', 'somente categoria lanches', 'is-brand')}
+      ${kpiCard('Lanches controlados', String(snacks.length), managerIcon('menu'), '#EA580C', 'produtos prontos', 'is-brand')}
       ${kpiCard('Estoque normal', String(counts.normal), managerIcon('check'), '#15803D', 'acima do mínimo')}
       ${kpiCard('Estoque baixo', String(counts.baixo), managerIcon('alert'), '#B45309', 'no mínimo ou abaixo')}
       ${kpiCard('Esgotados', String(counts.zero), managerIcon('close'), '#B91C1C', 'quantidade real igual a zero')}
     </div>
-    <div class="snack-stock-toolbar"><div><strong>Disponibilidade</strong><span>${filtered.length} ${filtered.length === 1 ? 'lanche no filtro atual' : 'lanches no filtro atual'}</span></div><div class="filter-tabs snack-stock-filters" aria-label="Filtrar por disponibilidade">${filters.map(filter => `<button class="filter-tab${SNACK_STOCK_UI_STATE.filter === filter.key ? ' active' : ''}" type="button" aria-pressed="${SNACK_STOCK_UI_STATE.filter === filter.key}" onclick="setSnackStockFilter('${filter.key}')"><span>${filter.label}</span><strong>${filter.count}</strong></button>`).join('')}</div></div>
-    ${filtered.length ? `<div class="snack-stock-grid">${filtered.map(renderSnackStockCard).join('')}</div>` : `<div class="snack-stock-empty"><span aria-hidden="true">${managerIcon('inbox')}</span><strong>Nenhum lanche neste estado</strong><p>Escolha outro filtro para continuar.</p></div>`}
+    <div class="snack-stock-toolbar"><div><strong>Disponibilidade</strong><span>${filtered.length} ${filtered.length === 1 ? 'produto no filtro atual' : 'produtos no filtro atual'}</span></div><div class="filter-tabs snack-stock-filters" aria-label="Filtrar por disponibilidade">${filters.map(filter => `<button class="filter-tab${SNACK_STOCK_UI_STATE.filter === filter.key ? ' active' : ''}" type="button" aria-pressed="${SNACK_STOCK_UI_STATE.filter === filter.key}" onclick="setSnackStockFilter('${filter.key}')"><span>${filter.label}</span><strong>${filter.count}</strong></button>`).join('')}</div></div>
+    ${filtered.length ? `<div class="snack-stock-grid">${filtered.map(renderSnackStockCard).join('')}</div>` : `<div class="snack-stock-empty"><span aria-hidden="true">${managerIcon('inbox')}</span><strong>Nenhum produto neste estado</strong><p>Escolha outro filtro para continuar.</p></div>`}
     ${renderSnackStockHistory()}
     ${renderSnackRestockModal()}
     ${renderSnackProductDeleteModal()}

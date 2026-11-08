@@ -125,7 +125,7 @@ function addToCart(pid) {
   const product = getProduct(pid);
   if (!product) return;
   if (product.category === 'lanches' && Number(product.stock) <= 0) {
-    showToast('Este lanche está esgotado.');
+    showToast('Este produto está esgotado.');
     return;
   }
   const existing = cart.find(i => i.product.id === pid);
