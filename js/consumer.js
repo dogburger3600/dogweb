@@ -11,6 +11,7 @@ let checkoutPreviousFocus = null;
 const CUSTOMER_ICON_PATHS = Object.freeze({
   todos:'<rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/>',
   lanches:'<path d="M5 11a7 7 0 0 1 14 0M3 11h18M4 11v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3M7 16v2h10v-2"/>',
+  pasteis:'<path d="M4 9h16a8 8 0 0 1-16 0Z"/><path d="M7 11h.01M10 13h.01M13 11h.01M16 13h.01"/>',
   combos:'<path d="M6 9h12l-1 11H7L6 9ZM8 9l1-5M12 9V4M16 9l-1-5"/>',
   sucos:'<path d="M7 7h10l-1 14H8L7 7ZM9 3h7l-3 4M8 12h8"/>',
   refrigerantes:'<path d="M8 4h8l1 17H7L8 4ZM9 8h6M10 4V2h4v2"/>',

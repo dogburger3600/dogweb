@@ -73,7 +73,7 @@
           <label class="menu-search-wrap" for="menu-search"><svg class="manager-icon" aria-hidden="true"><use href="#menu-icon-search"></use></svg><input id="menu-search" type="search" placeholder="Buscar por nome ou descrição" /></label>
           <select class="form-select menu-filter" id="menu-category-filter">
             <option value="todos">Todas as categorias</option>
-            <option value="lanches">Lanches</option><option value="combos">Combos</option><option value="sucos">Sucos</option>
+            <option value="lanches">Lanches</option><option value="pasteis">Pastéis</option><option value="combos">Combos</option><option value="sucos">Sucos</option>
             <option value="refrigerantes">Refrigerantes</option><option value="sobremesas">Sobremesas</option>
           </select>
           <label class="menu-archived-toggle"><input type="checkbox" id="show-archived" /> Mostrar desativados</label>
@@ -96,7 +96,7 @@
       <section class="product-form-section">
         <div class="product-form-section-head"><span aria-hidden="true"><svg class="manager-icon"><use href="#menu-icon-tag"></use></svg></span><div><strong>Classificação e preço</strong><small>Categoria e valor comercial</small></div></div>
         <div class="signup-grid">
-          <div class="form-group"><label class="form-label" for="product-category">Categoria *</label><select class="form-select" id="product-category" required><option value="lanches">Lanches</option><option value="combos">Combos</option><option value="sucos">Sucos</option><option value="refrigerantes">Refrigerantes</option><option value="sobremesas">Sobremesas</option></select><small class="form-error" id="product-category-error"></small></div>
+          <div class="form-group"><label class="form-label" for="product-category">Categoria *</label><select class="form-select" id="product-category" required><option value="lanches">Lanches</option><option value="pasteis">Pastéis</option><option value="combos">Combos</option><option value="sucos">Sucos</option><option value="refrigerantes">Refrigerantes</option><option value="sobremesas">Sobremesas</option></select><small class="form-error" id="product-category-error"></small></div>
           <div class="form-group"><label class="form-label" for="product-price">Preço (R$) *</label><input class="form-input" id="product-price" type="number" min="0" step="0.01" inputmode="decimal" required /><small class="form-error" id="product-price-error"></small></div>
         </div>
         <div class="form-group" id="product-ingredients-group">
@@ -134,8 +134,8 @@
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/supabase-config.js?v=20261108-1"></script>
-  <script src="js/store.js"></script>
+  <script src="js/store.js?v=20261108-5"></script>
   <script src="js/ui-capabilities.js"></script>
-  <script src="js/cardapio-gestor.js"></script>
+  <script src="js/cardapio-gestor.js?v=20261108-3"></script>
 </body>
 </html>

@@ -63,7 +63,7 @@ function validateProductFields() {
   const price = Number(priceValue);
   if (!name) valid = productFieldError('product-name', 'Informe o nome do produto.');
   if (!description) valid = productFieldError('product-description', 'Informe a descrição do produto.');
-  if (!['lanches','combos','sucos','refrigerantes','sobremesas'].includes(category)) valid = productFieldError('product-category', 'Selecione uma categoria válida.');
+  if (!['lanches','pasteis','combos','sucos','refrigerantes','sobremesas'].includes(category)) valid = productFieldError('product-category', 'Selecione uma categoria válida.');
   if (priceValue === '' || !Number.isFinite(price) || price < 0) valid = productFieldError('product-price', 'Informe um preço válido igual ou maior que zero.');
   if (category === 'lanches' && !parseIngredients(document.getElementById('product-ingredients').value).length) valid = productFieldError('product-ingredients', 'Informe pelo menos um ingrediente do lanche.');
   return valid;
