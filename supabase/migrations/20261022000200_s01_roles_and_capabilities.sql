@@ -125,44 +125,11 @@ $function$;
 revoke all on function public.set_user_role(uuid, public.user_role) from public, anon, authenticated;
 grant execute on function public.set_user_role(uuid, public.user_role) to authenticated;
 
--- Bootstrap deterministico e fail-closed. UUID e e-mail devem corresponder em auth.users.
-do $bootstrap$
-declare
-  identities constant jsonb := jsonb_build_array(
-    jsonb_build_object('id','6a00514d-776a-4cda-99d6-767bee8a3f5c','email','bastos.weeme@gmail.com','role','owner'),
-    jsonb_build_object('id','d68e65a3-b04f-4ae5-b506-da74d199ce19','email','dogburger360@gmail.com','role','manager'),
-    jsonb_build_object('id','f6b74f6c-2a55-4278-bec1-8f790f5dd16a','email','wemerson.badm@gmail.com','role','attendant'),
-    jsonb_build_object('id','dd44a049-3589-4cef-bcec-8301868f90db','email','lucas@gmail.com','role','customer')
-  );
-  identity jsonb;
-begin
-  for identity in select * from jsonb_array_elements(identities) loop
-    if not exists (
-      select 1 from auth.users
-      where id = (identity->>'id')::uuid
-        and lower(email) = lower(identity->>'email')
-    ) then
-      raise exception using errcode = 'P0001',
-        message = format('S01_BOOTSTRAP_ABORTED: identidade %s / %s nao corresponde ao Auth', identity->>'id', identity->>'email');
-    end if;
-    if not exists (select 1 from public.profiles where id = (identity->>'id')::uuid) then
-      raise exception using errcode = 'P0001',
-        message = format('S01_BOOTSTRAP_ABORTED: profile ausente para %s', identity->>'id');
-    end if;
-  end loop;
-
-  update public.profiles profiles
-  set role = desired.role::public.user_role
-  from (
-    values
-      ('6a00514d-776a-4cda-99d6-767bee8a3f5c'::uuid, 'owner'),
-      ('d68e65a3-b04f-4ae5-b506-da74d199ce19'::uuid, 'manager'),
-      ('f6b74f6c-2a55-4278-bec1-8f790f5dd16a'::uuid, 'attendant'),
-      ('dd44a049-3589-4cef-bcec-8301868f90db'::uuid, 'customer')
-  ) desired(id, role)
-  where profiles.id = desired.id;
-end;
-$bootstrap$;
+-- As contas administrativas pertencem a cada instalacao e nao podem ser
+-- vinculadas a UUIDs/e-mails de outro banco. Esta migration preserva os papeis
+-- que ja existem em public.profiles. A promocao inicial de uma conta deve ser
+-- feita conscientemente no painel SQL da instalacao, depois de conferir o UUID
+-- em auth.users.
 
 -- Impede autoelevacao mesmo quando a policy de update proprio permite a linha.
 revoke update on table public.profiles from public, anon, authenticated;
