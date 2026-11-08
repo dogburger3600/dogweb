@@ -131,6 +131,11 @@ const Store = {
     if (error) throw error;
     return data;
   },
+  async removeSnackProductStock(id, quantity, operationId, note = null) {
+    const { data, error } = await DB.rpc('remove_snack_product_stock', { p_product_id:id, p_quantity:quantity, p_operation_id:operationId, p_note:note });
+    if (error) throw error;
+    return data;
+  },
   async setSnackMinStock(id, minStock) {
     const { data, error } = await DB.rpc('set_snack_min_stock', { p_product_id:id, p_min_stock:minStock });
     if (error) throw error;

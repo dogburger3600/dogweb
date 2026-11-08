@@ -573,7 +573,15 @@ body { min-height: 100vh; }
 .snack-stock-quantity span { color: var(--stone-light); font-size: 0.7rem; font-weight: 700; }
 .snack-stock-minimum { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--stone); font-size: 0.72rem; font-weight: 700; }
 .snack-stock-minimum input { width: 78px; padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px; font-family: var(--font-mono); text-align: center; }
-.snack-stock-restock { width: 100%; margin-top: auto; }
+.snack-stock-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
+.snack-stock-restock { width: 100%; }
+.snack-stock-withdraw { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid #FCA5A5; border-radius: 10px; background: #FFF; color: #B91C1C; font-family: var(--font-body); font-size: 0.78rem; font-weight: 800; cursor: pointer; }
+.snack-stock-withdraw:hover:not(:disabled) { border-color: #DC2626; background: #FEF2F2; }
+.snack-stock-withdraw:disabled { border-color: var(--border); background: var(--surface); color: var(--stone-light); cursor: not-allowed; }
+.snack-stock-withdraw .manager-icon { width: 17px; height: 17px; }
+.snack-withdraw-confirm { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; border: none; border-radius: 10px; background: #B91C1C; color: #fff; font-family: var(--font-body); font-size: 0.78rem; font-weight: 800; cursor: pointer; }
+.snack-withdraw-confirm:hover:not(:disabled) { background: #991B1B; }
+.snack-withdraw-confirm:disabled { opacity: 0.65; cursor: not-allowed; }
 .snack-stock-empty { min-height: 220px; display: grid; place-items: center; align-content: center; gap: 5px; border: 1px dashed var(--border); border-radius: 14px; background: var(--white); color: var(--stone-light); text-align: center; }
 .snack-stock-empty > span { font-size: 1.7rem; }
 .snack-stock-empty strong { color: var(--stone); }
@@ -2588,6 +2596,7 @@ body { min-height: 100vh; }
   font-weight: 800;
 }
 .dashboard-shell .snack-stock-restock .manager-icon { width: 17px; height: 17px; }
+.dashboard-shell .snack-stock-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
 .dashboard-shell .snack-stock-empty {
   min-height: 260px;
   gap: 7px;
@@ -2769,6 +2778,7 @@ body { min-height: 100vh; }
 .dashboard-shell .snack-stock-minimum input { transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease; }
 .dashboard-shell .snack-stock-filters .filter-tab:focus-visible,
 .dashboard-shell .snack-stock-restock:focus-visible,
+.dashboard-shell .snack-stock-withdraw:focus-visible,
 .dashboard-shell .snack-stock-minimum input:focus-visible,
 .dashboard-shell .snack-stock-state button:focus-visible,
 .dashboard-shell .snack-restock-modal button:focus-visible,

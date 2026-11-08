@@ -24,6 +24,7 @@ const SNACK_STOCK_UI_STATE = {
   movements: [],
   filter: 'todos',
   restockProductId: null,
+  withdrawProductId: null,
   deleteProductId: null,
   deletingProductId: null,
   feedback: null,
@@ -704,6 +705,7 @@ function renderSnackStock() {
     ${filtered.length ? `<div class="snack-stock-grid">${filtered.map(renderSnackStockCard).join('')}</div>` : `<div class="snack-stock-empty"><span aria-hidden="true">${managerIcon('inbox')}</span><strong>Nenhum produto neste estado</strong><p>Escolha outro filtro para continuar.</p></div>`}
     ${renderSnackStockHistory()}
     ${renderSnackRestockModal()}
+    ${renderSnackWithdrawalModal()}
     ${renderSnackProductDeleteModal()}
   </section>`;
 }
@@ -717,7 +719,10 @@ function renderSnackStockCard(product) {
     <div class="snack-stock-card-head"><div class="snack-stock-product-icon" aria-hidden="true">${managerIcon('menu')}</div><div class="snack-stock-product-summary"><h3>${escapeManagerHtml(product.name)}</h3><span class="snack-stock-status">${managerIcon(status.icon)}<span>${status.label}</span></span></div><button class="snack-stock-delete" type="button" data-capability="manageMenu" data-delete-product-id="${escapeManagerHtml(String(product.id))}" aria-label="Excluir ${escapeManagerHtml(product.name)}" title="Excluir produto" onclick="openSnackProductDelete(${JSON.stringify(product.id)})"${deleting ? ' disabled' : ''}>${managerIcon('trash')}<span class="sr-only">Excluir produto</span></button></div>
     <div class="snack-stock-quantity"><span>Quantidade disponível</span><strong>${quantity}</strong><small>unidades prontas</small></div>
     <label class="snack-stock-minimum"><span><strong>Estoque mínimo</strong><small>Alerta a partir deste valor</small></span><input type="number" min="0" max="999" step="1" value="${minimum}" aria-label="Estoque mínimo de ${escapeManagerHtml(product.name)}" aria-busy="${SNACK_STOCK_UI_STATE.savingMinimums.has(product.id)}" onchange="updateSnackStockMinimum(${JSON.stringify(product.id)}, this.value)" ${SNACK_STOCK_UI_STATE.savingMinimums.has(product.id) ? 'disabled' : ''} /></label>
-    <button class="btn-primary snack-stock-restock" type="button" data-capability="manageStock" data-capability-mode="disable" onclick="openSnackRestock(${JSON.stringify(product.id)})">${managerIcon('plus')}<span>Reposição manual</span></button>
+    <div class="snack-stock-actions">
+      <button class="snack-stock-withdraw" type="button" data-capability="manageStock" data-capability-mode="disable" onclick="openSnackWithdrawal(${JSON.stringify(product.id)})"${quantity === 0 ? ' disabled' : ''}>${managerIcon('minus')}<span>Retirar</span></button>
+      <button class="btn-primary snack-stock-restock" type="button" data-capability="manageStock" data-capability-mode="disable" onclick="openSnackRestock(${JSON.stringify(product.id)})">${managerIcon('plus')}<span>Adicionar</span></button>
+    </div>
   </article>`;
 }
 
@@ -771,6 +776,37 @@ function openSnackRestock(productId) {
 
 function closeSnackRestock() {
   SNACK_STOCK_UI_STATE.restockProductId = null;
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
+function renderSnackWithdrawalModal() {
+  if (SNACK_STOCK_UI_STATE.withdrawProductId === null) return '';
+  const product = snackStockProducts().find(item => item.id === SNACK_STOCK_UI_STATE.withdrawProductId);
+  if (!product) return '';
+  const available = normalizedStockNumber(product.stock);
+  return `<div class="modal-overlay snack-restock-overlay" onclick="closeSnackWithdrawal()"></div>
+    <section class="modal snack-restock-modal snack-withdraw-modal" role="dialog" aria-modal="true" aria-labelledby="snack-withdraw-title">
+      <span class="orders-demo-badge">${managerIcon('history')}<span>Retirada auditada</span></span>
+      <h2 class="modal-title" id="snack-withdraw-title">Retirar de ${escapeManagerHtml(product.name)}</h2>
+      <p class="modal-sub">Estoque atual: <strong>${available} unidades</strong>. A retirada será registrada no histórico e nunca poderá deixar o saldo negativo.</p>
+      <form onsubmit="submitSnackWithdrawal(event)">
+        <div class="form-group"><label class="form-label" for="snack-withdraw-amount">Quantidade a retirar *</label><input class="form-input" id="snack-withdraw-amount" type="number" min="1" max="${available}" step="1" inputmode="numeric" required /></div>
+        <p class="form-error" id="snack-withdraw-error"></p>
+        <div class="modal-actions"><button class="btn-secondary" type="button" onclick="closeSnackWithdrawal()">Cancelar</button><button class="snack-withdraw-confirm" type="submit">${managerIcon('minus')}<span>Retirar unidades</span></button></div>
+      </form>
+    </section>`;
+}
+
+function openSnackWithdrawal(productId) {
+  const product = snackStockProducts().find(item => item.id === productId);
+  if (!product || normalizedStockNumber(product.stock) === 0) return;
+  SNACK_STOCK_UI_STATE.withdrawProductId = productId;
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+  setTimeout(() => document.getElementById('snack-withdraw-amount')?.focus(), 0);
+}
+
+function closeSnackWithdrawal() {
+  SNACK_STOCK_UI_STATE.withdrawProductId = null;
   document.getElementById('m-content').innerHTML = renderSnackStock();
 }
 
@@ -891,13 +927,45 @@ async function submitSnackRestock(event) {
   document.getElementById('m-content').innerHTML = renderSnackStock();
 }
 
+async function submitSnackWithdrawal(event) {
+  event.preventDefault();
+  const amount = Number(document.getElementById('snack-withdraw-amount').value);
+  const errorElement = document.getElementById('snack-withdraw-error');
+  const productId = SNACK_STOCK_UI_STATE.withdrawProductId;
+  const product = snackStockProducts().find(item => item.id === productId);
+  const current = normalizedStockNumber(product?.stock);
+  if (!Number.isInteger(amount) || amount < 1 || amount > 999) {
+    errorElement.textContent = 'Informe uma quantidade inteira entre 1 e 999.';
+    return;
+  }
+  if (!product || amount > current) {
+    errorElement.textContent = `Não é possível retirar mais que as ${current} unidades disponíveis.`;
+    return;
+  }
+  const button = event.submitter || event.currentTarget.querySelector('button[type="submit"]');
+  button.disabled = true;
+  button.innerHTML = `${managerIcon('activity')}<span>Retirando...</span>`;
+  try {
+    await Store.removeSnackProductStock(productId, amount, crypto.randomUUID());
+    [products, SNACK_STOCK_UI_STATE.movements] = await Promise.all([loadProductsForCurrentRole(), Store.getStockMovements()]);
+    SNACK_STOCK_UI_STATE.withdrawProductId = null;
+    SNACK_STOCK_UI_STATE.feedback = { type:'success', message:`${amount} unidades retiradas de ${product.name}.` };
+  } catch (error) {
+    errorElement.textContent = `Não foi possível retirar do estoque. ${error.message}`;
+    button.disabled = false;
+    button.innerHTML = `${managerIcon('minus')}<span>Retirar unidades</span>`;
+    return;
+  }
+  document.getElementById('m-content').innerHTML = renderSnackStock();
+}
+
 function renderSnackStockHistory() {
   const entries = SNACK_STOCK_UI_STATE.movements.slice(0, 10);
   return `<section class="card snack-stock-history"><div class="card-header"><div><span class="card-title">Histórico de movimentações</span><p>Últimos registros persistidos pelo backend</p></div><span class="snack-stock-history-count">${entries.length}</span></div>${entries.length ? `<div class="snack-stock-history-list">${entries.map(entry => { const product = getProduct(entry.product_id); const delta = Number(entry.quantity_delta); const movementClass = delta > 0 ? 'is-positive' : 'is-negative'; return `<div class="snack-stock-history-row ${movementClass}"><span class="snack-stock-history-icon" aria-hidden="true">${managerIcon(delta > 0 ? 'plus' : 'minus')}</span><div class="snack-stock-history-main"><strong>${escapeManagerHtml(product?.name || `Produto ${entry.product_id}`)}</strong><small>${escapeManagerHtml(stockMovementLabel(entry.reason))}</small></div><span class="snack-stock-history-delta">${delta > 0 ? '+' : ''}${delta}</span><div class="snack-stock-history-meta"><strong>Saldo ${entry.resulting_stock}</strong><time>${new Date(entry.created_at).toLocaleString('pt-BR')}</time></div></div>`; }).join('')}</div>` : `<div class="snack-stock-history-empty"><span aria-hidden="true">${managerIcon('history')}</span><strong>Nenhuma movimentação registrada</strong><p>As próximas alterações de estoque aparecerão aqui.</p></div>`}</section>`;
 }
 
 function stockMovementLabel(reason) {
-  return ({ manual_restock:'Reposição manual', order_debit:'Baixa por pedido', order_restore:'Restauração por cancelamento', manual_adjustment:'Ajuste manual' })[reason] || reason;
+  return ({ manual_restock:'Reposição manual', order_debit:'Baixa por pedido', order_restore:'Restauração por cancelamento', manual_adjustment:'Retirada manual' })[reason] || reason;
 }
 
 /* ── CONFIGURAÇÕES DA LOJA (FRONTEND) ── */
