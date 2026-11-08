@@ -1430,8 +1430,13 @@ function formatOrderAddress(address) {
 async function verifyManager() {
   const { data: { user } } = await DB.auth.getUser();
   if (!user) return false;
-  const { data, error } = await DB.from('profiles').select('role').eq('id', user.id).single();
-  return !error && ['owner', 'manager', 'attendant'].includes(data?.role) ? data.role : null;
+  const [profileResult, capabilityResult] = await Promise.all([
+    DB.from('profiles').select('role').eq('id', user.id).single(),
+    DB.rpc('has_capability', { p_capability:'view_dashboard' }),
+  ]);
+  const role = profileResult.data?.role;
+  return !profileResult.error && !capabilityResult.error && capabilityResult.data === true
+    && ['owner', 'manager', 'attendant'].includes(role) ? role : null;
 }
 
 function loadProductsForCurrentRole() {

@@ -16,6 +16,9 @@ const profileHtml = read('perfil.html');
 const loginHtml = read('entrar.html');
 const supabaseConfig = read('js/supabase-config.js');
 const cleanupProposal = read('supabase/audits/test-data-cleanup-proposal.sql');
+const adminAccessFix = read('supabase/CORRECAO_SEGURANCA_ACESSO_ADMIN.sql');
+const menuManager = read('js/cardapio-gestor.js');
+const authHeader = read('js/auth-header.js');
 
 assert.match(roles, /Somente owner pode alterar perfis de acesso/);
 assert.match(roles, /O ultimo owner nao pode ser removido ou rebaixado/);
@@ -58,6 +61,10 @@ assert.match(consumer, /escapeCartHtml\(p\.name\)/);
 assert.match(consumer, /escapeCartHtml\(p\.desc\)/);
 assert.match(consumer, /const imageUrl = safePopupUrl\(popup\.image_url\)/);
 assert.match(manager, /\['owner', 'manager', 'attendant'\]\.includes/);
+assert.match(manager, /rpc\('has_capability', \{ p_capability:'view_dashboard' \}\)/);
+assert.match(menuManager, /rpc\('has_capability', \{ p_capability:'manage_menu' \}\)/);
+assert.match(login, /rpc\('has_capability', \{ p_capability:'view_dashboard' \}\)/);
+assert.match(authHeader, /rpc\('has_capability', \{ p_capability:'view_dashboard' \}\)/);
 assert.match(manager, /p\?\.name \|\| i\.productName \|\| 'Produto indisponível'/);
 assert.match(manager, /data-capability="manageStock"[^>]*>Abrir área preparada/);
 assert.match(manager, /data-capability="manageMenu"[^>]*data-delete-product-id/);
@@ -97,5 +104,12 @@ assert.match(cleanupProposal, /confirmation_text constant text := 'REVIEW_REQUIR
 assert.match(cleanupProposal, /auth_users_before/);
 assert.match(cleanupProposal, /profiles_before/);
 assert.doesNotMatch(cleanupProposal, /drop\s+(table|function)|delete\s+from\s+auth\.users|delete\s+from\s+public\.profiles|\bcascade\b/i);
+
+assert.match(adminAccessFix, /new\.role := 'customer'::public\.user_role/);
+assert.match(adminAccessFix, /grant update \(name, phone, street, address_number, address_complement, neighborhood\)/);
+assert.doesNotMatch(adminAccessFix.match(/grant update \([^;]+\)\s+on table public\.profiles/)?.[0] || '', /\brole\b|\bpoints\b|\bemail\b/);
+assert.match(adminAccessFix, /products public active read/);
+assert.match(adminAccessFix, /has_column_privilege\('authenticated', 'public\.profiles', 'role', 'UPDATE'\)/);
+assert.match(adminAccessFix, /bucket_id = 'product-images' and public\.has_capability\('manage_menu'\)/);
 
 console.log('security-static: PASS');

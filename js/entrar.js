@@ -49,7 +49,12 @@ async function redirectAuthenticatedUser() {
   const customerDestination = params.get('returnTo') === 'index.html'
     ? `index.html${params.get('checkout') === '1' ? '?checkout=1' : ''}`
     : 'index.html';
-  window.location.replace(['owner', 'manager', 'attendant'].includes(profile?.role) ? 'gestor.html' : customerDestination);
+  let canViewDashboard = false;
+  if (['owner', 'manager', 'attendant'].includes(profile?.role)) {
+    const capabilityResult = await DB.rpc('has_capability', { p_capability:'view_dashboard' });
+    canViewDashboard = !capabilityResult.error && capabilityResult.data === true;
+  }
+  window.location.replace(canViewDashboard ? 'gestor.html' : customerDestination);
   return true;
 }
 

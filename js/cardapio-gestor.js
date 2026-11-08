@@ -71,8 +71,13 @@ function validateProductFields() {
 async function verifyMenuManager() {
   const { data: { user } } = await DB.auth.getUser();
   if (!user) return false;
-  const { data } = await DB.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  return ['owner', 'manager'].includes(data?.role) ? data.role : null;
+  const [profileResult, capabilityResult] = await Promise.all([
+    DB.from('profiles').select('role').eq('id', user.id).maybeSingle(),
+    DB.rpc('has_capability', { p_capability:'manage_menu' }),
+  ]);
+  const role = profileResult.data?.role;
+  return !profileResult.error && !capabilityResult.error && capabilityResult.data === true
+    && ['owner', 'manager'].includes(role) ? role : null;
 }
 
 function renderMenuProducts() {

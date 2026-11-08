@@ -11,13 +11,18 @@ async function updateHeaderAuth() {
     return;
   }
 
-  const { data: profile } = await DB.from('profiles').select('name, role').eq('id', user.id).maybeSingle();
+  const [{ data: profile }, capabilityResult] = await Promise.all([
+    DB.from('profiles').select('name, role').eq('id', user.id).maybeSingle(),
+    DB.rpc('has_capability', { p_capability:'view_dashboard' }),
+  ]);
   const name = profile?.name || user.user_metadata?.name || user.email.split('@')[0];
   document.getElementById('header-user-name').textContent = name;
   document.getElementById('header-user-avatar').textContent = name.charAt(0).toUpperCase();
   guestActions.classList.add('hidden');
   userActions.classList.remove('hidden');
-  document.getElementById('manager-shortcut').classList.toggle('hidden', !['owner', 'manager', 'attendant'].includes(profile?.role));
+  const canViewDashboard = !capabilityResult.error && capabilityResult.data === true
+    && ['owner', 'manager', 'attendant'].includes(profile?.role);
+  document.getElementById('manager-shortcut').classList.toggle('hidden', !canViewDashboard);
 }
 
 document.getElementById('header-logout').addEventListener('click', async () => {
