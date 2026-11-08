@@ -171,6 +171,9 @@ async function loadProfile() {
   document.getElementById('profile-member').textContent = `Cliente desde ${createdAt}`;
   document.getElementById('profile-content').classList.remove('hidden');
   await loadOrderHistory();
+  if (window.location.hash === '#meus-pedidos') {
+    requestAnimationFrame(() => document.getElementById('meus-pedidos')?.scrollIntoView({ behavior:'smooth', block:'start' }));
+  }
 }
 
 function showProfileToast(message) {

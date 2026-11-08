@@ -7,7 +7,7 @@
   <link rel="icon" type="image/png" href="dogburger.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css?v=20261108-3" />
 </head>
 <body class="app-pattern-background">
 
@@ -27,10 +27,18 @@
         <a href="cadastro.html" class="btn-ghost customer-header-button">Criar conta</a>
       </div>
       <div class="header-user hidden" id="user-actions">
-        <span class="header-user-avatar" id="header-user-avatar">U</span>
+        <a href="perfil.html" class="header-user-avatar" id="header-user-avatar" aria-label="Abrir meu perfil">U</a>
         <a href="perfil.html" class="header-user-name" id="header-user-name" title="Ver meu perfil"></a>
-        <a href="gestor.html" class="btn-manager-shortcut hidden" id="manager-shortcut">Painel do Gestor</a>
-        <button class="btn-ghost customer-header-button" id="header-logout" type="button">Sair</button>
+        <a href="perfil.html#meus-pedidos" class="header-orders-link"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Meus pedidos</span></a>
+        <div class="header-notifications" id="header-notifications">
+          <button class="header-notification-button" id="header-notification-button" type="button" aria-label="Atualizações dos pedidos" aria-haspopup="true" aria-expanded="false" aria-controls="header-notification-panel"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span class="header-notification-badge hidden" id="header-notification-badge">0</span></button>
+          <section class="header-notification-panel hidden" id="header-notification-panel" aria-label="Atualizações dos seus pedidos">
+            <div class="header-notification-head"><div><strong>Atualizações dos pedidos</strong><span>Acompanhe cada etapa</span></div><a href="perfil.html#meus-pedidos">Ver histórico</a></div>
+            <div class="header-notification-list" id="header-notification-list"></div>
+          </section>
+        </div>
+        <a href="gestor.html" class="btn-manager-shortcut hidden" id="manager-shortcut"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Painel do Gestor</span></a>
+        <button class="btn-ghost customer-header-button" id="header-logout" type="button" aria-label="Sair da conta"><svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5M14 8l4 4-4 4M8 12h10"/></svg><span>Sair</span></button>
       </div>
       <button class="btn-cart" type="button" onclick="openCart()" aria-haspopup="dialog" aria-controls="cart-drawer">
         <svg class="customer-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.1a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L21 8H7"/><circle cx="10" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg><span>Carrinho</span>
@@ -154,7 +162,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js?v=20261108-1"></script>
 <script src="js/store.js?v=20261108-2"></script>
-<script src="js/auth-header.js"></script>
+<script src="js/auth-header.js?v=20261108-1"></script>
 <script src="js/consumer.js?v=20261108-2"></script>
 </body>
 </html>
