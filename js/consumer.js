@@ -425,6 +425,29 @@ function showToast(msg) {
 
 let homePopupPreviousFocus = null;
 let homePopupDismissed = false;
+let activeHomePopupSignature = '';
+const HOME_POPUP_DISMISS_KEY = 'dogburger:home-popup:last-dismissed';
+
+function homePopupSignature(popup) {
+  const source = [popup.id || 1, popup.updated_at || '', popup.title || '', popup.message || '', popup.image_url || '', popup.button_text || '', popup.button_url || '', popup.starts_at || '', popup.ends_at || ''].join('|');
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index++) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `${popup.id || 1}:${(hash >>> 0).toString(36)}`;
+}
+
+function wasHomePopupDismissed(signature) {
+  try { return localStorage.getItem(HOME_POPUP_DISMISS_KEY) === signature; }
+  catch { return false; }
+}
+
+function rememberHomePopupDismissal() {
+  if (!activeHomePopupSignature) return;
+  try { localStorage.setItem(HOME_POPUP_DISMISS_KEY, activeHomePopupSignature); }
+  catch { /* O fechamento continua válido durante a navegação atual. */ }
+}
 
 function closeHomePopup() {
   const popup = document.getElementById('home-popup');
@@ -432,6 +455,7 @@ function closeHomePopup() {
   document.getElementById('home-popup-overlay').classList.add('hidden');
   popup.classList.add('hidden');
   homePopupDismissed = true;
+  rememberHomePopupDismissal();
   if (homePopupPreviousFocus?.isConnected) homePopupPreviousFocus.focus();
   homePopupPreviousFocus = null;
 }
@@ -461,6 +485,9 @@ async function loadHomePopup() {
   try {
     const popup = await Store.getActivePopup();
     if (!popup || !popup.active || !popup.title || !popup.message) return;
+    const signature = homePopupSignature(popup);
+    if (wasHomePopupDismissed(signature)) return;
+    activeHomePopupSignature = signature;
     document.getElementById('home-popup-title').textContent = popup.title;
     document.getElementById('home-popup-message').textContent = popup.message;
 
@@ -497,6 +524,10 @@ async function loadHomePopup() {
 
 document.getElementById('home-popup-close').addEventListener('click', closeHomePopup);
 document.getElementById('home-popup-overlay').addEventListener('click', closeHomePopup);
+document.getElementById('home-popup-action').addEventListener('click', () => {
+  homePopupDismissed = true;
+  rememberHomePopupDismissal();
+});
 document.addEventListener('keydown', handleHomePopupKeydown);
 
 async function initConsumer() {
