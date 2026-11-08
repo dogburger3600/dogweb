@@ -269,6 +269,34 @@ function updateChangeOptions() {
   if (!needsChange) document.getElementById('change-for').value = '';
 }
 
+async function refreshCartAvailability() {
+  const latestProducts = await Store.getProducts();
+  const latestById = new Map(latestProducts.map(product => [product.id, product]));
+  const problems = [];
+
+  cart.forEach(item => {
+    const latest = latestById.get(item.product.id);
+    if (!latest) {
+      problems.push(`${item.product.name}: produto indisponível`);
+      return;
+    }
+    item.product = latest;
+    if (latest.category === 'lanches' && item.qty > Number(latest.stock)) {
+      problems.push(`${latest.name}: disponível ${Number(latest.stock) || 0}, solicitado ${item.qty}`);
+    }
+  });
+
+  products = latestProducts;
+  saveCart();
+  updateCartBadge();
+  renderProducts();
+  renderCartItems();
+
+  if (problems.length) {
+    throw new Error(`O estoque mudou. ${problems.join('; ')}. Ajuste o carrinho para continuar.`);
+  }
+}
+
 async function openCheckout() {
   const { data: { user } } = await DB.auth.getUser();
   if (!user) {
@@ -276,7 +304,13 @@ async function openCheckout() {
     window.location.href = 'entrar.html?returnTo=index.html&checkout=1';
     return;
   }
-  try { checkoutSettings = await Store.getStoreSettings(); } catch (error) { alert(`Não foi possível carregar as configurações. ${error.message || ''}`); return; }
+  try {
+    await refreshCartAvailability();
+    checkoutSettings = await Store.getStoreSettings();
+  } catch (error) {
+    alert(`Não foi possível continuar. ${error.message || ''}`);
+    return;
+  }
   const count = cart.length;
   const total = cartTotal();
   document.getElementById('checkout-sub').textContent =
@@ -328,16 +362,19 @@ async function placeOrder() {
     alert('Escolha a forma de pagamento.');
     return;
   }
-  const fee = fulfillmentMethod === 'delivery' && cartTotal() < Number(checkoutSettings.free_delivery_from) ? Number(checkoutSettings.delivery_fee) : 0;
-  if (needsChange && (!Number.isFinite(changeFor) || changeFor < cartTotal() + fee)) {
-    alert('Informe um valor para troco igual ou maior que o total do pedido.');
-    return;
-  }
-
   const button = document.getElementById('btn-place-order');
   button.disabled = true;
   button.innerHTML = `<span>Enviando pedido...</span>`;
   try {
+    // Atualiza novamente imediatamente antes da RPC. A checagem definitiva
+    // continua no banco, dentro da mesma transacao que desconta o estoque.
+    await refreshCartAvailability();
+    renderCheckoutSummary();
+    renderCheckoutSettings();
+    const fee = fulfillmentMethod === 'delivery' && cartTotal() < Number(checkoutSettings.free_delivery_from) ? Number(checkoutSettings.delivery_fee) : 0;
+    if (needsChange && (!Number.isFinite(changeFor) || changeFor < cartTotal() + fee)) {
+      throw new Error('Informe um valor para troco igual ou maior que o total do pedido.');
+    }
     const order = await Store.placeOrder(name, note, cart, paymentMethod, changeFor, fulfillmentMethod);
     products = await Store.getProducts();
     cart = [];
