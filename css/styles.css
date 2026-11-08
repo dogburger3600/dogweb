@@ -920,6 +920,9 @@ body { min-height: 100vh; }
 .history-order-financial dd { font-family: var(--font-mono); }
 .history-order-financial .history-order-financial-total { margin-top: 4px; padding-top: 7px; border-top: 1px solid var(--border); color: var(--dark); font-family: var(--font-display); font-size: 0.86rem; font-weight: 800; }
 .history-order-financial .history-order-financial-total dd { font-family: var(--font-display); }
+.history-order-points { margin-top: 10px; padding: 10px 12px; border: 1px solid #BBF7D0; border-radius: 9px; background: #F0FDF4; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.history-order-points strong { color: #15803D; font-family: var(--font-display); font-size: 0.86rem; }
+.history-order-points span { color: #166534; font-size: 0.72rem; text-align: right; }
 .history-order-details { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--surface); }
 .history-detail { display: flex; align-items: flex-start; gap: 8px; color: var(--stone); font-size: 0.76rem; line-height: 1.4; }
 

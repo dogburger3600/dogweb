@@ -1056,18 +1056,24 @@ function toggleOrder(id) {
 
 async function advanceOrder(id, nextStatus) {
   const o = orders.find(o => o.id === id);
+  let pointsAwarded = 0;
+  let pointsBalance = null;
   if (o) {
     try {
       const result = await Store.updateOrderStatus(o.databaseId, nextStatus);
       orders = await Store.getOrders();
       expandedOrders.add(id);
       nextStatus = result.status;
+      pointsAwarded = Number(result.points_awarded) || 0;
+      pointsBalance = result.points_balance == null ? null : Number(result.points_balance);
     } catch (error) {
       alert(`Não foi possível atualizar o pedido. ${error.message}`);
       return;
     }
   }
-  ORDERS_UI_STATE.feedback = `${id} avançou para ${STATUS_META[nextStatus].label}.`;
+  ORDERS_UI_STATE.feedback = nextStatus === 'entregue'
+    ? `${id} foi entregue. ${pointsAwarded} ${pointsAwarded === 1 ? 'ponto creditado' : 'pontos creditados'}${Number.isFinite(pointsBalance) ? ` · saldo do cliente: ${pointsBalance}` : ''}.`
+    : `${id} avançou para ${STATUS_META[nextStatus].label}.`;
   updateActiveOrdersBadge();
   document.getElementById('m-content').innerHTML = renderPedidos();
 }

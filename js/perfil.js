@@ -36,6 +36,10 @@ function formatOrderAddress(address) {
 
 async function loadOrderHistory() {
   const list = document.getElementById('profile-orders-list');
+  const { data: pointCredits, error:pointCreditsError } = await DB.from('loyalty_point_credits')
+    .select('order_id, eligible_amount, points_awarded, credited_at')
+    .order('credited_at', { ascending:false });
+  const creditsByOrder = new Map((pointCreditsError ? [] : pointCredits || []).map(credit => [credit.order_id, credit]));
   let { data: orders, error } = await DB.from('orders')
     .select('id, status, note, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, product_name, quantity, unit_price, removed_ingredients)')
     .order('created_at', { ascending:false });
@@ -74,6 +78,7 @@ async function loadOrderHistory() {
   const paymentLabels = { pix:'Pix', credito:'Crédito', debito:'Débito', dinheiro:'Dinheiro' };
 
   list.innerHTML = orders.map(order => {
+    const pointCredit = creditsByOrder.get(order.id);
     const legacyTotal = order.order_items.reduce((sum, item) => sum + Number(item.unit_price) * item.quantity, 0);
     const subtotal = order.subtotal == null ? null : Number(order.subtotal);
     const deliveryFee = order.delivery_fee == null ? null : Number(order.delivery_fee);
@@ -101,13 +106,14 @@ async function loadOrderHistory() {
       <div><span class="history-item-name">${escapeProfileHtml(item.product_name || `Produto #${item.product_id}`)}</span><small class="history-item-unit">R$ ${Number(item.unit_price).toLocaleString('pt-BR', {minimumFractionDigits:2})} cada</small>${item.removed_ingredients ? `<small class="history-item-removal">Sem: ${escapeProfileHtml(item.removed_ingredients)}</small>` : ''}</div>
       <span class="history-item-price">R$ ${(Number(item.unit_price) * item.quantity).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
     </div>`).join('');
+    const pointsSummary = pointCredit ? `<div class="history-order-points"><strong>+${Number(pointCredit.points_awarded) || 0} ${Number(pointCredit.points_awarded) === 1 ? 'ponto' : 'pontos'}</strong><span>Creditados após a entrega · regra de 1 ponto a cada R$ 10</span></div>` : '';
     return `<article class="history-order">
       <div class="history-order-summary">
         <div class="history-order-main"><span class="history-order-number">PED-${String(order.id).padStart(3,'0')}</span><time class="history-order-date">${date}</time></div>
         <span class="status-badge" style="background:${status.bg};color:${status.color}">${status.label}</span>
         <strong class="history-order-total">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
       </div>
-      <div class="history-order-body">${items}${financialSummary}<div class="history-order-details">
+      <div class="history-order-body">${items}${financialSummary}${pointsSummary}<div class="history-order-details">
         <div class="history-detail"><span>${profileIcon('pin')}</span><span>${escapeProfileHtml(address)}</span></div>
         ${order.payment_method ? `<div class="history-detail"><span>${profileIcon('payment')}</span><span>Pagamento na entrega: ${paymentLabels[order.payment_method] || order.payment_method}${order.payment_method === 'dinheiro' && order.change_for !== null ? ` · troco para R$ ${Number(order.change_for).toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</span></div>` : ''}
         ${order.note ? `<div class="history-detail"><span>${profileIcon('note')}</span><span>${escapeProfileHtml(order.note)}</span></div>` : ''}
