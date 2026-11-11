@@ -4484,6 +4484,8 @@ body { min-height: 100vh; }
     background-image:
       linear-gradient(rgba(12, 8, 5, 0.42), rgba(12, 8, 5, 0.52)),
       url('../assets/3b30759f-59f0-4708-bd09-cc348255cd55.png');
+    background-position: center, center bottom;
+    background-size: 100% 100%, contain;
   }
   #page-consumer .c-hero-inner { grid-template-columns: 104px minmax(0, 1fr); gap: 16px; }
   #page-consumer .c-hero-logo { width: 104px; max-height: 96px; }
