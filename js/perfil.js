@@ -1,12 +1,14 @@
 'use strict';
 
 let currentProfile = null;
+let profileOrders = [];
 
 const PROFILE_ICON_PATHS = Object.freeze({
   pin:'<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
   payment:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/>',
   note:'<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
   receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6M9 12h6M9 16h3"/>',
+  repeat:'<path d="M20 7v5h-5"/><path d="M18.5 16a8 8 0 1 1 1.1-8.2L20 12"/>',
 });
 
 function profileIcon(name) {
@@ -32,6 +34,87 @@ function formatOrderAddress(address) {
   if (!address) return 'Endereço não registrado';
   const firstLine = [address.street, address.number].filter(Boolean).join(', ');
   return `${firstLine}${address.complement ? ` · ${address.complement}` : ''}${address.neighborhood ? ` — ${address.neighborhood}` : ''}`;
+}
+
+function hasSavedCart() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('dogburger_cart') || '[]');
+    return Array.isArray(saved) && saved.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function repeatOrder(orderId, button) {
+  const order = profileOrders.find(item => Number(item.id) === Number(orderId));
+  if (!order || !Array.isArray(order.order_items) || !order.order_items.length) {
+    alert('Não foi possível encontrar os itens deste pedido.');
+    return;
+  }
+  if (!order.repeatable) {
+    alert('Aguarde a conclusão ou o cancelamento deste pedido antes de repeti-lo.');
+    return;
+  }
+  if (hasSavedCart() && !confirm('Seu carrinho atual será substituído pelos itens deste pedido. Deseja continuar?')) return;
+
+  const originalContent = button.innerHTML;
+  button.disabled = true;
+  button.textContent = 'Verificando...';
+  try {
+    const [currentProducts, currentAddons] = await Promise.all([Store.getProducts(), Store.getAddons()]);
+    const productsById = new Map(currentProducts.map(product => [Number(product.id), product]));
+    const addonsById = new Map(currentAddons.map(addon => [Number(addon.id), addon]));
+    const unavailableItems = [];
+    const unavailableAddons = [];
+    const repeatedCart = [];
+
+    order.order_items.forEach(item => {
+      const productId = Number(item.product_id);
+      const quantity = Number(item.quantity);
+      const product = productsById.get(productId);
+      const historicalName = item.product_name || `Produto #${productId}`;
+      if (!product || !Number.isInteger(quantity) || quantity <= 0) {
+        unavailableItems.push(`${historicalName}: indisponível`);
+        return;
+      }
+      if (product.category === 'lanches' && quantity > Number(product.stock)) {
+        unavailableItems.push(`${product.name}: disponível ${Number(product.stock) || 0}, pedido anterior ${quantity}`);
+        return;
+      }
+
+      const historicalAddons = Array.isArray(item.selected_addons) ? item.selected_addons : [];
+      const selectedAddonIds = [];
+      if (product.category === 'lanches') {
+        historicalAddons.forEach(addon => {
+          const addonId = Number(addon.id);
+          if (addonsById.has(addonId)) selectedAddonIds.push(addonId);
+          else unavailableAddons.push(`${product.name}: ${addon.name || 'adicional indisponível'}`);
+        });
+      }
+
+      repeatedCart.push({
+        pid:productId,
+        qty:quantity,
+        removedIngredients:product.category === 'lanches' ? String(item.removed_ingredients || '').slice(0, 120) : '',
+        selectedAddonIds:[...new Set(selectedAddonIds)].slice(0, 10),
+      });
+    });
+
+    if (unavailableItems.length) {
+      throw new Error(`Não é possível repetir este pedido agora. ${unavailableItems.join('; ')}.`);
+    }
+
+    sessionStorage.setItem('dogburger_cart', JSON.stringify(repeatedCart));
+    const notice = unavailableAddons.length
+      ? `Pedido anterior adicionado com os preços atuais. Alguns adicionais indisponíveis foram removidos: ${unavailableAddons.join('; ')}.`
+      : 'Pedido anterior adicionado ao carrinho com os preços atuais. Confira antes de finalizar.';
+    sessionStorage.setItem('dogburger_repeat_notice', notice);
+    window.location.href = 'index.html?cart=1';
+  } catch (error) {
+    alert(error.message || 'Não foi possível repetir este pedido. Tente novamente.');
+    button.disabled = false;
+    button.innerHTML = originalContent;
+  }
 }
 
 async function loadOrderHistory() {
@@ -69,6 +152,12 @@ async function loadOrderHistory() {
     list.innerHTML = `<div class="profile-orders-empty">${profileIcon('receipt')}<strong>Não foi possível carregar seu histórico</strong><p>Tente novamente em alguns instantes.</p></div>`;
     return;
   }
+
+  profileOrders = orders.map(order => ({
+    ...order,
+    repeatable:['entregue', 'cancelado'].includes(order.status) || cancellationsByOrder.has(Number(order.id)),
+  }));
+  orders = profileOrders;
 
   document.getElementById('profile-orders-count').textContent = `${orders.length} ${orders.length === 1 ? 'pedido' : 'pedidos'}`;
   if (!orders.length) {
@@ -115,6 +204,7 @@ async function loadOrderHistory() {
     </div>`).join('');
     const pointsSummary = pointCredit ? `<div class="history-order-points"><strong>+${Number(pointCredit.points_awarded) || 0} ${Number(pointCredit.points_awarded) === 1 ? 'ponto' : 'pontos'}</strong><span>Creditados após a entrega · regra de 1 ponto a cada R$ 10</span></div>` : '';
     const cancellationSummary = cancellation ? `<div class="history-detail"><span>${profileIcon('note')}</span><span><strong>Pedido cancelado</strong>${cancellation.reason ? ` · ${escapeProfileHtml(cancellation.reason)}` : ''}${cancellation.cancelled_at ? ` · ${new Date(cancellation.cancelled_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' })}` : ''}</span></div>` : '';
+    const repeatAction = order.repeatable ? `<div class="history-order-actions"><button class="history-repeat-button" type="button" data-repeat-order-id="${Number(order.id)}">${profileIcon('repeat')}<span>Pedir novamente</span></button></div>` : '';
     return `<article class="history-order">
       <div class="history-order-summary">
         <div class="history-order-main"><span class="history-order-number">PED-${String(order.id).padStart(3,'0')}</span><time class="history-order-date">${date}</time></div>
@@ -126,7 +216,7 @@ async function loadOrderHistory() {
         ${order.payment_method ? `<div class="history-detail"><span>${profileIcon('payment')}</span><span>Pagamento na entrega: ${paymentLabels[order.payment_method] || order.payment_method}${order.payment_method === 'dinheiro' && order.change_for !== null ? ` · troco para R$ ${Number(order.change_for).toLocaleString('pt-BR', {minimumFractionDigits:2})}` : ''}</span></div>` : ''}
         ${cancellationSummary}
         ${order.note ? `<div class="history-detail"><span>${profileIcon('note')}</span><span>${escapeProfileHtml(order.note)}</span></div>` : ''}
-      </div></div>
+      </div>${repeatAction}</div>
     </article>`;
   }).join('');
 }
@@ -213,6 +303,10 @@ document.getElementById('profile-edit-phone').addEventListener('input', event =>
 
 document.getElementById('profile-edit-button').addEventListener('click', openProfileEdit);
 document.getElementById('profile-edit-cancel').addEventListener('click', closeProfileEdit);
+document.getElementById('profile-orders-list').addEventListener('click', event => {
+  const button = event.target.closest('[data-repeat-order-id]');
+  if (button) repeatOrder(Number(button.dataset.repeatOrderId), button);
+});
 document.getElementById('profile-edit-form').addEventListener('submit', async event => {
   event.preventDefault();
   const name = document.getElementById('profile-edit-name').value.trim().replace(/\s+/g, ' ');

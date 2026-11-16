@@ -981,6 +981,16 @@ body { min-height: 100vh; }
 .history-order-points span { color: #166534; font-size: 0.72rem; text-align: right; }
 .history-order-details { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--surface); }
 .history-detail { display: flex; align-items: flex-start; gap: 8px; color: var(--stone); font-size: 0.76rem; line-height: 1.4; }
+.history-order-actions { display: flex; justify-content: flex-end; margin-top: 13px; padding-top: 13px; border-top: 1px solid var(--surface); }
+.history-repeat-button { min-height: 40px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 14px; border: 1px solid #FDBA74; border-radius: 10px; background: #FFF7ED; color: #9A3412; font-family: var(--font-body); font-size: 0.76rem; font-weight: 900; cursor: pointer; }
+.history-repeat-button:hover:not(:disabled) { border-color: var(--brand); background: var(--brand); color: #fff; }
+.history-repeat-button:focus-visible { outline: 3px solid rgba(234,88,12,0.25); outline-offset: 2px; }
+.history-repeat-button:disabled { opacity: 0.65; cursor: wait; }
+.history-repeat-button .customer-icon { width: 17px; height: 17px; }
+
+@media (max-width: 640px) {
+  .history-repeat-button { width: 100%; }
+}
 
 /* ── MENU MANAGER ── */
 #page-menu-manager { min-height: 100vh; }

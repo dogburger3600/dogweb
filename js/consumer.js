@@ -593,7 +593,18 @@ async function initConsumer() {
     updateCartBadge();
     renderCartItems();
     const params = new URLSearchParams(window.location.search);
-    if (params.get('checkout') === '1' && cart.length > 0) {
+    if (params.get('cart') === '1') {
+      window.history.replaceState({}, '', 'index.html');
+      homePopupDismissed = true;
+      const repeatNotice = sessionStorage.getItem('dogburger_repeat_notice');
+      sessionStorage.removeItem('dogburger_repeat_notice');
+      if (cart.length > 0) {
+        openCart();
+        showToast(repeatNotice || 'Pedido anterior adicionado ao carrinho. Confira antes de finalizar.');
+      } else {
+        showToast('Os itens deste pedido não estão mais disponíveis no cardápio.');
+      }
+    } else if (params.get('checkout') === '1' && cart.length > 0) {
       window.history.replaceState({}, '', 'index.html');
       await openCheckout();
     }
