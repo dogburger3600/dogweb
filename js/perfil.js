@@ -95,9 +95,9 @@ async function repeatOrder(orderId, button) {
 
       const selectedPastelFlavor = product.category === 'pasteis' && product.pastelFlavors.includes(item.selected_pastel_flavor) ? item.selected_pastel_flavor : '';
       const selectedPastelIngredients = product.category === 'pasteis' && Array.isArray(item.selected_pastel_ingredients)
-        ? [...new Set(item.selected_pastel_ingredients.map(String).filter(ingredient => product.ingredients.includes(ingredient)))].slice(0, product.pastelSize === 'medio' ? 3 : 2)
+        ? [...new Set(item.selected_pastel_ingredients.map(String).filter(ingredient => product.ingredients.includes(ingredient)))].slice(0, product.pastelSize === 'medio' ? 3 : product.pastelSize === 'grande' ? 2 : product.pastelSize === 'doce' ? 1 : 0)
         : [];
-      const requiredPastelIngredients = product.pastelSize === 'medio' ? 3 : product.pastelSize === 'grande' ? 2 : 0;
+      const requiredPastelIngredients = product.pastelSize === 'medio' ? 3 : product.pastelSize === 'grande' ? 2 : product.pastelSize === 'doce' ? 1 : 0;
       if (product.category === 'pasteis' && product.pastelSize !== 'simples'
         && (selectedPastelIngredients.length !== requiredPastelIngredients || (product.pastelSize === 'grande' && !selectedPastelFlavor))) {
         pastelReviews.push(product.name);

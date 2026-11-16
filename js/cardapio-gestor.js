@@ -40,7 +40,7 @@ function updateIngredientsField() {
   document.getElementById('product-pastel-flavors-group').classList.toggle('hidden', !isPastel || pastelSize !== 'grande');
   document.getElementById('product-ingredients-label').textContent = isPastel ? 'Ingredientes disponíveis para escolha *' : 'Ingredientes do lanche *';
   document.getElementById('product-ingredients-help').textContent = isPastel
-    ? `Separe por vírgulas. O cliente escolherá exatamente ${pastelSize === 'grande' ? 2 : pastelSize === 'medio' ? 3 : 0} ingrediente(s).`
+    ? `Separe por vírgulas. O cliente escolherá exatamente ${pastelSize === 'grande' ? 2 : pastelSize === 'medio' ? 3 : pastelSize === 'doce' ? 1 : 0} ingrediente(s).`
     : 'Separe por vírgulas. Ingredientes repetidos serão consolidados e até 30 itens serão considerados.';
 }
 
@@ -77,9 +77,10 @@ function validateProductFields() {
   if (!['lanches','pasteis','combos','sucos','refrigerantes','sobremesas'].includes(category)) valid = productFieldError('product-category', 'Selecione uma categoria válida.');
   if (priceValue === '' || !Number.isFinite(price) || price < 0) valid = productFieldError('product-price', 'Informe um preço válido igual ou maior que zero.');
   if (category === 'lanches' && !ingredients.length) valid = productFieldError('product-ingredients', 'Informe pelo menos um ingrediente do lanche.');
-  if (category === 'pasteis' && !['medio','grande','simples'].includes(pastelSize)) valid = productFieldError('product-pastel-size', 'Selecione o tipo de pastel.');
+  if (category === 'pasteis' && !['medio','grande','doce','simples'].includes(pastelSize)) valid = productFieldError('product-pastel-size', 'Selecione o tipo de pastel.');
   if (category === 'pasteis' && pastelSize === 'medio' && ingredients.length < 3) valid = productFieldError('product-ingredients', 'Cadastre pelo menos 3 ingredientes para o pastel médio.');
   if (category === 'pasteis' && pastelSize === 'grande' && ingredients.length < 2) valid = productFieldError('product-ingredients', 'Cadastre pelo menos 2 ingredientes para o pastel grande.');
+  if (category === 'pasteis' && pastelSize === 'doce' && ingredients.length < 1) valid = productFieldError('product-ingredients', 'Cadastre pelo menos 1 ingrediente para o pastel doce.');
   if (category === 'pasteis' && pastelSize === 'grande' && !pastelFlavors.length) valid = productFieldError('product-pastel-flavors', 'Cadastre pelo menos um sabor para o pastel grande.');
   return valid;
 }
@@ -128,7 +129,7 @@ function renderMenuProducts() {
         <div class="menu-edit-title"><h2>${escapeHtml(product.name)}</h2><strong>R$ ${fmt(product.price)}</strong></div>
         <p>${escapeHtml(product.desc)}</p>
         ${['lanches','pasteis'].includes(product.category) && product.ingredients.length ? `<p class="menu-edit-ingredients"><strong>${product.category === 'pasteis' ? 'Opções' : 'Ingredientes'}:</strong> ${product.ingredients.map(escapeHtml).join(', ')}</p>` : ''}
-        ${product.category === 'pasteis' ? `<p class="menu-edit-ingredients"><strong>Formato:</strong> ${product.pastelSize === 'medio' ? 'Médio · 3 ingredientes' : product.pastelSize === 'grande' ? `Grande · 1 sabor + 2 ingredientes${product.pastelFlavors.length ? ` · ${product.pastelFlavors.map(escapeHtml).join(', ')}` : ''}` : 'Sem personalização'}</p>` : ''}
+        ${product.category === 'pasteis' ? `<p class="menu-edit-ingredients"><strong>Formato:</strong> ${product.pastelSize === 'medio' ? 'Médio · 3 ingredientes' : product.pastelSize === 'grande' ? `Grande · 1 sabor + 2 ingredientes${product.pastelFlavors.length ? ` · ${product.pastelFlavors.map(escapeHtml).join(', ')}` : ''}` : product.pastelSize === 'doce' ? 'Doce · 1 ingrediente' : 'Sem personalização'}</p>` : ''}
         <div class="menu-edit-meta"><span class="menu-availability${product.active ? ' is-active' : ''}"><i aria-hidden="true"></i>${product.active ? 'Disponível' : 'Desativado'}</span>${product.category === 'lanches' ? `<span>Estoque: <b>${Number(product.stock) || 0}</b></span>` : '<span>Sem controle de estoque</span>'}</div>
         <div class="menu-edit-actions">
           <button class="btn-edit-product" data-action="edit" data-id="${product.id}" data-capability="manageMenu" data-capability-mode="disable">${menuIcon('edit')}<span>Editar</span></button>

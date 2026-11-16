@@ -53,7 +53,7 @@ function cartCount() {
 
 function requiredPastelIngredients(product) {
   if (product?.category !== 'pasteis') return 0;
-  return product.pastelSize === 'medio' ? 3 : product.pastelSize === 'grande' ? 2 : 0;
+  return product.pastelSize === 'medio' ? 3 : product.pastelSize === 'grande' ? 2 : product.pastelSize === 'doce' ? 1 : 0;
 }
 
 function pastelSelectionProblem(item) {
