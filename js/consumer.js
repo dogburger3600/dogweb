@@ -51,6 +51,20 @@ function cartCount() {
   return cart.reduce((s, i) => s + i.qty, 0);
 }
 
+function requiredPastelIngredients(product) {
+  if (product?.category !== 'pasteis') return 0;
+  return product.pastelSize === 'medio' ? 3 : product.pastelSize === 'grande' ? 2 : 0;
+}
+
+function pastelSelectionProblem(item) {
+  if (item.product.category !== 'pasteis' || item.product.pastelSize === 'simples') return '';
+  const required = requiredPastelIngredients(item.product);
+  const selectedCount = Array.isArray(item.selectedPastelIngredients) ? item.selectedPastelIngredients.length : 0;
+  if (item.product.pastelSize === 'grande' && !item.selectedPastelFlavor) return `${item.product.name}: escolha o sabor`;
+  if (selectedCount !== required) return `${item.product.name}: escolha exatamente ${required} ingredientes`;
+  return '';
+}
+
 function escapeCartHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, character => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' })[character]);
 }
@@ -63,19 +77,26 @@ function safeProductImageUrl(value) {
 }
 
 function saveCart() {
-  sessionStorage.setItem('dogburger_cart', JSON.stringify(cart.map(item => ({ pid:item.product.id, qty:item.qty, removedIngredients:item.removedIngredients || '', selectedAddonIds:item.selectedAddonIds || [] }))));
+  sessionStorage.setItem('dogburger_cart', JSON.stringify(cart.map(item => ({ pid:item.product.id, qty:item.qty, removedIngredients:item.removedIngredients || '', selectedAddonIds:item.selectedAddonIds || [], selectedPastelFlavor:item.selectedPastelFlavor || '', selectedPastelIngredients:item.selectedPastelIngredients || [] }))));
 }
 
 function restoreCart() {
   try {
     const saved = JSON.parse(sessionStorage.getItem('dogburger_cart') || '[]');
-    cart = saved.map(item => ({ product:getProduct(item.pid), qty:item.qty, removedIngredients:String(item.removedIngredients || '').slice(0,120), selectedAddonIds:[...new Set(Array.isArray(item.selectedAddonIds) ? item.selectedAddonIds.map(Number).filter(Number.isInteger) : [])].slice(0,10) })).filter(item => item.product && item.qty > 0);
+    cart = saved.map(item => ({ product:getProduct(item.pid), qty:item.qty, removedIngredients:String(item.removedIngredients || '').slice(0,120), selectedAddonIds:[...new Set(Array.isArray(item.selectedAddonIds) ? item.selectedAddonIds.map(Number).filter(Number.isInteger) : [])].slice(0,10), selectedPastelFlavor:String(item.selectedPastelFlavor || '').slice(0,80), selectedPastelIngredients:[...new Set(Array.isArray(item.selectedPastelIngredients) ? item.selectedPastelIngredients.map(String) : [])].slice(0,3) })).filter(item => item.product && item.qty > 0);
     cart.forEach(item => {
       if (item.product.category !== 'lanches') {
         item.removedIngredients = '';
         item.selectedAddonIds = [];
       } else {
         item.selectedAddonIds = item.selectedAddonIds.filter(addonId => Boolean(getAddon(addonId)));
+      }
+      if (item.product.category !== 'pasteis') {
+        item.selectedPastelFlavor = '';
+        item.selectedPastelIngredients = [];
+      } else {
+        item.selectedPastelFlavor = item.product.pastelFlavors.includes(item.selectedPastelFlavor) ? item.selectedPastelFlavor : '';
+        item.selectedPastelIngredients = item.selectedPastelIngredients.filter(ingredient => item.product.ingredients.includes(ingredient)).slice(0, requiredPastelIngredients(item.product));
       }
     });
   } catch {
@@ -157,7 +178,7 @@ function addToCart(pid) {
     }
     existing.qty++;
   } else {
-    cart.push({ product, qty: 1, removedIngredients: '', selectedAddonIds: [] });
+    cart.push({ product, qty: 1, removedIngredients: '', selectedAddonIds: [], selectedPastelFlavor:'', selectedPastelIngredients:[] });
   }
   updateCartBadge();
   renderCartItems();
@@ -204,6 +225,33 @@ function toggleCartAddon(pid, addonId, checked) {
   renderCartItems();
 }
 
+function selectPastelFlavor(pid, flavorIndex) {
+  const item = cart.find(cartItem => cartItem.product.id === pid);
+  const flavor = item?.product.pastelFlavors?.[flavorIndex];
+  if (!item || item.product.category !== 'pasteis' || !item.product.pastelFlavors.includes(flavor)) return;
+  item.selectedPastelFlavor = flavor;
+  saveCart();
+  renderCartItems();
+}
+
+function togglePastelIngredient(pid, ingredientIndex, checked) {
+  const item = cart.find(cartItem => cartItem.product.id === pid);
+  const ingredient = item?.product.ingredients?.[ingredientIndex];
+  if (!item || !ingredient || item.product.category !== 'pasteis') return;
+  const required = requiredPastelIngredients(item.product);
+  const selected = new Set(item.selectedPastelIngredients || []);
+  if (checked && !selected.has(ingredient) && selected.size >= required) {
+    showToast(`Você pode escolher ${required} ingredientes para este pastel.`);
+    renderCartItems();
+    return;
+  }
+  if (checked) selected.add(ingredient);
+  else selected.delete(ingredient);
+  item.selectedPastelIngredients = [...selected].slice(0, required);
+  saveCart();
+  renderCartItems();
+}
+
 function renderCartItems() {
   const el = document.getElementById('cart-items-list');
   const footer = document.getElementById('cart-footer');
@@ -221,6 +269,7 @@ function renderCartItems() {
 
   el.innerHTML = cart.map(i => {
     const isSnack = i.product.category === 'lanches';
+    const isPastel = i.product.category === 'pasteis';
     const ingredients = isSnack && Array.isArray(i.product.ingredients) ? i.product.ingredients : [];
     const removed = new Set(String(i.removedIngredients || '').split(',').map(value => value.trim()).filter(Boolean));
     const selectedAddonIds = new Set(i.selectedAddonIds || []);
@@ -238,6 +287,12 @@ function renderCartItems() {
         ${addons.map(addon => `<label><input type="checkbox" ${selectedAddonIds.has(addon.id) ? 'checked' : ''} onchange="toggleCartAddon(${i.product.id}, ${addon.id}, this.checked)" /><span><b>${escapeCartHtml(addon.name)}</b><small>+ R$ ${fmt(addon.price)}</small></span></label>`).join('')}
       </div>
     </div>`;
+    const requiredIngredients = requiredPastelIngredients(i.product);
+    const selectedPastelIngredients = new Set(i.selectedPastelIngredients || []);
+    const pastelEditor = !isPastel || i.product.pastelSize === 'simples' ? '' : `<div class="cart-pastel-customization">
+      ${i.product.pastelSize === 'grande' ? `<div class="cart-pastel-section"><div class="cart-pastel-heading"><strong>1. Escolha o sabor</strong><span>${i.selectedPastelFlavor ? 'Sabor selecionado' : 'Escolha obrigatória'}</span></div><div class="cart-pastel-options">${i.product.pastelFlavors.map((flavor, index) => `<label><input type="radio" name="pastel-flavor-${i.product.id}" ${i.selectedPastelFlavor === flavor ? 'checked' : ''} onchange="selectPastelFlavor(${i.product.id}, ${index})" /><span>${escapeCartHtml(flavor)}</span></label>`).join('')}</div></div>` : ''}
+      <div class="cart-pastel-section"><div class="cart-pastel-heading"><strong>${i.product.pastelSize === 'grande' ? '2.' : '1.'} Escolha ${requiredIngredients} ingredientes</strong><span class="${selectedPastelIngredients.size === requiredIngredients ? 'is-complete' : ''}">${selectedPastelIngredients.size}/${requiredIngredients} selecionados</span></div><div class="cart-pastel-options">${i.product.ingredients.map((ingredient, index) => `<label><input type="checkbox" ${selectedPastelIngredients.has(ingredient) ? 'checked' : ''} onchange="togglePastelIngredient(${i.product.id}, ${index}, this.checked)" /><span>${escapeCartHtml(ingredient)}</span></label>`).join('')}</div></div>
+    </div>`;
     return `
     <div class="cart-item">
       <div class="cart-item-main">
@@ -254,6 +309,7 @@ function renderCartItems() {
       </div>
       ${ingredientsEditor}
       ${addonsEditor}
+      ${pastelEditor}
     </div>`;
   }).join('');
 
@@ -280,9 +336,10 @@ function closeCart() {
 function renderCheckoutSummary() {
   document.getElementById('checkout-order-summary').innerHTML = cart.map(item => {
     const itemAddons = selectedCartAddons(item);
+    const pastelDetails = item.product.category === 'pasteis' ? `${item.selectedPastelFlavor ? `<small>Sabor: ${escapeCartHtml(item.selectedPastelFlavor)}</small>` : ''}${item.selectedPastelIngredients?.length ? `<small>Ingredientes: ${item.selectedPastelIngredients.map(escapeCartHtml).join(', ')}</small>` : ''}` : '';
     return `
     <div class="checkout-summary-item">
-      <div><strong>${item.qty}× ${escapeCartHtml(item.product.name)}</strong>${item.removedIngredients ? `<small>Sem: ${escapeCartHtml(item.removedIngredients)}</small>` : ''}${itemAddons.length ? `<small>Adicionais: ${itemAddons.map(addon => `${escapeCartHtml(addon.name)} (+ R$ ${fmt(addon.price)})`).join(', ')}</small>` : ''}</div>
+      <div><strong>${item.qty}× ${escapeCartHtml(item.product.name)}</strong>${item.removedIngredients ? `<small>Sem: ${escapeCartHtml(item.removedIngredients)}</small>` : ''}${itemAddons.length ? `<small>Adicionais: ${itemAddons.map(addon => `${escapeCartHtml(addon.name)} (+ R$ ${fmt(addon.price)})`).join(', ')}</small>` : ''}${pastelDetails}</div>
       <span>R$ ${fmt(cartItemUnitPrice(item) * item.qty)}</span>
     </div>`;
   }).join('');
@@ -334,6 +391,20 @@ async function refreshCartAvailability() {
     }
     if (latest.category === 'lanches' && item.qty > Number(latest.stock)) {
       problems.push(`${latest.name}: disponível ${Number(latest.stock) || 0}, solicitado ${item.qty}`);
+    }
+    if (latest.category === 'pasteis') {
+      const availableIngredients = new Set(latest.ingredients);
+      const selectedIngredients = (item.selectedPastelIngredients || []).filter(ingredient => availableIngredients.has(ingredient));
+      if (selectedIngredients.length !== (item.selectedPastelIngredients || []).length) {
+        item.selectedPastelIngredients = selectedIngredients;
+        problems.push(`${latest.name}: uma opção de ingrediente ficou indisponível`);
+      }
+      if (item.selectedPastelFlavor && !latest.pastelFlavors.includes(item.selectedPastelFlavor)) {
+        item.selectedPastelFlavor = '';
+        problems.push(`${latest.name}: o sabor escolhido ficou indisponível`);
+      }
+      const selectionProblem = pastelSelectionProblem(item);
+      if (selectionProblem) problems.push(selectionProblem);
     }
   });
 

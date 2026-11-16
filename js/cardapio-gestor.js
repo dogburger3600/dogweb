@@ -32,8 +32,16 @@ function parseIngredients(value) {
 function updateIngredientsField() {
   const category = document.getElementById('product-category').value;
   const isSnack = category === 'lanches';
-  document.getElementById('product-ingredients-group').classList.toggle('hidden', !isSnack);
+  const isPastel = category === 'pasteis';
+  const pastelSize = document.getElementById('product-pastel-size').value;
+  document.getElementById('product-ingredients-group').classList.toggle('hidden', !isSnack && (!isPastel || pastelSize === 'simples'));
   document.getElementById('product-ready-stock-group').classList.toggle('hidden', !isSnack);
+  document.getElementById('product-pastel-config-group').classList.toggle('hidden', !isPastel);
+  document.getElementById('product-pastel-flavors-group').classList.toggle('hidden', !isPastel || pastelSize !== 'grande');
+  document.getElementById('product-ingredients-label').textContent = isPastel ? 'Ingredientes disponíveis para escolha *' : 'Ingredientes do lanche *';
+  document.getElementById('product-ingredients-help').textContent = isPastel
+    ? `Separe por vírgulas. O cliente escolherá exatamente ${pastelSize === 'grande' ? 2 : pastelSize === 'medio' ? 3 : 0} ingrediente(s).`
+    : 'Separe por vírgulas. Ingredientes repetidos serão consolidados e até 30 itens serão considerados.';
 }
 
 function updateDescriptionCount() {
@@ -59,13 +67,20 @@ function validateProductFields() {
   const name = document.getElementById('product-name').value.trim();
   const description = document.getElementById('product-description').value.trim();
   const category = document.getElementById('product-category').value;
+  const pastelSize = document.getElementById('product-pastel-size').value;
+  const ingredients = parseIngredients(document.getElementById('product-ingredients').value);
+  const pastelFlavors = parseIngredients(document.getElementById('product-pastel-flavors').value);
   const priceValue = document.getElementById('product-price').value.trim();
   const price = Number(priceValue);
   if (!name) valid = productFieldError('product-name', 'Informe o nome do produto.');
   if (!description) valid = productFieldError('product-description', 'Informe a descrição do produto.');
   if (!['lanches','pasteis','combos','sucos','refrigerantes','sobremesas'].includes(category)) valid = productFieldError('product-category', 'Selecione uma categoria válida.');
   if (priceValue === '' || !Number.isFinite(price) || price < 0) valid = productFieldError('product-price', 'Informe um preço válido igual ou maior que zero.');
-  if (category === 'lanches' && !parseIngredients(document.getElementById('product-ingredients').value).length) valid = productFieldError('product-ingredients', 'Informe pelo menos um ingrediente do lanche.');
+  if (category === 'lanches' && !ingredients.length) valid = productFieldError('product-ingredients', 'Informe pelo menos um ingrediente do lanche.');
+  if (category === 'pasteis' && !['medio','grande','simples'].includes(pastelSize)) valid = productFieldError('product-pastel-size', 'Selecione o tipo de pastel.');
+  if (category === 'pasteis' && pastelSize === 'medio' && ingredients.length < 3) valid = productFieldError('product-ingredients', 'Cadastre pelo menos 3 ingredientes para o pastel médio.');
+  if (category === 'pasteis' && pastelSize === 'grande' && ingredients.length < 2) valid = productFieldError('product-ingredients', 'Cadastre pelo menos 2 ingredientes para o pastel grande.');
+  if (category === 'pasteis' && pastelSize === 'grande' && !pastelFlavors.length) valid = productFieldError('product-pastel-flavors', 'Cadastre pelo menos um sabor para o pastel grande.');
   return valid;
 }
 
@@ -112,7 +127,8 @@ function renderMenuProducts() {
       <div class="menu-edit-body">
         <div class="menu-edit-title"><h2>${escapeHtml(product.name)}</h2><strong>R$ ${fmt(product.price)}</strong></div>
         <p>${escapeHtml(product.desc)}</p>
-        ${product.category === 'lanches' && product.ingredients.length ? `<p class="menu-edit-ingredients"><strong>Ingredientes:</strong> ${product.ingredients.map(escapeHtml).join(', ')}</p>` : ''}
+        ${['lanches','pasteis'].includes(product.category) && product.ingredients.length ? `<p class="menu-edit-ingredients"><strong>${product.category === 'pasteis' ? 'Opções' : 'Ingredientes'}:</strong> ${product.ingredients.map(escapeHtml).join(', ')}</p>` : ''}
+        ${product.category === 'pasteis' ? `<p class="menu-edit-ingredients"><strong>Formato:</strong> ${product.pastelSize === 'medio' ? 'Médio · 3 ingredientes' : product.pastelSize === 'grande' ? `Grande · 1 sabor + 2 ingredientes${product.pastelFlavors.length ? ` · ${product.pastelFlavors.map(escapeHtml).join(', ')}` : ''}` : 'Sem personalização'}</p>` : ''}
         <div class="menu-edit-meta"><span class="menu-availability${product.active ? ' is-active' : ''}"><i aria-hidden="true"></i>${product.active ? 'Disponível' : 'Desativado'}</span>${product.category === 'lanches' ? `<span>Estoque: <b>${Number(product.stock) || 0}</b></span>` : '<span>Sem controle de estoque</span>'}</div>
         <div class="menu-edit-actions">
           <button class="btn-edit-product" data-action="edit" data-id="${product.id}" data-capability="manageMenu" data-capability-mode="disable">${menuIcon('edit')}<span>Editar</span></button>
@@ -140,6 +156,8 @@ function openProductModal(product = null) {
   document.getElementById('product-name').value = product?.name || '';
   document.getElementById('product-description').value = product?.desc || '';
   document.getElementById('product-category').value = product?.category || 'lanches';
+  document.getElementById('product-pastel-size').value = product?.pastelSize || 'medio';
+  document.getElementById('product-pastel-flavors').value = (product?.pastelFlavors || []).join(', ');
   document.getElementById('product-ingredients').value = (product?.ingredients || []).join(', ');
   updateIngredientsField();
   document.getElementById('product-image').value = '';
@@ -191,10 +209,12 @@ document.getElementById('product-form').addEventListener('submit', async event =
   }
   const existingProduct = menuProducts.find(item => item.id === Number(id));
   const category = document.getElementById('product-category').value;
-  const ingredients = category === 'lanches' ? parseIngredients(document.getElementById('product-ingredients').value) : [];
+  const pastelSize = category === 'pasteis' ? document.getElementById('product-pastel-size').value : null;
+  const ingredients = ['lanches','pasteis'].includes(category) && pastelSize !== 'simples' ? parseIngredients(document.getElementById('product-ingredients').value) : [];
+  const pastelFlavors = category === 'pasteis' && pastelSize === 'grande' ? parseIngredients(document.getElementById('product-pastel-flavors').value) : [];
   const product = {
     name:document.getElementById('product-name').value.trim(), desc:document.getElementById('product-description').value.trim(),
-    category, ingredients, img:currentImage,
+    category, ingredients, pastelSize, pastelFlavors, img:currentImage,
     price:Number(document.getElementById('product-price').value), cost:existingProduct?.cost ?? 0,
     stock:existingProduct?.stock ?? 0, minStock:existingProduct?.minStock ?? 0,
   };
@@ -235,6 +255,7 @@ document.getElementById('menu-manager-grid').addEventListener('click', async eve
 
 document.getElementById('new-product-button').addEventListener('click', () => openProductModal());
 document.getElementById('product-category').addEventListener('change', updateIngredientsField);
+document.getElementById('product-pastel-size').addEventListener('change', updateIngredientsField);
 document.getElementById('product-description').addEventListener('input', updateDescriptionCount);
 document.getElementById('choose-product-image').addEventListener('click', () => document.getElementById('product-image').click());
 document.getElementById('product-upload-box').addEventListener('click', event => {

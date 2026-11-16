@@ -66,6 +66,7 @@ async function repeatOrder(orderId, button) {
     const addonsById = new Map(currentAddons.map(addon => [Number(addon.id), addon]));
     const unavailableItems = [];
     const unavailableAddons = [];
+    const pastelReviews = [];
     const repeatedCart = [];
 
     order.order_items.forEach(item => {
@@ -92,11 +93,23 @@ async function repeatOrder(orderId, button) {
         });
       }
 
+      const selectedPastelFlavor = product.category === 'pasteis' && product.pastelFlavors.includes(item.selected_pastel_flavor) ? item.selected_pastel_flavor : '';
+      const selectedPastelIngredients = product.category === 'pasteis' && Array.isArray(item.selected_pastel_ingredients)
+        ? [...new Set(item.selected_pastel_ingredients.map(String).filter(ingredient => product.ingredients.includes(ingredient)))].slice(0, product.pastelSize === 'medio' ? 3 : 2)
+        : [];
+      const requiredPastelIngredients = product.pastelSize === 'medio' ? 3 : product.pastelSize === 'grande' ? 2 : 0;
+      if (product.category === 'pasteis' && product.pastelSize !== 'simples'
+        && (selectedPastelIngredients.length !== requiredPastelIngredients || (product.pastelSize === 'grande' && !selectedPastelFlavor))) {
+        pastelReviews.push(product.name);
+      }
+
       repeatedCart.push({
         pid:productId,
         qty:quantity,
         removedIngredients:product.category === 'lanches' ? String(item.removed_ingredients || '').slice(0, 120) : '',
         selectedAddonIds:[...new Set(selectedAddonIds)].slice(0, 10),
+        selectedPastelFlavor,
+        selectedPastelIngredients,
       });
     });
 
@@ -105,9 +118,11 @@ async function repeatOrder(orderId, button) {
     }
 
     sessionStorage.setItem('dogburger_cart', JSON.stringify(repeatedCart));
-    const notice = unavailableAddons.length
-      ? `Pedido anterior adicionado com os preços atuais. Alguns adicionais indisponíveis foram removidos: ${unavailableAddons.join('; ')}.`
-      : 'Pedido anterior adicionado ao carrinho com os preços atuais. Confira antes de finalizar.';
+    const noticeParts = ['Pedido anterior adicionado ao carrinho com os preços atuais.'];
+    if (unavailableAddons.length) noticeParts.push(`Alguns adicionais indisponíveis foram removidos: ${unavailableAddons.join('; ')}.`);
+    if (pastelReviews.length) noticeParts.push(`Revise a personalização de: ${[...new Set(pastelReviews)].join(', ')}.`);
+    noticeParts.push('Confira antes de finalizar.');
+    const notice = noticeParts.join(' ');
     sessionStorage.setItem('dogburger_repeat_notice', notice);
     window.location.href = 'index.html?cart=1';
   } catch (error) {
@@ -129,7 +144,7 @@ async function loadOrderHistory() {
   const creditsByOrder = new Map((pointCreditsError ? [] : pointCredits || []).map(credit => [credit.order_id, credit]));
   const cancellationsByOrder = new Map((cancellationsResult.error ? [] : cancellationsResult.data || []).map(cancellation => [Number(cancellation.order_id), cancellation]));
   let { data: orders, error } = await DB.from('orders')
-    .select('id, status, note, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, product_name, quantity, unit_price, removed_ingredients, selected_addons)')
+    .select('id, status, note, created_at, delivery_address, payment_method, change_for, fulfillment_method, subtotal, delivery_fee, total, eta_min, eta_max, order_items(product_id, product_name, quantity, unit_price, removed_ingredients, selected_addons, selected_pastel_flavor, selected_pastel_ingredients)')
     .order('created_at', { ascending:false });
 
   if (error?.code === '42703') {
@@ -199,7 +214,7 @@ async function loadOrderHistory() {
     const date = new Date(order.created_at).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' });
     const items = order.order_items.map(item => `<div class="history-item">
       <span class="history-item-qty">${item.quantity}×</span>
-      <div><span class="history-item-name">${escapeProfileHtml(item.product_name || `Produto #${item.product_id}`)}</span><small class="history-item-unit">R$ ${Number(item.unit_price).toLocaleString('pt-BR', {minimumFractionDigits:2})} cada</small>${item.removed_ingredients ? `<small class="history-item-removal">Sem: ${escapeProfileHtml(item.removed_ingredients)}</small>` : ''}${Array.isArray(item.selected_addons) && item.selected_addons.length ? `<small class="history-item-addons">Adicionais: ${item.selected_addons.map(addon => `${escapeProfileHtml(addon.name)} (+ R$ ${Number(addon.price).toLocaleString('pt-BR', {minimumFractionDigits:2})})`).join(', ')}</small>` : ''}</div>
+      <div><span class="history-item-name">${escapeProfileHtml(item.product_name || `Produto #${item.product_id}`)}</span><small class="history-item-unit">R$ ${Number(item.unit_price).toLocaleString('pt-BR', {minimumFractionDigits:2})} cada</small>${item.removed_ingredients ? `<small class="history-item-removal">Sem: ${escapeProfileHtml(item.removed_ingredients)}</small>` : ''}${Array.isArray(item.selected_addons) && item.selected_addons.length ? `<small class="history-item-addons">Adicionais: ${item.selected_addons.map(addon => `${escapeProfileHtml(addon.name)} (+ R$ ${Number(addon.price).toLocaleString('pt-BR', {minimumFractionDigits:2})})`).join(', ')}</small>` : ''}${item.selected_pastel_flavor ? `<small class="history-item-pastel">Sabor: ${escapeProfileHtml(item.selected_pastel_flavor)}</small>` : ''}${Array.isArray(item.selected_pastel_ingredients) && item.selected_pastel_ingredients.length ? `<small class="history-item-pastel">Ingredientes: ${item.selected_pastel_ingredients.map(escapeProfileHtml).join(', ')}</small>` : ''}</div>
       <span class="history-item-price">R$ ${(Number(item.unit_price) * item.quantity).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
     </div>`).join('');
     const pointsSummary = pointCredit ? `<div class="history-order-points"><strong>+${Number(pointCredit.points_awarded) || 0} ${Number(pointCredit.points_awarded) === 1 ? 'ponto' : 'pontos'}</strong><span>Creditados após a entrega · regra de 1 ponto a cada R$ 10</span></div>` : '';
