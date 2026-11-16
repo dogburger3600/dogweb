@@ -4127,6 +4127,7 @@ body { min-height: 100vh; }
   font-weight: 700;
 }
 #page-consumer .c-hero-meta .customer-icon { width: 16px; height: 16px; color: #FB923C; }
+#page-consumer .c-hero-meta strong { font: inherit; font-weight: 800; }
 #page-consumer .catalog-toolbar {
   padding: 22px max(20px, calc((100vw - 1200px) / 2)) 0;
   border-bottom: 1px solid var(--border);
@@ -4516,7 +4517,10 @@ body { min-height: 100vh; }
   #page-consumer .c-hero-label { margin-bottom: 5px; font-size: 0.57rem; }
   #page-consumer .c-hero-title { margin-bottom: 6px; font-size: clamp(1.55rem, 7.3vw, 1.95rem); }
   #page-consumer .c-hero-sub { font-size: 0.76rem; line-height: 1.4; }
-  #page-consumer .c-hero-meta { display: none; }
+  #page-consumer .c-hero-meta { display: flex; gap: 5px; margin-top: 9px; }
+  #page-consumer .c-hero-meta > span { min-height: 29px; padding: 4px 7px; font-size: 0.61rem; line-height: 1.25; }
+  #page-consumer .c-hero-meta > span:not(.c-hero-hours) { display: none; }
+  #page-consumer .c-hero-meta .customer-icon { width: 14px; height: 14px; }
   #page-consumer .catalog-toolbar { padding: 18px 14px 0; }
   #page-consumer .catalog-heading { align-items: flex-start; }
   #page-consumer .catalog-heading h2 { font-size: 1.18rem; }

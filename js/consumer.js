@@ -27,6 +27,35 @@ function customerIcon(name, className = 'customer-icon') {
   return `<svg class="${className}" viewBox="0 0 24 24" aria-hidden="true">${CUSTOMER_ICON_PATHS[name] || CUSTOMER_ICON_PATHS.todos}</svg>`;
 }
 
+function formatBusinessTime(value) {
+  const match = String(value || '').match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return '';
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23 || !Number.isInteger(minute) || minute < 0 || minute > 59) return '';
+  return minute === 0 ? `${hour}h` : `${hour}h${String(minute).padStart(2, '0')}`;
+}
+
+async function loadHomeBusinessHours() {
+  const element = document.getElementById('home-business-hours');
+  if (!element) return;
+  try {
+    const settings = await Store.getStoreSettings();
+    const openTime = formatBusinessTime(settings?.open_time);
+    const closeTime = formatBusinessTime(settings?.close_time);
+    if (!openTime || !closeTime) throw new Error('Horário inválido');
+    let label = `Funcionamento: ${openTime} às ${closeTime}`;
+    if (settings.pause_enabled) {
+      const pauseStart = formatBusinessTime(settings.pause_start);
+      const pauseEnd = formatBusinessTime(settings.pause_end);
+      if (pauseStart && pauseEnd) label += ` · pausa ${pauseStart}–${pauseEnd}`;
+    }
+    element.textContent = label;
+  } catch {
+    element.textContent = 'Horário: consulte no atendimento';
+  }
+}
+
 function getProduct(pid) {
   return products.find(p => p.id === pid);
 }
@@ -656,6 +685,7 @@ document.addEventListener('keydown', handleHomePopupKeydown);
 async function initConsumer() {
   renderCategoryTabs();
   updateCartBadge();
+  const businessHoursRequest = loadHomeBusinessHours();
   document.getElementById('products-grid').innerHTML = `<div class="catalog-loading" role="status"><span></span><strong>Carregando cardápio</strong><p>Buscando os produtos disponíveis.</p></div>`;
   try {
     [products, addons] = await Promise.all([Store.getProducts(), Store.getAddons()]);
@@ -687,6 +717,7 @@ async function initConsumer() {
     message.textContent = `Não foi possível carregar o cardápio. ${error.message || ''}`;
     grid.appendChild(message);
   }
+  await businessHoursRequest;
   await loadHomePopup();
 }
 
